@@ -1,9 +1,29 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AdminsModule } from './admins/admins.module';
+import { PrismaModule } from 'prisma/prisma.module';
+import { AdminAuthModule } from './admin-auth/admin-auth.module';
+import { ConfigModule } from '@nestjs/config';
+import Joi from '@hapi/joi';
 
 @Module({
-  imports: [],
+  imports: [
+    ConfigModule.forRoot({
+      validationSchema: Joi.object({
+        SERVER_PORT: Joi.number().required(),
+        SERVER_URL: Joi.string().required(),
+        ENDPOINT_PREFIX: Joi.string().required(),
+        ACCESS_TOKEN_SECRET: Joi.string().required(),
+        ACCESS_TOKEN_EXP: Joi.number().required(),
+        REFRESH_TOKEN_SECRET: Joi.string().required(),
+        REFRESH_TOKEN_EXP: Joi.number().required(),
+      }),
+    }),
+    AdminsModule,
+    PrismaModule,
+    AdminAuthModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
