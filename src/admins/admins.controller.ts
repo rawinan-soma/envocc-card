@@ -1,5 +1,7 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { AdminsService } from './admins.service';
+import type { RequestwithUserData } from 'src/common/request-with-data.interface';
+import { JwtAccessGuard } from 'src/admin-auth/jwt-access.guard';
 
 @Controller('admins')
 export class AdminsController {
@@ -23,5 +25,11 @@ export class AdminsController {
   @Get(':email')
   async getAdminByEmailHandler(@Param('email') email: string) {
     return this.adminsService.getAdminByEmail(email);
+  }
+
+  @UseGuards(JwtAccessGuard)
+  @Get('me')
+  async getCurrentAdminHandler(@Req() request: RequestwithUserData) {
+    return this.adminsService.getAdminById(Number(request.user.id));
   }
 }

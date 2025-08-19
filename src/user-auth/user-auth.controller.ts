@@ -1,38 +1,28 @@
 import {
-  Body,
   Controller,
   HttpCode,
   Logger,
-  Post,
-  Req,
   UseGuards,
+  Req,
+  Post,
 } from '@nestjs/common';
-import { AdminAuthService } from './admin-auth.service';
-import { AdminCreateDto } from './dto/admin-create.dto/admin-create.dto';
-import { AdminLocalAuthenGuard } from './admin-local.guard';
-
+import { UserAuthService } from './user-auth.service';
 import { CommonAuthService } from 'src/common/common-auth.service';
+import { UserLocalAuthenGuard } from './user-local.guard';
 import type { RequestwithUserData } from 'src/common/request-with-data.interface';
-import { JwtAccessGuardAdmin } from './jwt-access.guard';
-import JwtRefreshGuardAdmin from './jwt-refresh.guard';
+import { JwtAccessGuardUser } from './jwt-access.guard';
+import { JwtRefreshGuardUser } from './jwt-refresh.guard';
 
-@Controller('admins/auth')
-export class AdminAuthController {
-  private readonly logger = new Logger(AdminAuthController.name);
+@Controller('users/auth')
+export class UserAuthController {
+  private readonly logger = new Logger(UserAuthController.name);
   constructor(
-    private readonly adminAuthService: AdminAuthService,
+    private readonly userAuthService: UserAuthService,
     private readonly commonAuthService: CommonAuthService,
   ) {}
 
-  @Post('register')
-  async createAdminHandler(@Body() admin: AdminCreateDto) {
-    const newAdmin = await this.adminAuthService.createAdmin(admin);
-
-    return { msg: 'admin create', admin: newAdmin };
-  }
-
   @HttpCode(200)
-  @UseGuards(AdminLocalAuthenGuard)
+  @UseGuards(UserLocalAuthenGuard)
   @Post('login')
   async loginHandler(@Req() request: RequestwithUserData) {
     const { user } = request;
@@ -46,7 +36,7 @@ export class AdminAuthController {
       'refresh',
     );
 
-    await this.adminAuthService.setCurrentRefreshToken(
+    await this.userAuthService.setCurrentRefreshToken(
       refreshTokenCookie,
       Number(user.id),
     );
@@ -63,16 +53,12 @@ export class AdminAuthController {
       this.commonAuthService.getCookieOption('refresh'),
     );
 
-    this.logger.log(`user: ${user.id}, role: ${user.role} logged in`);
+    this.logger.log(`user: ${user.id},  role: ${user.role} logged in`);
 
-    return {
-      msg: 'login succesful',
-      id: Number(user.id),
-      role: user.role,
-    };
+    return { msg: 'login succesful' };
   }
 
-  @UseGuards(JwtRefreshGuardAdmin)
+  @UseGuards(JwtRefreshGuardUser)
   @Post('refresh')
   @HttpCode(200)
   refreshTokenHandler(@Req() request: RequestwithUserData) {
@@ -88,24 +74,20 @@ export class AdminAuthController {
     );
 
     this.logger.log(
-      `user: ${request.user.id},  role: ${request.user.role} refreshed cookie`,
+      `user: ${request.user.id}, role: ${request.user.role} refresh token`,
     );
-
-    return { msg: 'token refreshed' };
   }
 
   @HttpCode(200)
-  @UseGuards(JwtAccessGuardAdmin)
+  @UseGuards(JwtAccessGuardUser)
   @Post('logout')
   async logoutHandler(@Req() request: RequestwithUserData) {
-    await this.adminAuthService.removeRefreshToken(Number(request.user.id));
-
+    await this.userAuthService.removeRefreshToken(Number(request.user.id));
     request.res?.clearCookie('Authentication');
-
     request.res?.clearCookie('Refresh');
 
     this.logger.log(
-      `user: ${request.user.id},  role: ${request.user.role} logged out`,
+      `user: ${request.user.id}, role: ${request.user.role} logged out`,
     );
 
     return { msg: 'logout succesful' };

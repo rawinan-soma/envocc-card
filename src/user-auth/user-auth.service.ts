@@ -6,52 +6,63 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
-import { AdminCreateDto } from './dto/admin-create.dto/admin-create.dto';
+
 import * as bcrypt from 'bcrypt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { UserExpCreateDto } from './dto/user-exp-create.dto';
 
 @Injectable()
-export class AdminAuthService {
-  private readonly logger = new Logger(AdminAuthService.name);
+export class UserAuthService {
+  private readonly logger = new Logger(UserAuthService.name);
   constructor(private readonly prisma: PrismaService) {}
 
-  async createAdmin(dto: AdminCreateDto) {
+  async createuser(dto: UserExpCreateDto) {
     try {
-      const hashedPassword = await bcrypt.hash(dto.password, 10);
-      return await this.prisma.admins.create({
-        data: { ...dto, password: hashedPassword },
-        select: { username: true, role: true },
+      const hashedPassword = await bcrypt.hash(dto.user.password, 10);
+      dto.user.password = hashedPassword;
+      const existingUser = await this.prisma.users.findFirst({
+        where: {
+          OR: [{ username: dto.user.username }, { email: dto.user.email }],
+        },
+      });
+
+      if (existingUser) {
+        throw new BadRequestException('username or email already exists');
+      }
+
+      return await this.prisma.users.create({
+        data: {
+          ...dto.user,
+          experience: { createMany: { data: { ...dto.experiences } } },
+        },
       });
     } catch (error) {
       this.logger.error(error);
       if (error instanceof PrismaClientKnownRequestError) {
-        switch (error.code) {
-          case 'P2002':
-            throw new BadRequestException('username or email alredy exists');
-          default:
-            throw new BadRequestException('create user failed');
-        }
+        throw new BadRequestException('failed to create user');
+      } else if (error instanceof BadRequestException) {
+        throw error;
       } else {
         throw new InternalServerErrorException('something went wrong');
       }
     }
   }
 
-  async getAuthenticatedAdmin(username: string, password: string) {
+  async getAuthenticatedUser(username: string, password: string) {
     try {
-      const admin = await this.prisma.admins.findFirst({
+      const user = await this.prisma.users.findFirst({
         where: { username: username },
         select: { username: true, password: true, id: true, role: true },
       });
 
-      if (!admin) {
-        throw new UnauthorizedException('invalid credential 1');
+      if (!user) {
+        throw new UnauthorizedException('invalid credential');
       }
 
-      await this.verifyPassword(password, admin?.password || '');
-      admin.password = '';
+      await this.verifyPassword(password, user?.password || '');
+      user.password = '';
 
-      return admin;
+      return user;
     } catch (error) {
       this.logger.error(error);
       if (error instanceof UnauthorizedException) {
@@ -67,38 +78,38 @@ export class AdminAuthService {
   private async verifyPassword(password: string, hashedPassword: string) {
     const isPasswordMatched = await bcrypt.compare(password, hashedPassword);
     if (!isPasswordMatched) {
-      throw new UnauthorizedException('invalid credential 2');
+      throw new UnauthorizedException('invalid credential');
     }
   }
 
   async setCurrentRefreshToken(refreshToken: string, id: number) {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
-    await this.prisma.admins.update({
+    await this.prisma.users.update({
       where: { id: id },
       data: { hashedRefreshToken: hashedRefreshToken },
     });
   }
 
-  async getAdminFromRefreshToken(refreshToken: string, id: number) {
-    const admin = await this.prisma.admins.findUnique({
+  async getUserFromRefreshToken(refreshToken: string, id: number) {
+    const user = await this.prisma.users.findUnique({
       where: { id: id },
     });
     const isTokenMatch = await bcrypt.compare(
       refreshToken,
-      (admin?.hashedRefreshToken as string) ?? '',
+      (user?.hashedRefreshToken as string) ?? '',
     );
 
     if (isTokenMatch) {
       return {
-        id: admin?.id,
-        username: admin?.username,
-        role: admin?.role,
+        id: user?.id,
+        username: user?.username,
+        role: user?.role,
       };
     }
   }
 
   async removeRefreshToken(id: number) {
-    return this.prisma.admins.update({
+    return this.prisma.users.update({
       where: { id: id },
       data: { hashedRefreshToken: null },
     });

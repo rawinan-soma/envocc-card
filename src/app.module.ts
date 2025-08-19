@@ -5,6 +5,7 @@ import { AdminsModule } from './admins/admins.module';
 import { PrismaModule } from 'prisma/prisma.module';
 import { AdminAuthModule } from './admin-auth/admin-auth.module';
 import { ConfigModule } from '@nestjs/config';
+import { UserAuthModule } from './user-auth/user-auth.module';
 import Joi from '@hapi/joi';
 
 @Module({
@@ -23,6 +24,7 @@ import Joi from '@hapi/joi';
     AdminsModule,
     PrismaModule,
     AdminAuthModule,
+    UserAuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

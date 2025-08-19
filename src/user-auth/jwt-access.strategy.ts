@@ -9,7 +9,7 @@ import { TokenPayload } from 'src/common/payload.interface';
 @Injectable()
 export class JwtAccessStrategy extends PassportStrategy(
   Strategy,
-  'jwt-access-admin',
+  'jwt-access-user',
 ) {
   constructor(
     private readonly config: ConfigService,
@@ -26,7 +26,7 @@ export class JwtAccessStrategy extends PassportStrategy(
   }
 
   async validate(payload: TokenPayload) {
-    return this.prisma.admins.findUnique({
+    return this.prisma.users.findUnique({
       where: { id: payload.id },
       select: { username: true, role: true, id: true },
     });

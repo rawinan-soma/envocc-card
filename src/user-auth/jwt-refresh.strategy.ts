@@ -2,18 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy, StrategyOptionsWithRequest } from 'passport-jwt';
-import { AdminAuthService } from './admin-auth.service';
+
 import { Request } from 'express';
 import { TokenPayload } from 'src/common/payload.interface';
+import { UserAuthService } from './user-auth.service';
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(
   Strategy,
-  'jwt-refresh-admin',
+  'jwt-refresh-user',
 ) {
   constructor(
     private readonly config: ConfigService,
-    private readonly service: AdminAuthService,
+    private readonly service: UserAuthService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -28,6 +29,6 @@ export class JwtRefreshStrategy extends PassportStrategy(
 
   async validate(request: Request, payload: TokenPayload) {
     const refreshToken = request?.cookies?.Refresh as string;
-    return this.service.getAdminFromRefreshToken(refreshToken, payload.id);
+    return this.service.getUserFromRefreshToken(refreshToken, payload.id);
   }
 }
