@@ -16,6 +16,6 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  await app.listen(configService.get('SERVER_PORT') ?? 6666);
+  await app.listen(configService.get('SERVER_PORT') ?? 3000);
 }
 void bootstrap();

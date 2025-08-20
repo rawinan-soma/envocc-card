@@ -13,7 +13,7 @@ import Joi from '@hapi/joi';
   imports: [
     ConfigModule.forRoot({
       validationSchema: Joi.object({
-        SERVER_PORT: Joi.number().required(),
+        SERVER_PORT: Joi.number(),
         SERVER_URL: Joi.string().required(),
         ENDPOINT_PREFIX: Joi.string().required(),
         ACCESS_TOKEN_SECRET: Joi.string().required(),

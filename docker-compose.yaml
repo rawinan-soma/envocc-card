@@ -19,6 +19,22 @@ services:
     networks:
       - envocc-card
 
+  api:
+    image: rawinan/envocc-card-api:test-latest
+    container_name: envocc-card-api-test
+    restart: always
+    ports:
+      - 3333:3000
+    depends_on:
+      - database
+    networks:
+      - envocc-card
+    # healthcheck:
+    #   test: ['CMD', 'curl', 'http://localhost:3333/envocc-card/api/v2/']
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+    #   start_period: 5s
 volumes:
   postgres_data:
 networks:

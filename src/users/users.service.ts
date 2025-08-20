@@ -8,6 +8,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
+import { UserUpdateDto } from './dto/user-update.dto';
 
 @Injectable()
 export class UsersService {
@@ -287,6 +288,55 @@ export class UsersService {
       }
 
       return user;
+    } catch (error: any) {
+      this.logger.error(error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      } else if (error instanceof PrismaClientKnownRequestError) {
+        throw new BadRequestException('bad request by user');
+      } else {
+        throw new InternalServerErrorException('something went wrong');
+      }
+    }
+  }
+
+  async updateUser(id: number, data: UserUpdateDto) {
+    try {
+      const user = await this.prisma.users.findUnique({ where: { id: id } });
+
+      if (!user) {
+        throw new NotFoundException('user not found');
+      }
+
+      return await this.prisma.users.update({
+        where: { id: id },
+        data: { ...data },
+      });
+    } catch (error) {
+      this.logger.error(error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      } else if (error instanceof PrismaClientKnownRequestError) {
+        throw new BadRequestException('bad request by user');
+      } else {
+        throw new InternalServerErrorException('something went wrong');
+      }
+    }
+  }
+
+  async deleteUser(id: number) {
+    try {
+      const existedUser = await this.prisma.users.findUnique({
+        where: { id: id },
+      });
+
+      if (!existedUser) {
+        throw new NotFoundException(`user not found`);
+      }
+
+      return await this.prisma.users.delete({
+        where: { id: id },
+      });
     } catch (error: any) {
       this.logger.error(error);
       if (error instanceof NotFoundException) {
