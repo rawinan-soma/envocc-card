@@ -5,13 +5,15 @@ import {
   UseGuards,
   Req,
   Post,
+  Body,
 } from '@nestjs/common';
 import { UserAuthService } from './user-auth.service';
 import { CommonAuthService } from 'src/common/common-auth.service';
 import { UserLocalAuthenGuard } from './user-local.guard';
-import type { RequestwithUserData } from 'src/common/request-with-data.interface';
 import { JwtAccessGuardUser } from './jwt-access.guard';
 import { JwtRefreshGuardUser } from './jwt-refresh.guard';
+import { UserExpCreateDto } from './dto/user-exp-create.dto';
+import type { RequestwithUserData } from './request-user-interface';
 
 @Controller('users/auth')
 export class UserAuthController {
@@ -91,5 +93,11 @@ export class UserAuthController {
     );
 
     return { msg: 'logout succesful' };
+  }
+
+  @Post('register')
+  async creteUserHandler(@Body() user: UserExpCreateDto) {
+    const newUser = await this.userAuthService.createUser(user);
+    return { msg: 'user created', user: newUser };
   }
 }

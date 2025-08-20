@@ -12,9 +12,10 @@ import { AdminCreateDto } from './dto/admin-create.dto/admin-create.dto';
 import { AdminLocalAuthenGuard } from './admin-local.guard';
 
 import { CommonAuthService } from 'src/common/common-auth.service';
-import type { RequestwithUserData } from 'src/common/request-with-data.interface';
+
 import { JwtAccessGuardAdmin } from './jwt-access.guard';
 import JwtRefreshGuardAdmin from './jwt-refresh.guard';
+import type { RequestwithAdminData } from './request-admin.interface';
 
 @Controller('admins/auth')
 export class AdminAuthController {
@@ -34,7 +35,7 @@ export class AdminAuthController {
   @HttpCode(200)
   @UseGuards(AdminLocalAuthenGuard)
   @Post('login')
-  async loginHandler(@Req() request: RequestwithUserData) {
+  async loginHandler(@Req() request: RequestwithAdminData) {
     const { user } = request;
     const accessTokenCookie = this.commonAuthService.getCookieFromToken(
       Number(user.id),
@@ -75,7 +76,7 @@ export class AdminAuthController {
   @UseGuards(JwtRefreshGuardAdmin)
   @Post('refresh')
   @HttpCode(200)
-  refreshTokenHandler(@Req() request: RequestwithUserData) {
+  refreshTokenHandler(@Req() request: RequestwithAdminData) {
     const accessTokenCookie = this.commonAuthService.getCookieFromToken(
       Number(request.user.id),
       'access',
@@ -97,7 +98,7 @@ export class AdminAuthController {
   @HttpCode(200)
   @UseGuards(JwtAccessGuardAdmin)
   @Post('logout')
-  async logoutHandler(@Req() request: RequestwithUserData) {
+  async logoutHandler(@Req() request: RequestwithAdminData) {
     await this.adminAuthService.removeRefreshToken(Number(request.user.id));
 
     request.res?.clearCookie('Authentication');

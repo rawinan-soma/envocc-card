@@ -1,11 +1,16 @@
-import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Req, UseGuards, Query } from '@nestjs/common';
 import { AdminsService } from './admins.service';
-import type { RequestwithUserData } from 'src/common/request-with-data.interface';
-import { JwtAccessGuard } from 'src/admin-auth/jwt-access.guard';
+import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
+import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
+import { GetAllUserQueryDto } from 'src/users/dto/get-all-user-query.dto';
+import { UsersService } from 'src/users/users.service';
 
 @Controller('admins')
 export class AdminsController {
-  constructor(private readonly adminsService: AdminsService) {}
+  constructor(
+    private readonly adminsService: AdminsService,
+    private readonly userService: UsersService,
+  ) {}
 
   @Get()
   async getAllAdminsHandler() {
@@ -27,9 +32,40 @@ export class AdminsController {
     return this.adminsService.getAdminByEmail(email);
   }
 
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtAccessGuardAdmin)
   @Get('me')
-  async getCurrentAdminHandler(@Req() request: RequestwithUserData) {
+  async getCurrentAdminHandler(@Req() request: RequestwithAdminData) {
     return this.adminsService.getAdminById(Number(request.user.id));
+  }
+
+  @Get('users')
+  async getAllUserHandler(
+    @Req() request: RequestwithAdminData,
+    @Query() queryParams: GetAllUserQueryDto,
+  ) {
+    const { page, status, fname_th, lname_th, institution_name } = queryParams;
+    const pageNumber = page === 0 || !page ? 1 : queryParams.page;
+    const adminLevel = request.user.level;
+    const adminInst = request.user.institution;
+
+    return await this.userService.getAllUsers({
+      adminInst: adminInst,
+      adminLevel: adminLevel,
+      page: pageNumber as number,
+      status: status as string,
+      fname_th: fname_th,
+      institution_name: institution_name,
+      lname_th: lname_th,
+    });
+  }
+
+  @Get('users/form/:id')
+  async getUserPrintFormHandler(@Param('id') id: number) {
+    return await this.userService.getUserPrintForm(id);
+  }
+
+  @Get('users/exp/:id')
+  async getUserPrintExpHandler(@Param('id') id: number) {
+    return this.userService.getUserPrintExpForm(id);
   }
 }

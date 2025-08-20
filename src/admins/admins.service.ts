@@ -83,9 +83,8 @@ export class AdminsService {
         throw new BadRequestException('bad request by user');
       } else if (error instanceof NotFoundException) {
         return error;
-        // } else {
-        //   throw new InternalServerErrorException('something went wrong');
-        // }
+      } else {
+        throw new InternalServerErrorException('something went wrong');
       }
     }
   }

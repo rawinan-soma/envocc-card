@@ -16,7 +16,7 @@ export class UserAuthService {
   private readonly logger = new Logger(UserAuthService.name);
   constructor(private readonly prisma: PrismaService) {}
 
-  async createuser(dto: UserExpCreateDto) {
+  async createUser(dto: UserExpCreateDto) {
     try {
       const hashedPassword = await bcrypt.hash(dto.user.password, 10);
       dto.user.password = hashedPassword;
@@ -33,7 +33,7 @@ export class UserAuthService {
       return await this.prisma.users.create({
         data: {
           ...dto.user,
-          experience: { createMany: { data: { ...dto.experiences } } },
+          experience: { createMany: { data: dto.experiences } },
         },
       });
     } catch (error) {
