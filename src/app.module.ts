@@ -8,6 +8,7 @@ import { ConfigModule } from '@nestjs/config';
 import { UserAuthModule } from './user-auth/user-auth.module';
 import { UsersModule } from './users/users.module';
 import { RequestModule } from './request/request.module';
+import { DepartmentsModule } from './departments/departments.module';
 import Joi from '@hapi/joi';
 
 @Module({
@@ -29,6 +30,7 @@ import Joi from '@hapi/joi';
     UserAuthModule,
     UsersModule,
     RequestModule,
+    DepartmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
