@@ -1,15 +1,29 @@
-import { Controller, Get, Param, Req, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Req,
+  UseGuards,
+  Query,
+  Delete,
+  Patch,
+  Body,
+  Post,
+} from '@nestjs/common';
 import { AdminsService } from './admins.service';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
 import { GetAllUserQueryDto } from 'src/users/dto/get-all-user-query.dto';
 import { UsersService } from 'src/users/users.service';
+import { StatusCreateDto } from 'src/request/dto/status-create.dto';
+import { RequestService } from 'src/request/request.service';
 
 @Controller('admins')
 export class AdminsController {
   constructor(
     private readonly adminsService: AdminsService,
     private readonly userService: UsersService,
+    private readonly requestService: RequestService,
   ) {}
 
   @Get()
@@ -66,6 +80,29 @@ export class AdminsController {
 
   @Get('users/exp/:id')
   async getUserPrintExpHandler(@Param('id') id: number) {
-    return this.userService.getUserPrintExpForm(id);
+    return await this.userService.getUserPrintExpForm(id);
+  }
+
+  @Delete(':id')
+  async deleteUserHandler(@Param('id') id: number) {
+    return await this.userService.deleteUserById(id);
+  }
+
+  @Patch('users/validate/:id')
+  async validateUserHandler(
+    @Param('id') id: number,
+    @Req() request: RequestwithAdminData,
+  ) {
+    const approver = request.user.id;
+    return this.userService.validateUser(id, approver);
+  }
+
+  @Post('users/requests/update')
+  async updateStatusHandler(
+    @Req() request: RequestwithAdminData,
+    @Body() updated: StatusCreateDto,
+  ) {
+    const approver = request.user.id;
+    return await this.requestService.updateStatus(updated, approver);
   }
 }

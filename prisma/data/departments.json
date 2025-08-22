@@ -1,0 +1,44 @@
+[
+  {
+    "department_id": 21002,
+    "department_name_th": "สำนักงานปลัดกระทรวงสาธารณสุข",
+    "department_name_eng": "engname",
+    "ministry": 15000
+  },
+  {
+    "department_id": 21003,
+    "department_name_th": "กรมการแพทย์",
+    "department_name_eng": "engname",
+    "ministry": 15000
+  },
+  {
+    "department_id": 21004,
+    "department_name_th": "กรมควบคุมโรค",
+    "department_name_eng": "engname",
+    "ministry": 15000
+  },
+  {
+    "department_id": 21009,
+    "department_name_th": "กรมอนามัย",
+    "department_name_eng": "engname",
+    "ministry": 15000
+  },
+  {
+    "department_id": 10000,
+    "department_name_th": "สำนักอนามัย",
+    "department_name_eng": "engname",
+    "ministry": 21000
+  },
+  {
+    "department_id": 10001,
+    "department_name_th": "เทศบาล",
+    "department_name_eng": "engname",
+    "ministry": 21000
+  },
+  {
+    "department_id": 99999,
+    "department_name_th": "IGNORE",
+    "department_name_eng": "IGNORE",
+    "ministry": 99999
+  }
+]

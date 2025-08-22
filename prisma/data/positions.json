@@ -1,0 +1,42 @@
+[
+  {
+    "position_id": 1,
+    "position_name": "นายแพทย์",
+    "position_name_eng": "Medical Physician"
+  },
+  {
+    "position_id": 2,
+    "position_name": "เภสัชกร",
+    "position_name_eng": "Pharmacist"
+  },
+  {
+    "position_id": 3,
+    "position_name": "พยาบาลวิชาชีพ",
+    "position_name_eng": "Registered Nurse"
+  },
+  {
+    "position_id": 4,
+    "position_name": "นักวิชาการสาธารณสุข",
+    "position_name_eng": "Public Health Technical Officer"
+  },
+  {
+    "position_id": 5,
+    "position_name": "นักวิชาการสุขาภิบาล",
+    "position_name_eng": "Sanitation Technical Officer"
+  },
+  {
+    "position_id": 6,
+    "position_name": "นักวิทยาศาสตร์การแพทย์",
+    "position_name_eng": "Medical Scientist"
+  },
+  {
+    "position_id": 7,
+    "position_name": "นักเทคนิคการแพทย์",
+    "position_name_eng": "Medical Technologist"
+  },
+  {
+    "position_id": 99,
+    "position_name": "อื่นๆ",
+    "position_name_eng": "Other"
+  }
+]

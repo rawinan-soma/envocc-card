@@ -1,7 +1,7 @@
 services:
-  database:
+  database-docker:
     image: postgres:17-alpine
-    container_name: envocc-services-db
+    container_name: database
     restart: always
     environment:
       - POSTGRES_PASSWORD=root
@@ -19,22 +19,47 @@ services:
     networks:
       - envocc-card
 
+  database-local:
+    image: postgres:17-alpine
+
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=envocc-card
+    ports:
+      - 5441:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
   api:
     image: rawinan/envocc-card-api:test-latest
     container_name: envocc-card-api-test
-    restart: always
     ports:
       - 3333:3000
     depends_on:
-      - database
+      - database-docker
     networks:
       - envocc-card
-    # healthcheck:
-    #   test: ['CMD', 'curl', 'http://localhost:3333/envocc-card/api/v2/']
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 5
-    #   start_period: 5s
+    env_file:
+      - docker.env
+    command: |
+      sh -c "
+        bun prisma migrate deploy
+        bun prisma db seed
+        bun run start:prod
+      "
+    healthcheck:
+      test: ['CMD', 'curl', 'http://localhost:3000/envocc-card/api/v2/']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 volumes:
   postgres_data:
 networks:

@@ -1,0 +1,19 @@
+[
+  { "status_id": 0, "status_name": "ตรวจสอบ Register" },
+  { "status_id": 1, "status_name": "ตรวจสอบรูปถ่าย" },
+  { "status_id": 2, "status_name": "แก้ไขรูปถ่าย" },
+  { "status_id": 3, "status_name": "อัปโหลดเอกสาร" },
+  { "status_id": 4, "status_name": "ตรวจสอบเอกสาร" },
+  { "status_id": 5, "status_name": "Admin หน่วยงานแก้ไขเอกสาร" },
+  { "status_id": 6, "status_name": "User แก้ไขข้อมูล" },
+  { "status_id": 7, "status_name": "เลือกวิธีลงนาม" },
+  { "status_id": 8, "status_name": "เลือกวันที่อนุมัติ" },
+  { "status_id": 9, "status_name": "E.พิมพ์บัตร" },
+  { "status_id": 10, "status_name": "M.พิมพ์บัตร" },
+  { "status_id": 11, "status_name": "เลือกวันที่อนุมัติ" },
+  { "status_id": 12, "status_name": "User อัปโหลดบัตรพนักงาน" },
+  { "status_id": 13, "status_name": "Admin หน่วยงาน ตรวจสำเนาบัตร" },
+  { "status_id": 14, "status_name": "User แก้ไขบัตรพนักงาน" },
+  { "status_id": 15, "status_name": "ยื่นขอมีบัตรสำเร็จ" },
+  { "status_id": 16, "status_name": "บัตรถูกยกเลิก" }
+]

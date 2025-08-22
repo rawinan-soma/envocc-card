@@ -33,7 +33,8 @@ export class UserAuthService {
       return await this.prisma.users.create({
         data: {
           ...dto.user,
-          experience: { createMany: { data: dto.experiences } },
+
+          experiences: { createMany: { data: dto.experiences } },
         },
       });
     } catch (error) {

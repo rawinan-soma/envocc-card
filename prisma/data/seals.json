@@ -1,0 +1,44 @@
+[
+  {
+    "seal_id": 1,
+    "seal_pix": "seal1.jpg",
+    "update_admin": 1,
+    "seal_name": "test1"
+  },
+  {
+    "seal_id": 2,
+    "seal_pix": "seal2.jpg",
+    "update_admin": 1,
+    "seal_name": "test1"
+  },
+  {
+    "seal_id": 3,
+    "seal_pix": "seal3.jpg",
+    "update_admin": 1,
+    "seal_name": "test1"
+  },
+  {
+    "seal_id": 4,
+    "seal_pix": "seal4.jpg",
+    "update_admin": 1,
+    "seal_name": "test1"
+  },
+  {
+    "seal_id": 5,
+    "seal_pix": "seal5.jpg",
+    "update_admin": 1,
+    "seal_name": "test1"
+  },
+  {
+    "seal_id": 6,
+    "seal_pix": "seal6.jpg",
+    "update_admin": 1,
+    "seal_name": "test1"
+  },
+  {
+    "seal_id": 99999,
+    "seal_pix": "nothing",
+    "update_admin": 1,
+    "seal_name": "nothing"
+  }
+]

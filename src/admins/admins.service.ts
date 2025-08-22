@@ -39,6 +39,8 @@ export class AdminsService {
       this.logger.error(error);
       if (error instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
+      } else if (error instanceof NotFoundException) {
+        throw error;
       } else {
         throw new InternalServerErrorException('something went wrong');
       }

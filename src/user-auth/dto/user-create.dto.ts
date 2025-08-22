@@ -8,7 +8,7 @@ import {
   IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { BloodGroup, EngNamePrefix, ThaiNamePrefix } from './users.enum';
+import { EngNamePrefix, ThaiNamePrefix, BloodGroup } from './users.enum';
 
 export class UserCreateDto {
   // Required fields
@@ -18,6 +18,7 @@ export class UserCreateDto {
   @IsString()
   password: string;
 
+  @IsString()
   @IsEnum(ThaiNamePrefix)
   pname_th: ThaiNamePrefix;
 
@@ -30,6 +31,7 @@ export class UserCreateDto {
   @IsString()
   lname_th: string;
 
+  @IsString()
   @IsEnum(EngNamePrefix)
   pname_en: EngNamePrefix;
 
@@ -46,14 +48,13 @@ export class UserCreateDto {
   @Type(() => Date)
   birthday: Date;
 
-  @IsNumber()
-  nationality: number;
+  @IsString()
+  nationality: string;
 
   @IsEnum(BloodGroup)
   blood: BloodGroup;
 
   @IsString()
-  @Matches(/^0[0-9]{8}$/, { message: 'Invalid work number' })
   work_number: string;
 
   @IsString()
@@ -67,64 +68,77 @@ export class UserCreateDto {
   @IsString()
   house_number1: string;
 
-  @IsNumber()
-  moo1: number;
+  @Type(() => Number)
+  moo1?: number | null;
 
   @IsString()
-  alley1: string;
+  alley1?: string | null;
 
   @IsString()
-  road1: string;
+  road1?: string | null;
 
   @IsNumber()
+  @Type(() => Number)
   province1: number;
 
   @IsNumber()
+  @Type(() => Number)
   amphures1: number;
 
   @IsNumber()
-  districts1: number;
+  @Type(() => Number)
+  district1: number;
 
   @IsNumber()
+  @Type(() => Number)
   zip_code1: number;
 
   @IsString()
   house_number2: string;
 
-  @IsString()
-  moo2: string;
+  @Type(() => Number)
+  moo2?: number | null;
 
   @IsString()
-  alley2: string;
+  alley2?: string | null;
 
   @IsString()
-  road2: string;
+  road2?: string | null;
 
   @IsNumber()
+  @Type(() => Number)
   province2: number;
 
   @IsNumber()
+  @Type(() => Number)
   amphures2: number;
 
   @IsNumber()
+  @Type(() => Number)
   district2: number;
 
   @IsNumber()
+  @Type(() => Number)
   zip_code2: number;
 
   @IsNumber()
+  @Type(() => Number)
   institution: number;
 
   @IsNumber()
+  @Type(() => Number)
   eposition: number;
 
   @IsNumber()
+  @Type(() => Number)
   position: number;
 
   @IsNumber()
+  @Type(() => Number)
   position_lv: number;
 
   @IsNumber()
+  @Type(() => Number)
   e_learning: number;
 
   @IsBoolean()

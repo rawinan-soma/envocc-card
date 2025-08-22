@@ -1,0 +1,50 @@
+[
+  {
+    "exp_id": 1,
+    "user": 12,
+    "exp_fdate": "1990-01-01T00:00:00.000Z",
+    "exp_ldate": "1990-01-01T00:00:00.000Z",
+    "exp_years": 2,
+    "exp_typeoffice": 2,
+    "exp_office": "กรมควบคุมโรค",
+    "exp_position": "นักวิชาการคอมพิวเตอร์",
+    "exp_work": "พัฒนาระบบ",
+    "create_date": "1990-01-01T00:00:00.000Z"
+  },
+  {
+    "exp_id": 2,
+    "user": 12,
+    "exp_fdate": "1990-01-01T00:00:00.000Z",
+    "exp_ldate": "1990-01-01T00:00:00.000Z",
+    "exp_years": 1,
+    "exp_typeoffice": 1,
+    "exp_office": "กรมควบคุมโรค",
+    "exp_position": "นักวิชาการคอมพิวเตอร์",
+    "exp_work": "พัฒนาระบบ",
+    "create_date": "1990-01-01T00:00:00.000Z"
+  },
+  {
+    "exp_id": 3,
+    "user": 13,
+    "exp_fdate": "1990-01-01T00:00:00.000Z",
+    "exp_ldate": "1990-01-01T00:00:00.000Z",
+    "exp_years": 18,
+    "exp_typeoffice": 1,
+    "exp_office": "กรมควบคุมโรค",
+    "exp_position": "นักวิชาการคอมพิวเตอร์",
+    "exp_work": "พัฒนาระบบ",
+    "create_date": "1990-01-01T00:00:00.000Z"
+  },
+  {
+    "exp_id": 4,
+    "user": 14,
+    "exp_fdate": "1990-01-01T00:00:00.000Z",
+    "exp_ldate": "1990-01-01T00:00:00.000Z",
+    "exp_years": 0,
+    "exp_typeoffice": 1,
+    "exp_office": "กรมควบคุมโรค",
+    "exp_position": "นักวิชาการคอมพิวเตอร์",
+    "exp_work": "พัฒนาระบบ",
+    "create_date": "1990-01-01T00:00:00.000Z"
+  }
+]

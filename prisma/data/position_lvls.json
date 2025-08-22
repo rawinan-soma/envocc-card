@@ -1,0 +1,32 @@
+[
+  {
+    "position_lv_id": 1,
+    "position_lv_name": "ปฏิบัติการ",
+    "position_lv_name_eng": "Practioner level"
+  },
+  {
+    "position_lv_id": 2,
+    "position_lv_name": "ชำนาญการ",
+    "position_lv_name_eng": "Professional level"
+  },
+  {
+    "position_lv_id": 3,
+    "position_lv_name": "ชำนาญการพิเศษ",
+    "position_lv_name_eng": "Senior Professional level"
+  },
+  {
+    "position_lv_id": 4,
+    "position_lv_name": "เชี่ยวชาญ",
+    "position_lv_name_eng": "Expert level"
+  },
+  {
+    "position_lv_id": 5,
+    "position_lv_name": "ทรงคุณวุฒิ",
+    "position_lv_name_eng": "Advisory level"
+  },
+  {
+    "position_lv_id": 99,
+    "position_lv_name": "Other",
+    "position_lv_name_eng": "Other"
+  }
+]
