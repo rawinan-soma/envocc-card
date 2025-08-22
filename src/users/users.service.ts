@@ -12,15 +12,11 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
 import { UserUpdateDto } from './dto/user-update.dto';
 import { StatusCreateDto } from 'src/request/dto/status-create.dto';
-import { RequestService } from 'src/request/request.service';
 
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly request: RequestService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getUserById(id: number) {
     try {
