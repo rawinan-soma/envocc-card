@@ -20,7 +20,6 @@ services:
 
   database-local:
     image: postgres:17-alpine
-    container_name: database-local
     restart: always
     env_file:
       - docker.env
@@ -45,7 +44,7 @@ services:
     networks:
       - envocc-card
     env_file:
-      - docker.env
+      - env.docker
     command: |
       sh -c "
         bun prisma migrate deploy
