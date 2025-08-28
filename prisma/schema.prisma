@@ -72,22 +72,22 @@ model departments {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model documents {
-  doc_id      Int       @id @unique(map: "doc_id") @default(autoincrement())
+  id          Int       @id @unique() @default(autoincrement())
   doc_type    Int?
   doc_name    String?   @unique @db.VarChar(255)
-  doc_file    String?
+  filename    String?
   url         String?
   create_date DateTime? @default(now()) @db.Timestamptz()
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model envocc_card_files {
-  envocc_card_file_id Int       @id @unique(map: "envocc_card_file_id") @default(autoincrement())
-  user                Int?
-  file_card_name      String?   @unique @db.VarChar(255)
-  url                 String?
-  create_date         DateTime? @default(now()) @db.Timestamptz()
-  users               users?    @relation(fields: [user], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "envocc_card_files_ibfk_1")
+  id          Int       @id @unique() @default(autoincrement())
+  user        Int?
+  filename    String?   @unique @db.VarChar(255)
+  url         String?
+  create_date DateTime? @default(now()) @db.Timestamptz()
+  users       users?    @relation(fields: [user], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "envocc_card_files_ibfk_1")
 
   @@index([user])
 }
@@ -103,9 +103,9 @@ model epositions {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model exp_files {
-  exp_file_id Int       @id @unique(map: "exp_file_id") @default(autoincrement())
+  id          Int       @id @unique() @default(autoincrement())
   user        Int?
-  file_name   String?   @unique @db.VarChar(255)
+  filename    String?   @unique @db.VarChar(255)
   url         String?
   create_date DateTime? @default(now()) @db.Timestamptz()
   users       users?    @relation(fields: [user], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "exp_files_ibfk_1")
@@ -144,12 +144,12 @@ model experiences_files {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model gov_card_files {
-  gov_card_file_id Int       @id @unique(map: "gov_card_file_id") @default(autoincrement())
-  user             Int?
-  file_name        String?   @unique @db.VarChar(255)
-  url              String?
-  create_date      DateTime? @default(now()) @db.Timestamptz()
-  users            users?    @relation(fields: [user], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "gov_card_files_ibfk_1")
+  id          Int       @id @unique(map: "gov_card_file_id") @default(autoincrement())
+  user        Int?
+  filename    String?   @unique @db.VarChar(255)
+  url         String?
+  create_date DateTime? @default(now()) @db.Timestamptz()
+  users       users?    @relation(fields: [user], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "gov_card_files_ibfk_1")
 
   @@index([user])
 }
@@ -170,7 +170,7 @@ model institutions {
   users                users[]
   epositions           epositions[]
   sign_persons         sign_persons? @relation(fields: [sign_person], references: [sign_person_id])
-  seals                seals?        @relation(fields: [seal], references: [seal_id])
+  seals                seals?        @relation(fields: [seal], references: [id])
 
   @@index([department], map: "department")
 }
@@ -204,9 +204,9 @@ model ministries {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model photos {
-  photo_id    Int       @id @unique(map: "photo_id") @default(autoincrement())
+  id          Int       @id @unique(map: "photo_id") @default(autoincrement())
   user        Int?
-  photo       String?   @unique @db.VarChar(255)
+  filename    String?   @unique @db.VarChar(255)
   url         String?
   create_date DateTime? @default(now()) @db.Timestamptz()
   users       users?    @relation(fields: [user], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "photos_ibfk_1")
@@ -216,12 +216,12 @@ model photos {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model request_files {
-  request_file_id Int       @id @unique(map: "request_file_id") @default(autoincrement())
-  user            Int?
-  file_name       String?   @unique @db.VarChar(255)
-  url             String?
-  create_date     DateTime? @default(now()) @db.Timestamptz()
-  users           users?    @relation(fields: [user], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "request_files_ibfk_1")
+  id          Int       @id @unique(map: "request_file_id") @default(autoincrement())
+  user        Int?
+  filename    String?   @unique @db.VarChar(255)
+  url         String?
+  create_date DateTime? @default(now()) @db.Timestamptz()
+  users       users?    @relation(fields: [user], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "request_files_ibfk_1")
 
   @@index([user])
 }
@@ -268,10 +268,10 @@ model resetpass {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model seals {
-  seal_id      Int      @id @unique(map: "seal_id") @default(autoincrement())
-  seal_pix     String?  @unique @db.VarChar(255)
+  id           Int      @id @unique(map: "seal_id") @default(autoincrement())
+  filename     String?  @unique @db.VarChar(255)
   url          String?
-  add_date     DateTime @default(now()) @db.Timestamptz()
+  create_date  DateTime @default(now()) @db.Timestamptz()
   update_admin Int
   seal_name    String
 
