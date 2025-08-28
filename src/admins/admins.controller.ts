@@ -105,4 +105,6 @@ export class AdminsController {
     const approver = request.user.id;
     return await this.requestService.updateStatus(updated, approver);
   }
+
+  // TODO: Map controller to all files (Delete)
 }
