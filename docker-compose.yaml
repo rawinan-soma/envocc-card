@@ -45,7 +45,7 @@ services:
     networks:
       - envocc-card
     env_file:
-      - env.docker
+      - api.env
     command: |
       sh -c "
         bun prisma migrate deploy
