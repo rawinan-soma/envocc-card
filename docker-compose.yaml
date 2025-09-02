@@ -8,7 +8,7 @@ services:
     ports:
       - 5440:5432
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data-docker:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
@@ -20,13 +20,14 @@ services:
 
   database-local:
     image: postgres:17-alpine
+    container_name: database-local
     restart: always
     env_file:
       - docker.env
     ports:
       - 5441:5432
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data-local:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
@@ -58,7 +59,8 @@ services:
       retries: 5
       start_period: 5s
 volumes:
-  postgres_data:
+  postgres_data-docker:
+  postgres_data-local:
 networks:
   envocc-card:
     driver: bridge

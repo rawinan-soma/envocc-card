@@ -15,6 +15,7 @@ import { FilesModule } from './files/files.module';
 import { CommonDocumentsModule } from './common-documents/common-documents.module';
 import { EnvcardModule } from './envcard/envcard.module';
 import { ExpfileModule } from './expfile/expfile.module';
+import { MembersModule } from './members/members.module';
 import Joi from '@hapi/joi';
 
 @Module({
@@ -43,6 +44,7 @@ import Joi from '@hapi/joi';
     CommonDocumentsModule,
     EnvcardModule,
     ExpfileModule,
+    MembersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

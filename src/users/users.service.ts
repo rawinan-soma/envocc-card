@@ -134,6 +134,7 @@ export class UsersService {
           take: limit,
           select: {
             id: true,
+            cid: true,
             pname_th: true,
             pname_other_th: true,
             fname_th: true,

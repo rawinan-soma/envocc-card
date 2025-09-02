@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import {
   BadRequestException,
   Injectable,
@@ -10,7 +8,12 @@ import {
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { promises as fs } from 'fs';
-import { envocc_card_files, exp_files, gov_card_files } from '@prisma/client';
+import {
+  envocc_card_files,
+  exp_files,
+  gov_card_files,
+  // members,
+} from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { FileCreateDto } from './dto/file-create.dto';
@@ -26,6 +29,7 @@ type FileModelMap = {
   envcard: envocc_card_files;
   expfile: exp_files;
   govcard: gov_card_files;
+  // member: members;
 };
 
 @Injectable()
@@ -39,6 +43,7 @@ export class FilesService {
       envcard: this.prisma.envocc_card_files,
       expfile: this.prisma.exp_files,
       govcard: this.prisma.gov_card_files,
+      // member: this.prisma.members
     } satisfies Record<FileModels, any>;
   }
 
