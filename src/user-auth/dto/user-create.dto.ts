@@ -12,6 +12,10 @@ import { EngNamePrefix, ThaiNamePrefix, BloodGroup } from './users.enum';
 
 export class UserCreateDto {
   // Required fields
+
+  @IsString()
+  cid: string;
+
   @IsString()
   username: string;
 
