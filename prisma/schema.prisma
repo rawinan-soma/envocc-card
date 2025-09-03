@@ -169,7 +169,7 @@ model institutions {
   departments          departments   @relation(fields: [department], references: [department_id], onDelete: Cascade, onUpdate: NoAction, map: "institutions_ibfk_1")
   users                users[]
   epositions           epositions[]
-  sign_persons         sign_persons? @relation(fields: [sign_person], references: [sign_person_id])
+  sign_persons         sign_persons? @relation(fields: [sign_person], references: [id])
   seals                seals?        @relation(fields: [seal], references: [id])
 
   @@index([department], map: "department")
@@ -189,7 +189,7 @@ model members {
   num_print    Int           @default(2)
   create_date  DateTime      @default(now()) @db.Timestamptz()
   users        users         @relation(fields: [user], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "members_ibfk_1")
-  sign_persons sign_persons? @relation(fields: [signer], references: [sign_person_id], onDelete: Cascade, onUpdate: Cascade)
+  sign_persons sign_persons? @relation(fields: [signer], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@id([member_id])
 }
@@ -268,28 +268,28 @@ model resetpass {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model seals {
-  id           Int      @id @unique(map: "seal_id") @default(autoincrement())
-  filename     String?  @unique @db.VarChar(255)
-  url          String?
-  create_date  DateTime @default(now()) @db.Timestamptz()
-  update_admin Int
-  seal_name    String
+  id          Int      @id @unique(map: "seal_id") @default(autoincrement())
+  filename    String?  @unique @db.VarChar(255)
+  url         String?
+  create_date DateTime @default(now()) @db.Timestamptz()
+  user        Int
+  seal_name   String
 
   institutions institutions[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model sign_persons {
-  sign_person_id     Int      @id @unique(map: "sign_person_id") @default(autoincrement())
+  id                 Int      @id @unique(map: "sign_person_id") @default(autoincrement())
   sign_person_pname  String   @db.VarChar(100)
   sign_person_name   String   @db.VarChar(255)
   sign_person_lname  String   @db.VarChar(255)
-  signature_pix      String   @unique @db.VarChar(255)
+  filename           String   @unique @db.VarChar(255)
   url                String?
   position           String   @db.VarChar(255)
   sign_person_active Boolean  @default(true)
-  date_update        DateTime @default(now()) @db.Timestamptz()
-  update_admin       Int
+  create_date        DateTime @default(now()) @db.Timestamptz()
+  admin              Int
 
   institutions institutions[]
   members      members[]
