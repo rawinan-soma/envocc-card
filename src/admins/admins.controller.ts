@@ -20,6 +20,7 @@ import { StatusCreateDto } from 'src/request/dto/status-create.dto';
 import { RequestService } from 'src/request/request.service';
 import { MembersService } from 'src/members/members.service';
 import { MemeberCreateDto as MemberCreateDto } from 'src/members/dto/create-member.dto';
+import { FileModelMap, FilesService } from 'src/files/files.service';
 
 @Controller('admins')
 export class AdminsController {
@@ -28,6 +29,7 @@ export class AdminsController {
     private readonly userService: UsersService,
     private readonly requestService: RequestService,
     private readonly membersService: MembersService,
+    private readonly filesService: FilesService,
   ) {}
 
   @Get()
@@ -138,4 +140,20 @@ export class AdminsController {
     );
   }
   // TODO: Map controller to all files (Delete)
+
+  @Get('users/:userId/files/:file')
+  async getUsersFilesHandler(
+    @Param('file') file: keyof FileModelMap,
+    @Param('userId', ParseIntPipe) userId: number,
+  ) {
+    return await this.filesService.getFileByUserId(file, userId);
+  }
+
+  @Delete('/users/:userId/files/:file')
+  async deleteEnvcardHandler(
+    @Param('file') file: keyof FileModelMap,
+    @Param('userId', ParseIntPipe) userId: number,
+  ) {
+    return await this.filesService.deleteFileByUserId(file, userId);
+  }
 }

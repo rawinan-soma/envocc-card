@@ -8,6 +8,9 @@ import {
   Post,
   UseInterceptors,
   UploadedFile,
+  ParseIntPipe,
+  Param,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAccessGuardUser } from 'src/user-auth/jwt-access.guard';
@@ -16,7 +19,7 @@ import { UserUpdateDto } from './dto/user-update.dto';
 import { RequestService } from 'src/request/request.service';
 import { StatusCreateDto } from 'src/request/dto/status-create.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { FilesService } from 'src/files/files.service';
+import { FileModelMap, FilesService } from 'src/files/files.service';
 import { FileCreateDto } from 'src/files/dto/file-create.dto';
 
 import { getMulterOptions } from 'src/shared/file-multer-options';
@@ -86,11 +89,6 @@ export class UsersController {
     return { msg: 'envcard create', id: envcard?.id };
   }
 
-  @Get('me/envcard')
-  async getEnvcardHandler(@Req() request: RequestwithUserData) {
-    return this.filesService.getFileByUserId('envcard', request.user.id);
-  }
-
   // TODO: Map controller to all file
 
   @Post('me/govcard')
@@ -142,6 +140,17 @@ export class UsersController {
     );
     const photo = await this.filesService.createFile('photo', dto);
     return { msg: 'photo create', id: photo?.id };
+  }
+
+  @Get('users/:userId/files/:file')
+  async getUsersFilesHandler(
+    @Param('file') file: keyof FileModelMap,
+    @Param('userId', ParseIntPipe) userId: number,
+  ) {
+    if (file === 'seal') {
+      throw new UnauthorizedException('cannot adding seals');
+    }
+    return await this.filesService.getFileByUserId(file, userId);
   }
 
   @Patch('me/members/qrcode')
