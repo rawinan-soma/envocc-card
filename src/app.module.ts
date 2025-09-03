@@ -13,9 +13,11 @@ import { MinistriesModule } from './ministries/ministries.module';
 import { InstitutionsModule } from './institutions/institutions.module';
 import { FilesModule } from './files/files.module';
 import { CommonDocumentsModule } from './common-documents/common-documents.module';
-import { EnvcardModule } from './envcard/envcard.module';
-import { ExpfileModule } from './expfile/expfile.module';
 import { MembersModule } from './members/members.module';
+import { PublicModule } from './public/public.module';
+import { SignaturesModule } from './signatures/signatures.module';
+import { ReqFilesModule } from './req-files/req-files.module';
+import { ExperiecesModule } from './experiences/experiences.module';
 import Joi from '@hapi/joi';
 
 @Module({
@@ -42,9 +44,11 @@ import Joi from '@hapi/joi';
     InstitutionsModule,
     FilesModule,
     CommonDocumentsModule,
-    EnvcardModule,
-    ExpfileModule,
     MembersModule,
+    PublicModule,
+    SignaturesModule,
+    ReqFilesModule,
+    ExperiecesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

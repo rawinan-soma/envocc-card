@@ -45,7 +45,7 @@ export class AdminAuthService {
       });
 
       if (!admin) {
-        throw new UnauthorizedException('invalid credential 1');
+        throw new UnauthorizedException('invalid credential');
       }
 
       await this.verifyPassword(password, admin?.password || '');
@@ -67,7 +67,7 @@ export class AdminAuthService {
   private async verifyPassword(password: string, hashedPassword: string) {
     const isPasswordMatched = await bcrypt.compare(password, hashedPassword);
     if (!isPasswordMatched) {
-      throw new UnauthorizedException('invalid credential 2');
+      throw new UnauthorizedException('invalid credential');
     }
   }
 

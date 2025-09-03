@@ -11,7 +11,7 @@ import { AdminAuthService } from './admin-auth.service';
 import { AdminCreateDto } from './dto/admin-create.dto/admin-create.dto';
 import { AdminLocalAuthenGuard } from './admin-local.guard';
 
-import { CommonAuthService } from 'src/common/common-auth.service';
+import { CommonAuthService } from 'src/shared/common-auth.service';
 
 import { JwtAccessGuardAdmin } from './jwt-access.guard';
 import JwtRefreshGuardAdmin from './jwt-refresh.guard';

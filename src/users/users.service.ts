@@ -142,7 +142,7 @@ export class UsersService {
             institutions: {
               select: {
                 institution_name_th: true,
-                sign_persons: { select: { sign_person_id: true } },
+                sign_persons: { select: { id: true } },
                 departments: {
                   select: {
                     department_name_th: true,

@@ -31,7 +31,7 @@ export class CommonDocumentsService {
   async getDocumentById(id: number) {
     try {
       const document = await this.prisma.documents.findUnique({
-        where: { doc_id: id },
+        where: { id: id },
       });
 
       if (!document) {
@@ -63,7 +63,7 @@ export class CommonDocumentsService {
   async deleteDocument(id: number) {
     try {
       const document = await this.prisma.documents.findUnique({
-        where: { doc_id: id },
+        where: { id: id },
       });
 
       if (!document || !document.url) {

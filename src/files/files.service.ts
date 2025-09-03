@@ -12,6 +12,9 @@ import {
   envocc_card_files,
   exp_files,
   gov_card_files,
+  photos,
+  seals,
+
   // members,
 } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
@@ -23,12 +26,15 @@ interface MulterOptionsParams {
   size: number;
 }
 
-type FileModels = 'envcard' | 'expfile' | 'govcard';
+type FileModels = 'envcard' | 'expfile' | 'govcard' | 'seal' | 'photo';
 
-type FileModelMap = {
+export type FileModelMap = {
   envcard: envocc_card_files;
   expfile: exp_files;
   govcard: gov_card_files;
+  seal: seals;
+  photo: photos;
+
   // member: members;
 };
 
@@ -43,6 +49,9 @@ export class FilesService {
       envcard: this.prisma.envocc_card_files,
       expfile: this.prisma.exp_files,
       govcard: this.prisma.gov_card_files,
+      seal: this.prisma.seals,
+      photo: this.prisma.photos,
+
       // member: this.prisma.members
     } satisfies Record<FileModels, any>;
   }
@@ -73,7 +82,7 @@ export class FilesService {
     };
   }
 
-  private async deleteFile(path: string) {
+  async deleteFile(path: string) {
     try {
       await fs.unlink(path);
     } catch (error: any) {

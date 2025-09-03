@@ -9,6 +9,7 @@ import {
   Patch,
   Body,
   Post,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { AdminsService } from './admins.service';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
@@ -17,6 +18,8 @@ import { GetAllUserQueryDto } from 'src/users/dto/get-all-user-query.dto';
 import { UsersService } from 'src/users/users.service';
 import { StatusCreateDto } from 'src/request/dto/status-create.dto';
 import { RequestService } from 'src/request/request.service';
+import { MembersService } from 'src/members/members.service';
+import { MemeberCreateDto as MemberCreateDto } from 'src/members/dto/create-member.dto';
 
 @Controller('admins')
 export class AdminsController {
@@ -24,6 +27,7 @@ export class AdminsController {
     private readonly adminsService: AdminsService,
     private readonly userService: UsersService,
     private readonly requestService: RequestService,
+    private readonly membersService: MembersService,
   ) {}
 
   @Get()
@@ -106,5 +110,32 @@ export class AdminsController {
     return await this.requestService.updateStatus(updated, approver);
   }
 
+  @Get('members/:userId')
+  async getMemberByIdHandler(@Param('userId', ParseIntPipe) userId: number) {
+    return this.membersService.getMember(userId);
+  }
+
+  @Post('members')
+  async createMemberHandler(@Body() dto: MemberCreateDto) {
+    return this.membersService.transactionCreateMember(dto);
+  }
+
+  @Patch('members/:userId/deactivate')
+  async deactivateMemberHandler(@Param('userId', ParseIntPipe) userId: number) {
+    return this.membersService.deactivateMember(userId);
+  }
+
+  @Patch('members/:userId/activate')
+  async activateMemberHandler(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body('startDate') startDate: string,
+    @Req() request: RequestwithAdminData,
+  ) {
+    return this.membersService.transactionUpdateStartDate(
+      userId,
+      startDate,
+      request.user.id,
+    );
+  }
   // TODO: Map controller to all files (Delete)
 }

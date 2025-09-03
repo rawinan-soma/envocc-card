@@ -81,7 +81,7 @@ export class MembersService {
           },
           sign_persons: {
             select: {
-              signature_pix: true,
+              filename: true,
               sign_person_pname: true,
               sign_person_name: true,
               sign_person_lname: true,
@@ -294,9 +294,9 @@ export class MembersService {
         if (!latestMember) {
           nextMemberNo = 1;
         } else if (existedMember) {
-          nextMemberNo = existedMember.member_no;
+          nextMemberNo = existedMember.member_no as number;
         } else {
-          nextMemberNo = latestMember.member_no + 1;
+          nextMemberNo = (latestMember.member_no as number) + 1;
         }
 
         return await tx.members.create({
@@ -311,7 +311,11 @@ export class MembersService {
       });
     } catch (error) {
       this.logger.error(error);
-      serviceErrorHandler(error);
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new BadRequestException('bad request by user');
+      } else {
+        throw new InternalServerErrorException('something went wrong');
+      }
     }
   }
 }

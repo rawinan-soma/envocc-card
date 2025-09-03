@@ -19,7 +19,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { FilesService } from 'src/files/files.service';
 import { FileCreateDto } from 'src/files/dto/file-create.dto';
 
-import { getMulterOptions } from 'src/common/file-multer-options';
+import { getMulterOptions } from 'src/shared/file-multer-options';
+import { MembersService } from 'src/members/members.service';
 
 @Controller('users')
 export class UsersController {
@@ -27,6 +28,7 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly requestService: RequestService,
     private readonly filesService: FilesService,
+    private readonly membersService: MembersService,
   ) {}
 
   @UseGuards(JwtAccessGuardUser)
@@ -57,6 +59,15 @@ export class UsersController {
     return this.requestService.updateStatus(updated, approver);
   }
 
+  private createFileDtoMapper(user: number, filename: string, url: string) {
+    const dto = new FileCreateDto();
+    dto.user = user;
+    dto.file_name = filename;
+    dto.url = url;
+
+    return dto;
+  }
+
   @Post('me/envcard')
   @UseInterceptors(
     FileInterceptor('envcard', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),
@@ -65,10 +76,11 @@ export class UsersController {
     @UploadedFile() file: Express.Multer.File,
     @Req() request: RequestwithUserData,
   ) {
-    const dto = new FileCreateDto();
-    dto.user = request.user.id;
-    dto.file_name = file.filename;
-    dto.url = file.path;
+    const dto = this.createFileDtoMapper(
+      request.user.id,
+      file.filename,
+      file.path,
+    );
 
     const envcard = await this.filesService.createFile('envcard', dto);
     return { msg: 'envcard create', id: envcard?.id };
@@ -85,5 +97,58 @@ export class UsersController {
   @UseInterceptors(
     FileInterceptor('govcard', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),
   )
-  async createGovcardHandler() {}
+  async createGovcardHandler(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() request: RequestwithUserData,
+  ) {
+    const dto = this.createFileDtoMapper(
+      request.user.id,
+      file.filename,
+      file.path,
+    );
+    const govcard = await this.filesService.createFile('govcard', dto);
+    return { msg: 'govcard create', id: govcard?.id };
+  }
+
+  @Post('me/expfile')
+  @UseInterceptors(
+    FileInterceptor('expfile', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),
+  )
+  async createExpHandler(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() request: RequestwithUserData,
+  ) {
+    const dto = this.createFileDtoMapper(
+      request.user.id,
+      file.filename,
+      file.path,
+    );
+    const expfile = await this.filesService.createFile('expfile', dto);
+    return { msg: 'expfile create', id: expfile?.id };
+  }
+
+  @Post('me/expfile')
+  @UseInterceptors(
+    FileInterceptor('photo', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),
+  )
+  async createPhotosHandler(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() request: RequestwithUserData,
+  ) {
+    const dto = this.createFileDtoMapper(
+      request.user.id,
+      file.filename,
+      file.path,
+    );
+    const photo = await this.filesService.createFile('photo', dto);
+    return { msg: 'photo create', id: photo?.id };
+  }
+
+  @Patch('me/members/qrcode')
+  async setQRPasswordHandler(
+    @Body('password') password: string,
+    @Req() request: RequestwithUserData,
+  ) {
+    return this.membersService.setQrPassword(request.user.id, password);
+  }
 }
