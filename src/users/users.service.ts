@@ -31,7 +31,7 @@ export class UsersService {
     } catch (error) {
       this.logger.error(error);
       if (error instanceof NotFoundException) {
-        return error;
+        throw error;
       } else if (error instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
