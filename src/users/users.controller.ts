@@ -11,6 +11,7 @@ import {
   ParseIntPipe,
   Param,
   UnauthorizedException,
+  UploadedFiles,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAccessGuardUser } from 'src/user-auth/jwt-access.guard';
@@ -18,7 +19,10 @@ import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
 import { UserUpdateDto } from './dto/user-update.dto';
 import { RequestService } from 'src/request/request.service';
 import { StatusCreateDto } from 'src/request/dto/status-create.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+} from '@nestjs/platform-express';
 import { FileModelMap, FilesService } from 'src/files/files.service';
 import { FileCreateDto } from 'src/files/dto/file-create.dto';
 
@@ -125,7 +129,7 @@ export class UsersController {
     return { msg: 'expfile create', id: expfile?.id };
   }
 
-  @Post('me/expfile')
+  @Post('me/photo')
   @UseInterceptors(
     FileInterceptor('photo', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),
   )
@@ -142,15 +146,35 @@ export class UsersController {
     return { msg: 'photo create', id: photo?.id };
   }
 
-  @Get('users/:userId/files/:file')
+  @Post('me/files')
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'requestFile', maxCount: 1 },
+        { name: 'govcard', maxCount: 1 },
+        { name: 'experienceForm', maxCount: 1 },
+      ],
+      getMulterOptions(['.pdf'], 10 * 1024 * 1024),
+    ),
+  )
+  async uploadFilesHandler(
+    @UploadedFiles()
+    files: {
+      requestFile: Express.Multer.File[];
+      govcard: Express.Multer.File;
+      experienceForm: Express.Multer.File[];
+    },
+  ) {}
+
+  @Get('me/files/:file')
   async getUsersFilesHandler(
     @Param('file') file: keyof FileModelMap,
-    @Param('userId', ParseIntPipe) userId: number,
+    @Req() request: RequestwithUserData,
   ) {
     if (file === 'seal') {
-      throw new UnauthorizedException('cannot adding seals');
+      throw new UnauthorizedException('cannot getting seals');
     }
-    return await this.filesService.getFileByUserId(file, userId);
+    return await this.filesService.getFileByUserId(file, request.user.id);
   }
 
   @Patch('me/members/qrcode')

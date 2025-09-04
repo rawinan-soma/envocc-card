@@ -12,11 +12,16 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
 import { UserUpdateDto } from './dto/user-update.dto';
 import { StatusCreateDto } from 'src/request/dto/status-create.dto';
+import { FilesService } from 'src/files/files.service';
+import { FileCreateDto } from 'src/files/dto/file-create.dto';
 
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly filesService: FilesService,
+  ) {}
 
   async getUserById(id: number) {
     try {
@@ -508,4 +513,26 @@ export class UsersService {
   //     this.logger.error(error);
   //   }
   // }
+
+  async txUploadFileandUpdateRequest(
+    expFilesDto: FileCreateDto,
+    govcardDto: FileCreateDto,
+    reqFileDto: FileCreateDto,
+    user: number,
+    // requestUpdate: RequestCreateDto
+  ) {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await this.filesService.txUploadFileForUser('expfile', expFilesDto, tx);
+        await this.filesService.txUploadFileForUser('govcard', govcardDto, tx);
+        await this.filesService.txUploadFileForUser('reqFile', reqFileDto, tx);
+        await tx.requests.create({
+          data: { user: user, request_type: 1, request_status: 4 },
+        });
+      });
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
 }
