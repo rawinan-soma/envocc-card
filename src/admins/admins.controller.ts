@@ -58,15 +58,17 @@ export class AdminsController {
     return this.adminsService.getAdminById(Number(request.user.id));
   }
 
+  @UseGuards(JwtAccessGuardAdmin)
   @Get('users')
   async getAllUserHandler(
     @Req() request: RequestwithAdminData,
     @Query() queryParams: GetAllUserQueryDto,
   ) {
+    const admin = await this.adminsService.getAdminById(request.user.id);
     const { page, status, fname_th, lname_th, institution_name } = queryParams;
     const pageNumber = page === 0 || !page ? 1 : queryParams.page;
-    const adminLevel = request.user.level;
-    const adminInst = request.user.institution;
+    const adminLevel = admin.level;
+    const adminInst = admin.institution;
 
     return await this.userService.getAllUsers({
       adminInst: adminInst,

@@ -71,6 +71,7 @@ export class AdminsService {
     }
   }
 
+  // ##TODO: ทำไม return Promise ของ NotFoundException
   async getAdminById(id: number) {
     try {
       const admin = await this.prisma.admins.findUnique({
@@ -81,12 +82,13 @@ export class AdminsService {
       if (!admin) {
         throw new NotFoundException('admin not found');
       }
+      return admin;
     } catch (error) {
       this.logger.error(error);
       if (error instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else if (error instanceof NotFoundException) {
-        return error;
+        throw error;
       } else {
         throw new InternalServerErrorException('something went wrong');
       }
