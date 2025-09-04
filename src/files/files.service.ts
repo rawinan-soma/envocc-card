@@ -185,15 +185,6 @@ export class FilesService {
     }
   }
 
-  private createFileDtoMapper(user: number, filename: string, url: string) {
-    const dto = new FileCreateDto();
-    dto.user = user;
-    dto.file_name = filename;
-    dto.url = url;
-
-    return dto;
-  }
-
   async txUploadFileForUser<T extends keyof FileModelMap>(
     model: T,
     data: FileCreateDto,

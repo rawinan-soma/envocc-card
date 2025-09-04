@@ -8,7 +8,6 @@ import {
   Post,
   UseInterceptors,
   UploadedFile,
-  ParseIntPipe,
   Param,
   UnauthorizedException,
   UploadedFiles,
@@ -161,10 +160,33 @@ export class UsersController {
     @UploadedFiles()
     files: {
       requestFile: Express.Multer.File[];
-      govcard: Express.Multer.File;
+      govcard: Express.Multer.File[];
       experienceForm: Express.Multer.File[];
     },
-  ) {}
+    @Req() request: RequestwithUserData,
+  ) {
+    const requestFileDto = this.createFileDtoMapper(
+      request.user.id,
+      files.requestFile[0].filename,
+      files.requestFile[0].path,
+    );
+    const govcardDto = this.createFileDtoMapper(
+      request.user.id,
+      files.govcard[0].filename,
+      files.govcard[0].path,
+    );
+    const experienceFormDto = this.createFileDtoMapper(
+      request.user.id,
+      files.experienceForm[0].filename,
+      files.experienceForm[0].path,
+    );
+    return await this.usersService.txUploadFileandUpdateRequest(
+      experienceFormDto,
+      govcardDto,
+      requestFileDto,
+      request.user.id,
+    );
+  }
 
   @Get('me/files/:file')
   async getUsersFilesHandler(

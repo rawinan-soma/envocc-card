@@ -149,7 +149,7 @@ export class AdminsController {
     return await this.filesService.getFileByUserId(file, userId);
   }
 
-  @Delete('/users/:userId/files/:file')
+  @Delete('users/:userId/files/:file')
   async deleteEnvcardHandler(
     @Param('file') file: keyof FileModelMap,
     @Param('userId', ParseIntPipe) userId: number,
