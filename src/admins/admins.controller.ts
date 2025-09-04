@@ -32,22 +32,22 @@ export class AdminsController {
     private readonly filesService: FilesService,
   ) {}
 
-  @Get()
+  @Get('admins')
   async getAllAdminsHandler() {
     return this.adminsService.getAllAdmins();
   }
 
-  @Get(':username')
+  @Get('admins/:username')
   async getAdminByUsernameHandler(@Param('username') username: string) {
     return this.adminsService.getAdminByUsername(username);
   }
 
-  @Get(':id')
+  @Get('admins/:id')
   async getAdminByIdHandler(@Param('id') id: number) {
     return this.adminsService.getAdminById(id);
   }
 
-  @Get(':email')
+  @Get('admins/:email')
   async getAdminByEmailHandler(@Param('email') email: string) {
     return this.adminsService.getAdminByEmail(email);
   }
@@ -89,7 +89,7 @@ export class AdminsController {
     return await this.userService.getUserPrintExpForm(id);
   }
 
-  @Delete(':id')
+  @Delete('users/:id')
   async deleteUserHandler(@Param('id') id: number) {
     return await this.userService.deleteUserById(id);
   }
@@ -150,7 +150,7 @@ export class AdminsController {
   }
 
   @Delete('users/:userId/files/:file')
-  async deleteEnvcardHandler(
+  async deleteFilesHandler(
     @Param('file') file: keyof FileModelMap,
     @Param('userId', ParseIntPipe) userId: number,
   ) {
