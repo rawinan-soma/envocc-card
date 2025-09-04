@@ -92,11 +92,7 @@ export class AdminAuthController {
       `user: ${request.user.id},  role: ${request.user.role} refreshed cookie`,
     );
 
-    return {
-      msg: 'token refreshed',
-      id: Number(request.user.id),
-      role: request.user.role,
-    };
+    return { msg: 'token refreshed' };
   }
 
   @HttpCode(200)
