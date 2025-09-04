@@ -57,7 +57,11 @@ export class UserAuthController {
 
     this.logger.log(`user: ${user.id},  role: ${user.role} logged in`);
 
-    return { msg: 'login succesful' };
+    return {
+      msg: 'loggin succesful',
+      id: Number(request.user.id),
+      role: request.user.role,
+    };
   }
 
   @UseGuards(JwtRefreshGuardUser)
@@ -78,6 +82,11 @@ export class UserAuthController {
     this.logger.log(
       `user: ${request.user.id}, role: ${request.user.role} refresh token`,
     );
+    return {
+      msg: 'token refreshed',
+      id: Number(request.user.id),
+      role: request.user.role,
+    };
   }
 
   @HttpCode(200)
