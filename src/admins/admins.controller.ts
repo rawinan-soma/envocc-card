@@ -37,20 +37,20 @@ export class AdminsController {
     return this.adminsService.getAllAdmins();
   }
 
-  @Get('admins/:username')
-  async getAdminByUsernameHandler(@Param('username') username: string) {
-    return this.adminsService.getAdminByUsername(username);
-  }
+  // @Get(':username')
+  // async getAdminByUsernameHandler(@Param('username') username: string) {
+  //   return this.adminsService.getAdminByUsername(username);
+  // }
 
-  @Get('admins/:id')
-  async getAdminByIdHandler(@Param('id') id: number) {
-    return this.adminsService.getAdminById(id);
-  }
+  // @Get(':id')
+  // async getAdminByIdHandler(@Param('id') id: number) {
+  //   return this.adminsService.getAdminById(id);
+  // }
 
-  @Get('admins/:email')
-  async getAdminByEmailHandler(@Param('email') email: string) {
-    return this.adminsService.getAdminByEmail(email);
-  }
+  // @Get(':email')
+  // async getAdminByEmailHandler(@Param('email') email: string) {
+  //   return this.adminsService.getAdminByEmail(email);
+  // }
 
   @UseGuards(JwtAccessGuardAdmin)
   @Get('me')
@@ -58,15 +58,17 @@ export class AdminsController {
     return this.adminsService.getAdminById(Number(request.user.id));
   }
 
+  @UseGuards(JwtAccessGuardAdmin)
   @Get('users')
   async getAllUserHandler(
     @Req() request: RequestwithAdminData,
     @Query() queryParams: GetAllUserQueryDto,
   ) {
+    const admin = await this.adminsService.getAdminById(request.user.id);
     const { page, status, fname_th, lname_th, institution_name } = queryParams;
     const pageNumber = page === 0 || !page ? 1 : queryParams.page;
-    const adminLevel = request.user.level;
-    const adminInst = request.user.institution;
+    const adminLevel = admin.level;
+    const adminInst = admin.institution;
 
     return await this.userService.getAllUsers({
       adminInst: adminInst,

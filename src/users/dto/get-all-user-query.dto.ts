@@ -1,8 +1,8 @@
 import { Transform } from 'class-transformer';
-import { IsNumberString, IsOptional, IsString } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class GetAllUserQueryDto {
-  @IsNumberString()
+  @IsNumber()
   @IsOptional()
   @Transform(({ value }) => parseInt(value as string, 10))
   page?: number;
