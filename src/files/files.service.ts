@@ -14,6 +14,8 @@ import {
   gov_card_files,
   photos,
   seals,
+  Prisma,
+  request_files,
 
   // members,
 } from '@prisma/client';
@@ -26,7 +28,13 @@ interface MulterOptionsParams {
   size: number;
 }
 
-type FileModels = 'envcard' | 'expfile' | 'govcard' | 'seal' | 'photo';
+type FileModels =
+  | 'envcard'
+  | 'expfile'
+  | 'govcard'
+  | 'seal'
+  | 'photo'
+  | 'reqFile';
 
 export type FileModelMap = {
   envcard: envocc_card_files;
@@ -34,6 +42,7 @@ export type FileModelMap = {
   govcard: gov_card_files;
   seal: seals;
   photo: photos;
+  reqFile: request_files;
 
   // member: members;
 };
@@ -51,6 +60,7 @@ export class FilesService {
       govcard: this.prisma.gov_card_files,
       seal: this.prisma.seals,
       photo: this.prisma.photos,
+      reqFile: this.prisma.request_files,
 
       // member: this.prisma.members
     } satisfies Record<FileModels, any>;
@@ -165,6 +175,41 @@ export class FilesService {
   ) {
     try {
       const delegate = this.modelMap[model] as {
+        create: (args: any) => Promise<FileModelMap[T] | null>;
+      };
+
+      return await delegate.create({ data: data });
+    } catch (error) {
+      this.logger.error(error);
+      throw new InternalServerErrorException('something went wrong');
+    }
+  }
+
+  private createFileDtoMapper(user: number, filename: string, url: string) {
+    const dto = new FileCreateDto();
+    dto.user = user;
+    dto.file_name = filename;
+    dto.url = url;
+
+    return dto;
+  }
+
+  async txUploadFileForUser<T extends keyof FileModelMap>(
+    model: T,
+    data: FileCreateDto,
+    tx: Prisma.TransactionClient,
+  ) {
+    try {
+      const transactionModelMap = {
+        envcard: tx.envocc_card_files,
+        expfile: tx.exp_files,
+        govcard: tx.gov_card_files,
+        seal: tx.seals,
+        photo: tx.photos,
+        reqFile: tx.request_files,
+      } satisfies Record<FileModels, any>;
+
+      const delegate = transactionModelMap[model] as {
         create: (args: any) => Promise<FileModelMap[T] | null>;
       };
 
