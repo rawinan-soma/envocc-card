@@ -9,6 +9,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
 import { DocumentCreateDto } from './dto/document-create.dto';
 import { FilesService } from 'src/files/files.service';
+import * as fs from 'fs';
 
 @Injectable()
 export class CommonDocumentsService {
@@ -69,6 +70,7 @@ export class CommonDocumentsService {
       if (!document || !document.url) {
         throw new NotFoundException('document not found');
       }
+      fs.unlinkSync(document.url);
       await this.filesService.deleteFile(document.url);
     } catch (error) {
       this.logger.error(error);
