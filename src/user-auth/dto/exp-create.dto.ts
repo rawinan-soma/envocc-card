@@ -22,4 +22,20 @@ export class ExpCreateDto {
 
   @IsString()
   exp_work: string;
+
+  // @IsNumber(
+  //   {},
+  //   {
+  //     message: (args) => {
+  //       console.log(
+  //         'Validation failed for:',
+  //         args.value,
+  //         'Type:',
+  //         typeof args.value,
+  //       );
+  //       return 'expyears must be a number';
+  //     },
+  //   },
+  // )
+  exp_years?: number;
 }
