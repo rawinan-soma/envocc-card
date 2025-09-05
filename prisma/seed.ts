@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
@@ -89,6 +90,31 @@ async function main() {
     await tx.request_statuses.createMany({
       data: request_statuses,
     });
+    // TODO:seed user -> Remove on production
+
+    const users = JSON.parse(
+      fs.readFileSync('./prisma/data/users.json', 'utf-8'),
+    );
+
+    for (const userData of users) {
+      await tx.users.create({
+        data: {
+          ...userData.user,
+          birthday: new Date(userData.user.birthday as string),
+          position: 1,
+          experiences: {
+            createMany: {
+              data: userData.experiences.map((exp) => ({
+                ...exp,
+                exp_fdate: new Date(exp.exp_fdate as string),
+                exp_ldate: new Date(exp.exp_ldate as string),
+              })),
+            },
+          },
+          requests: { create: { request_status: 0, request_type: 1 } },
+        },
+      });
+    }
 
     // const users = JSON.parse(
     //   fs.readFileSync('./prisma/data/users.json', 'utf-8'),

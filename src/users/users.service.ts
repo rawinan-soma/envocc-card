@@ -136,7 +136,7 @@ export class UsersService {
       for (let index = 0; index < allUserList.length; index++) {
         const user = await this.prisma.users.findFirst({
           skip: offset,
-          take: limit,
+          take: 1,
           select: {
             id: true,
             cid: true,
