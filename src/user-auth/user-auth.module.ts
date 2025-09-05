@@ -8,7 +8,7 @@ import { JwtAccessStrategy } from './jwt-access.strategy';
 import { JwtRefreshStrategy } from './jwt-refresh.strategy';
 import { PrismaService } from 'prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
-import { CommonAuthService } from 'src/common/common-auth.service';
+import { CommonAuthService } from 'src/shared/common-auth.service';
 
 @Module({
   imports: [PassportModule, JwtModule],

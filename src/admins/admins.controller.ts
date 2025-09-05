@@ -9,6 +9,7 @@ import {
   Patch,
   Body,
   Post,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { AdminsService } from './admins.service';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
@@ -17,6 +18,9 @@ import { GetAllUserQueryDto } from 'src/users/dto/get-all-user-query.dto';
 import { UsersService } from 'src/users/users.service';
 import { StatusCreateDto } from 'src/request/dto/status-create.dto';
 import { RequestService } from 'src/request/request.service';
+import { MembersService } from 'src/members/members.service';
+import { MemeberCreateDto as MemberCreateDto } from 'src/members/dto/create-member.dto';
+import { FileModelMap, FilesService } from 'src/files/files.service';
 
 @Controller('admins')
 export class AdminsController {
@@ -24,24 +28,26 @@ export class AdminsController {
     private readonly adminsService: AdminsService,
     private readonly userService: UsersService,
     private readonly requestService: RequestService,
+    private readonly membersService: MembersService,
+    private readonly filesService: FilesService,
   ) {}
 
-  @Get()
+  @Get('admins')
   async getAllAdminsHandler() {
     return this.adminsService.getAllAdmins();
   }
 
-  @Get(':username')
+  @Get('admins/:username')
   async getAdminByUsernameHandler(@Param('username') username: string) {
     return this.adminsService.getAdminByUsername(username);
   }
 
-  @Get(':id')
+  @Get('admins/:id')
   async getAdminByIdHandler(@Param('id') id: number) {
     return this.adminsService.getAdminById(id);
   }
 
-  @Get(':email')
+  @Get('admins/:email')
   async getAdminByEmailHandler(@Param('email') email: string) {
     return this.adminsService.getAdminByEmail(email);
   }
@@ -52,15 +58,17 @@ export class AdminsController {
     return this.adminsService.getAdminById(Number(request.user.id));
   }
 
+  @UseGuards(JwtAccessGuardAdmin)
   @Get('users')
   async getAllUserHandler(
     @Req() request: RequestwithAdminData,
     @Query() queryParams: GetAllUserQueryDto,
   ) {
+    const admin = await this.adminsService.getAdminById(request.user.id);
     const { page, status, fname_th, lname_th, institution_name } = queryParams;
     const pageNumber = page === 0 || !page ? 1 : queryParams.page;
-    const adminLevel = request.user.level;
-    const adminInst = request.user.institution;
+    const adminLevel = admin.level;
+    const adminInst = admin.institution;
 
     return await this.userService.getAllUsers({
       adminInst: adminInst,
@@ -83,7 +91,7 @@ export class AdminsController {
     return await this.userService.getUserPrintExpForm(id);
   }
 
-  @Delete(':id')
+  @Delete('users/:id')
   async deleteUserHandler(@Param('id') id: number) {
     return await this.userService.deleteUserById(id);
   }
@@ -104,5 +112,50 @@ export class AdminsController {
   ) {
     const approver = request.user.id;
     return await this.requestService.updateStatus(updated, approver);
+  }
+
+  @Get('members/:userId')
+  async getMemberByIdHandler(@Param('userId', ParseIntPipe) userId: number) {
+    return this.membersService.getMember(userId);
+  }
+
+  @Post('members')
+  async createMemberHandler(@Body() dto: MemberCreateDto) {
+    return this.membersService.transactionCreateMember(dto);
+  }
+
+  @Patch('members/:userId/deactivate')
+  async deactivateMemberHandler(@Param('userId', ParseIntPipe) userId: number) {
+    return this.membersService.deactivateMember(userId);
+  }
+
+  @Patch('members/:userId/activate')
+  async activateMemberHandler(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body('startDate') startDate: string,
+    @Req() request: RequestwithAdminData,
+  ) {
+    return this.membersService.transactionUpdateStartDate(
+      userId,
+      startDate,
+      request.user.id,
+    );
+  }
+  // TODO: Map controller to all files (Delete)
+
+  @Get('users/:userId/files/:file')
+  async getUsersFilesHandler(
+    @Param('file') file: keyof FileModelMap,
+    @Param('userId', ParseIntPipe) userId: number,
+  ) {
+    return await this.filesService.getFileByUserId(file, userId);
+  }
+
+  @Delete('users/:userId/files/:file')
+  async deleteFilesHandler(
+    @Param('file') file: keyof FileModelMap,
+    @Param('userId', ParseIntPipe) userId: number,
+  ) {
+    return await this.filesService.deleteFileByUserId(file, userId);
   }
 }

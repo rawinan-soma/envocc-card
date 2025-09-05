@@ -4,7 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from 'prisma/prisma.service';
-import { TokenPayload } from 'src/common/payload.interface';
+import { TokenPayload } from 'src/shared/payload.interface';
 
 @Injectable()
 export class JwtAccessStrategy extends PassportStrategy(

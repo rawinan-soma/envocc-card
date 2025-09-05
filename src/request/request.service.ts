@@ -9,6 +9,7 @@ import { PrismaService } from 'prisma/prisma.service';
 import { StatusCreateDto } from './dto/status-create.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { RequestCreateDto } from './dto/request-create.dto';
+// import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class RequestService {

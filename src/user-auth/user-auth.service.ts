@@ -22,7 +22,11 @@ export class UserAuthService {
       dto.user.password = hashedPassword;
       const existingUser = await this.prisma.users.findFirst({
         where: {
-          OR: [{ username: dto.user.username }, { email: dto.user.email }],
+          OR: [
+            { username: dto.user.username },
+            { email: dto.user.email },
+            { cid: dto.user.cid },
+          ],
         },
       });
 

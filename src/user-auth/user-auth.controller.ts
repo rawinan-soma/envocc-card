@@ -8,7 +8,7 @@ import {
   Body,
 } from '@nestjs/common';
 import { UserAuthService } from './user-auth.service';
-import { CommonAuthService } from 'src/common/common-auth.service';
+import { CommonAuthService } from 'src/shared/common-auth.service';
 import { UserLocalAuthenGuard } from './user-local.guard';
 import { JwtAccessGuardUser } from './jwt-access.guard';
 import { JwtRefreshGuardUser } from './jwt-refresh.guard';

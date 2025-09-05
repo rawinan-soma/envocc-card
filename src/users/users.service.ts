@@ -12,11 +12,16 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
 import { UserUpdateDto } from './dto/user-update.dto';
 import { StatusCreateDto } from 'src/request/dto/status-create.dto';
+import { FilesService } from 'src/files/files.service';
+import { FileCreateDto } from 'src/files/dto/file-create.dto';
 
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly filesService: FilesService,
+  ) {}
 
   async getUserById(id: number) {
     try {
@@ -31,7 +36,7 @@ export class UsersService {
     } catch (error) {
       this.logger.error(error);
       if (error instanceof NotFoundException) {
-        return error;
+        throw error;
       } else if (error instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
@@ -134,6 +139,7 @@ export class UsersService {
           take: limit,
           select: {
             id: true,
+            cid: true,
             pname_th: true,
             pname_other_th: true,
             fname_th: true,
@@ -141,7 +147,7 @@ export class UsersService {
             institutions: {
               select: {
                 institution_name_th: true,
-                sign_persons: { select: { sign_person_id: true } },
+                sign_persons: { select: { id: true } },
                 departments: {
                   select: {
                     department_name_th: true,
@@ -507,4 +513,26 @@ export class UsersService {
   //     this.logger.error(error);
   //   }
   // }
+
+  async txUploadFileandUpdateRequest(
+    expFilesDto: FileCreateDto,
+    govcardDto: FileCreateDto,
+    reqFileDto: FileCreateDto,
+    user: number,
+    // requestUpdate: RequestCreateDto
+  ) {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await this.filesService.txUploadFileForUser('expfile', expFilesDto, tx);
+        await this.filesService.txUploadFileForUser('govcard', govcardDto, tx);
+        await this.filesService.txUploadFileForUser('reqFile', reqFileDto, tx);
+        await tx.requests.create({
+          data: { user: user, request_type: 1, request_status: 4 },
+        });
+      });
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
 }
