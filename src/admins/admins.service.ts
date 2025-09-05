@@ -71,7 +71,6 @@ export class AdminsService {
     }
   }
 
-  // ##TODO: ทำไม return Promise ของ NotFoundException
   async getAdminById(id: number) {
     try {
       const admin = await this.prisma.admins.findUnique({
