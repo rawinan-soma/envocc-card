@@ -119,75 +119,114 @@ export class UsersService {
       const limit = 10;
       const offset = (queryData.page - 1) * limit;
 
-      const allUserList: number[] = [];
-      const allUser = await this.prisma.requests.findMany({
-        select: { user: true },
-        distinct: ['user'],
-      });
-
-      let users: any[] = [];
-
-      allUser.forEach((item) => {
-        if (item.user) {
-          allUserList.push(item.user);
-        }
-      });
-
-      for (let index = 0; index < allUserList.length; index++) {
-        const user = await this.prisma.users.findFirst({
-          skip: offset,
-          take: 1,
-          select: {
-            id: true,
-            cid: true,
-            pname_th: true,
-            pname_other_th: true,
-            fname_th: true,
-            lname_th: true,
-            institutions: {
-              select: {
-                institution_name_th: true,
-                sign_persons: { select: { id: true } },
-                departments: {
-                  select: {
-                    department_name_th: true,
-                    ministries: { select: { ministry_name_th: true } },
-                  },
+      const users = await this.prisma.users.findMany({
+        skip: offset,
+        take: limit,
+        select: {
+          id: true,
+          cid: true,
+          pname_th: true,
+          pname_other_th: true,
+          fname_th: true,
+          lname_th: true,
+          institutions: {
+            select: {
+              institution_name_th: true,
+              sign_persons: { select: { id: true } },
+              departments: {
+                select: {
+                  department_name_th: true,
+                  ministries: { select: { ministry_name_th: true } },
                 },
               },
             },
-            members: {
-              select: { start_date: true, end_date: true },
-              orderBy: { end_date: 'desc' },
-              take: 1,
-            },
-            requests: {
-              select: { request_status: true },
-              orderBy: { date_update: 'desc' },
-              take: 1,
-            },
-            positions: { select: { position_name: true } },
-            position_lvs: { select: { position_lv_name: true } },
           },
-          // where: { id: allUserList[index] },
-          where: { AND: [{ id: allUserList[index] }, adminLevelFilter] },
-        });
-        if (!user) {
-          continue;
-        }
-        if (user) {
-          users.push(user);
-        }
-      }
+          members: {
+            select: { start_date: true, end_date: true },
+            orderBy: { end_date: 'desc' },
+          },
+          requests: {
+            select: {
+              request_status: true,
+            },
+            orderBy: { date_update: 'desc' },
+          },
+          positions: { select: { position_name: true } },
+          position_lvs: { select: { position_lv_name: true } },
+        },
+        where: adminLevelFilter,
+        orderBy: { id: 'asc' },
+      });
 
-      try {
-        users = users.filter((item) =>
-          filtered.includes(item.requests[0].request_status),
-        );
-      } catch (error) {
-        console.log(error);
-        users = [];
-      }
+      // const allUserList: number[] = [];
+      // const allUser = await this.prisma.requests.findMany({
+      //   select: { user: true },
+      //   distinct: ['user'],
+      // });
+
+      // let users: any[] = [];
+
+      // allUser.forEach((item) => {
+      //   if (item.user) {
+      //     allUserList.push(item.user);
+      //   }
+      // });
+
+      // for (let index = 0; index < allUserList.length; index++) {
+      //   const user = await this.prisma.users.findFirst({
+      //     skip: offset,
+      //     take: 10,
+      //     select: {
+      //       id: true,
+      //       cid: true,
+      //       pname_th: true,
+      //       pname_other_th: true,
+      //       fname_th: true,
+      //       lname_th: true,
+      //       institutions: {
+      //         select: {
+      //           institution_name_th: true,
+      //           sign_persons: { select: { id: true } },
+      //           departments: {
+      //             select: {
+      //               department_name_th: true,
+      //               ministries: { select: { ministry_name_th: true } },
+      //             },
+      //           },
+      //         },
+      //       },
+      //       members: {
+      //         select: { start_date: true, end_date: true },
+      //         orderBy: { end_date: 'desc' },
+      //         take: 1,
+      //       },
+      //       requests: {
+      //         select: { request_status: true },
+      //         orderBy: { date_update: 'desc' },
+      //         take: 1,
+      //       },
+      //       positions: { select: { position_name: true } },
+      //       position_lvs: { select: { position_lv_name: true } },
+      //     },
+      //     // where: { id: allUserList[index] },
+      //     where: { AND: [{ id: allUserList[index] }, adminLevelFilter] },
+      //   });
+      //   if (!user) {
+      //     continue;
+      //   }
+      //   if (user) {
+      //     users.push(user);
+      //   }
+      // }
+
+      // try {
+      //   users = users.filter((item) =>
+      //     filtered.includes(item.requests[0].request_status),
+      //   );
+      // } catch (error) {
+      //   console.log(error);
+      //   users = [];
+      // }
 
       const totalItems = await this.prisma.users.count();
       const totalPages = Math.ceil(totalItems / limit);
