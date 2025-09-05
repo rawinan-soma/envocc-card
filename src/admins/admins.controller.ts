@@ -10,6 +10,7 @@ import {
   Body,
   Post,
   ParseIntPipe,
+  UseInterceptors,
 } from '@nestjs/common';
 import { AdminsService } from './admins.service';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
@@ -21,6 +22,10 @@ import { RequestService } from 'src/request/request.service';
 import { MembersService } from 'src/members/members.service';
 import { MemeberCreateDto as MemberCreateDto } from 'src/members/dto/create-member.dto';
 import { FileModelMap, FilesService } from 'src/files/files.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { getMulterOptions } from 'src/shared/file-multer-options';
+import { DocumentCreateDto } from 'src/common-documents/dto/document-create.dto';
+import { CommonDocumentsService } from 'src/common-documents/common-documents.service';
 
 @Controller('admins')
 export class AdminsController {
@@ -30,6 +35,7 @@ export class AdminsController {
     private readonly requestService: RequestService,
     private readonly membersService: MembersService,
     private readonly filesService: FilesService,
+    private readonly documentsService: CommonDocumentsService,
   ) {}
 
   @Get('admins')
@@ -157,5 +163,25 @@ export class AdminsController {
     @Param('userId', ParseIntPipe) userId: number,
   ) {
     return await this.filesService.deleteFileByUserId(file, userId);
+  }
+
+  @Post('documents')
+  @UseInterceptors(
+    FileInterceptor('document', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),
+  )
+  async createdDocumentHandler(
+    @Param('file') file: Express.Multer.File,
+    @Body() data: DocumentCreateDto,
+  ) {
+    return await this.documentsService.createDocument({
+      ...data,
+      doc_file: file.filename,
+      url: file.path,
+    });
+  }
+
+  @Delete('document/:docId')
+  async deleteDocumentHandler(@Param() docId: number) {
+    return await this.documentsService.deleteDocument(docId);
   }
 }
