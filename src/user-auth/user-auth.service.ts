@@ -16,6 +16,20 @@ export class UserAuthService {
   private readonly logger = new Logger(UserAuthService.name);
   constructor(private readonly prisma: PrismaService) {}
 
+  private calculateExpYears(lastDate: Date, startDate: Date): number {
+    let yearDiff = lastDate.getFullYear() - startDate.getFullYear();
+
+    if (
+      lastDate.getMonth() < startDate.getMonth() ||
+      (lastDate.getMonth() === startDate.getMonth() &&
+        lastDate.getDay() < startDate.getDay())
+    ) {
+      yearDiff--;
+    }
+
+    return yearDiff;
+  }
+
   async createUser(dto: UserExpCreateDto) {
     try {
       const hashedPassword = await bcrypt.hash(dto.user.password, 10);
@@ -31,14 +45,22 @@ export class UserAuthService {
       });
 
       if (existingUser) {
-        throw new BadRequestException('username or email already exists');
+        throw new BadRequestException('user already exists');
       }
+
+      dto.experiences.map((item) => {
+        item.exp_years = Number(
+          this.calculateExpYears(item.exp_ldate, item.exp_fdate),
+        );
+      });
 
       return await this.prisma.users.create({
         data: {
           ...dto.user,
+          e_learning: 1,
 
           experiences: { createMany: { data: dto.experiences } },
+          requests: { create: { request_status: 0, request_type: 1 } },
         },
       });
     } catch (error) {
