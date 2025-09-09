@@ -27,45 +27,69 @@ model access_levels {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model admins {
-  id                 Int      @id @unique() @default(autoincrement())
-  role               String   @default("admin")
-  username           String   @unique @db.VarChar(255)
-  password           String   @db.VarChar(255)
-  institution        Int
+  id                 Int                 @id @unique() @default(autoincrement())
+  role               String              @default("admin")
+  username           String              @unique @db.VarChar(255)
+  password           String              @db.VarChar(255)
   level              Int
-  pname              String   @db.VarChar(255)
-  fname              String   @db.VarChar(255)
-  lname              String   @db.VarChar(255)
-  private_number     String   @db.VarChar(255)
+  pname              String              @db.VarChar(255)
+  fname              String              @db.VarChar(255)
+  lname              String              @db.VarChar(255)
+  private_number     String              @db.VarChar(255)
   work_number        String
-  email              String   @unique @db.VarChar(255)
+  email              String              @unique @db.VarChar(255)
   position           Int
   position_lv        Int
-  is_validate        Boolean  @default(true)
-  create_date        DateTime @default(now()) @db.Timestamptz()
+  is_validate        Boolean             @default(true)
+  create_date        DateTime            @default(now()) @db.Timestamptz()
   hashedRefreshToken String?
+  access_levels      access_levels       @relation(fields: [level], references: [level_id], onDelete: Cascade, onUpdate: NoAction, map: "admins_ibfk_1")
+  experiences_files  experiences_files[]
+  requests           requests[]
+  positions          positions           @relation(fields: [position], references: [position_id])
+  position_lvs       position_lvs        @relation(fields: [position_lv], references: [position_lv_id])
+  adminDep           adminDep[]
+  adminInst          adminInst[]
+  adminMinis         adminMinis[]
 
-  access_levels     access_levels       @relation(fields: [level], references: [level_id], onDelete: Cascade, onUpdate: NoAction, map: "admins_ibfk_1")
-  institutions      institutions        @relation(fields: [institution], references: [institution_id], onDelete: Cascade, onUpdate: NoAction, map: "admins_ibfk_2")
-  experiences_files experiences_files[]
-  requests          requests[]
-  positions         positions           @relation(fields: [position], references: [position_id])
-  position_lvs      position_lvs        @relation(fields: [position_lv], references: [position_lv_id])
-
-  @@index([institution])
   @@index([level], map: "level")
+}
+
+model adminDep {
+  admins      admins      @relation(references: [id], fields: [admin])
+  departments departments @relation(references: [id], fields: [department])
+  admin       Int         @unique
+  department  Int
+}
+
+model adminInst {
+  admins       admins       @relation(references: [id], fields: [admin])
+  institutions institutions @relation(references: [id], fields: [institution])
+  admin        Int          @unique
+  institution  Int
+}
+
+model adminMinis {
+  admins     admins     @relation(references: [id], fields: [admin])
+  ministries ministries @relation(references: [id], fields: [ministry])
+  admin      Int        @unique
+  ministry   Int
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model departments {
-  department_id       Int    @id @unique(map: "department_id")
-  department_name_th  String @db.VarChar(255)
-  department_name_eng String @db.VarChar(255)
-  ministry            Int
-
-  ministries ministries @relation(fields: [ministry], references: [ministry_id], onDelete: Cascade, onUpdate: NoAction, map: "departments_ibfk_1")
-
+  id           Int            @id @unique(map: "department_id")
+  name_th      String         @db.VarChar(255)
+  name_eng     String         @db.VarChar(255)
+  ministry     Int
+  ministries   ministries     @relation(fields: [ministry], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "departments_ibfk_1")
   institutions institutions[]
+
+  seal         seals          @relation(fields: [sealsId], references: [id])
+  adminDep     adminDep[]
+  sealsId      Int
+  sign_persons sign_persons[]
+  userDep      userDep[]
 
   @@index([ministry], map: "ministry")
 }
@@ -97,7 +121,7 @@ model epositions {
   eposition_name_th  String        @db.VarChar(255)
   eposition_name_eng String        @db.VarChar(255)
   institution        Int
-  institutions       institutions? @relation(fields: [institution], references: [institution_id])
+  institutions       institutions? @relation(fields: [institution], references: [id])
   users              users[]
 }
 
@@ -156,21 +180,20 @@ model gov_card_files {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model institutions {
-  institution_id       Int           @id @unique(map: "institution_id")
-  institution_code     String        @db.VarChar(10)
-  institution_name_th  String        @db.VarChar(255)
-  institution_name_eng String        @db.VarChar(255)
-  department           Int
-  province             Int
-  health_region        Int
-  sign_person          Int
-  seal                 Int
-  admins               admins[]
-  departments          departments   @relation(fields: [department], references: [department_id], onDelete: Cascade, onUpdate: NoAction, map: "institutions_ibfk_1")
-  users                users[]
-  epositions           epositions[]
-  sign_persons         sign_persons? @relation(fields: [sign_person], references: [id])
-  seals                seals?        @relation(fields: [seal], references: [id])
+  id            Int    @id @unique(map: "institution_id") @default(autoincrement())
+  code          String @db.VarChar(10)
+  name_th       String @db.VarChar(255)
+  name_eng      String @db.VarChar(255)
+  department    Int
+  province      Int
+  health_region Int
+  sign_person   Int
+  seal          Int
+
+  departments departments  @relation(fields: [department], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "institutions_ibfk_1")
+  epositions  epositions[]
+  adminInst   adminInst[]
+  userInst    userInst[]
 
   @@index([department], map: "department")
 }
@@ -196,10 +219,11 @@ model members {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model ministries {
-  ministry_id       Int           @id @unique(map: "ministry_id")
-  ministry_name_th  String        @db.VarChar(255)
-  ministry_name_eng String        @db.VarChar(255)
-  departments       departments[]
+  id          Int           @id @unique(map: "ministry_id")
+  name_th     String        @db.VarChar(255)
+  name_eng    String        @db.VarChar(255)
+  departments departments[]
+  adminMinis  adminMinis[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -268,14 +292,13 @@ model resetpass {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model seals {
-  id          Int      @id @unique(map: "seal_id") @default(autoincrement())
-  filename    String?  @unique @db.VarChar(255)
+  id          Int           @id @unique(map: "seal_id") @default(autoincrement())
+  filename    String?       @unique @db.VarChar(255)
   url         String?
-  create_date DateTime @default(now()) @db.Timestamptz()
+  create_date DateTime      @default(now()) @db.Timestamptz()
   user        Int
   seal_name   String
-
-  institutions institutions[]
+  departments departments[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -291,8 +314,9 @@ model sign_persons {
   create_date        DateTime @default(now()) @db.Timestamptz()
   admin              Int
 
-  institutions institutions[]
-  members      members[]
+  members       members[]
+  departments   departments? @relation(fields: [departmentsId], references: [id])
+  departmentsId Int?
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -332,10 +356,6 @@ model users {
   amphures2                             Int
   district2                             Int
   zip_code2                             Int
-  institution                           Int
-  eposition                             Int
-  position                              Int
-  position_lv                           Int
   e_learning                            Int
   approve                               Boolean
   is_validate                           Boolean             @default(false)
@@ -351,13 +371,33 @@ model users {
   requests                              requests[]
   resetpass_resetpass_userTousers       resetpass[]         @relation("resetpass_userTousers")
   resetpass_resetpass_user_emailTousers resetpass[]         @relation("resetpass_user_emailTousers")
-  institutions                          institutions        @relation(fields: [institution], references: [institution_id], map: "users_ibfk_1")
-  positions                             positions           @relation(fields: [position], references: [position_id])
-  position_lvs                          position_lvs        @relation(fields: [position_lv], references: [position_lv_id])
-  epositions                            epositions          @relation(fields: [eposition], references: [eposition_id])
+  epositions                            epositions?         @relation(fields: [epositionsEposition_id], references: [eposition_id])
+  epositionsEposition_id                Int?
+  positions                             positions?          @relation(fields: [positionsPosition_id], references: [position_id])
+  positionsPosition_id                  Int?
+  position_lvs                          position_lvs?       @relation(fields: [position_lvsPosition_lv_id], references: [position_lv_id])
+  position_lvsPosition_lv_id            Int?
+
+  userInst userInst?
+  userDep  userDep?
 
   @@id([username, email, id])
-  @@index([institution], map: "institution")
+}
+
+model userInst {
+  users        users        @relation(references: [id], fields: [user])
+  institutions institutions @relation(references: [id], fields: [institution])
+
+  user        Int @unique
+  institution Int
+}
+
+model userDep {
+  users users @relation(references: [id], fields: [user])
+  user  Int   @unique
+
+  departments departments @relation(references: [id], fields: [department])
+  department  Int
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
