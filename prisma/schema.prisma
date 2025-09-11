@@ -48,9 +48,10 @@ model admins {
   requests           requests[]
   positions          positions           @relation(fields: [position], references: [position_id])
   position_lvs       position_lvs        @relation(fields: [position_lv], references: [position_lv_id])
-  adminDep           adminDep[]
-  adminInst          adminInst[]
-  adminMinis         adminMinis[]
+  adminDep           adminDep?
+  adminInst          adminInst?
+  adminMinis         adminMinis?
+  adminOdpc          adminOdpc[]
 
   @@index([level], map: "level")
 }
@@ -76,22 +77,41 @@ model adminMinis {
   ministry   Int
 }
 
+model adminOdpc {
+  admins admins @relation(references: [id], fields: [admin])
+  admin  Int    @unique
+
+  odpc  Int
+  odpcs odpcs @relation(references: [id], fields: [odpc])
+}
+
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model departments {
-  id           Int            @id @unique(map: "department_id")
-  name_th      String         @db.VarChar(255)
-  name_eng     String         @db.VarChar(255)
-  ministry     Int
-  ministries   ministries     @relation(fields: [ministry], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "departments_ibfk_1")
-  institutions institutions[]
+  id         Int        @id @unique(map: "department_id")
+  name_th    String     @db.VarChar(255)
+  name_eng   String     @db.VarChar(255)
+  ministry   Int
+  ministries ministries @relation(fields: [ministry], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "departments_ibfk_1")
 
-  seal         seals          @relation(fields: [sealsId], references: [id])
+  seals        seals          @relation(fields: [sealsId], references: [id])
   adminDep     adminDep[]
   sealsId      Int
   sign_persons sign_persons[]
   userDep      userDep[]
+  odpcs        odpcs[]
+  instituions  institutions[]
 
   @@index([ministry], map: "ministry")
+}
+
+model odpcs {
+  id          Int         @id @unique
+  name_th     String
+  name_eng    String
+  department  Int
+  departments departments @relation(fields: [department], references: [id])
+
+  adminOdpc adminOdpc[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -180,22 +200,19 @@ model gov_card_files {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model institutions {
-  id            Int    @id @unique(map: "institution_id") @default(autoincrement())
-  code          String @db.VarChar(10)
-  name_th       String @db.VarChar(255)
-  name_eng      String @db.VarChar(255)
-  department    Int
+  id       Int    @id @unique(map: "institution_id") @default(autoincrement())
+  code     String @db.VarChar(10)
+  name_th  String @db.VarChar(255)
+  name_eng String @db.VarChar(255)
+
   province      Int
   health_region Int
-  sign_person   Int
-  seal          Int
 
-  departments departments  @relation(fields: [department], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "institutions_ibfk_1")
-  epositions  epositions[]
-  adminInst   adminInst[]
-  userInst    userInst[]
-
-  @@index([department], map: "department")
+  epositions    epositions[]
+  adminInst     adminInst[]
+  userInst      userInst[]
+  departments   departments? @relation(fields: [departmentsId], references: [id])
+  departmentsId Int?
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -371,12 +388,12 @@ model users {
   requests                              requests[]
   resetpass_resetpass_userTousers       resetpass[]         @relation("resetpass_userTousers")
   resetpass_resetpass_user_emailTousers resetpass[]         @relation("resetpass_user_emailTousers")
-  epositions                            epositions?         @relation(fields: [epositionsEposition_id], references: [eposition_id])
-  epositionsEposition_id                Int?
-  positions                             positions?          @relation(fields: [positionsPosition_id], references: [position_id])
-  positionsPosition_id                  Int?
-  position_lvs                          position_lvs?       @relation(fields: [position_lvsPosition_lv_id], references: [position_lv_id])
-  position_lvsPosition_lv_id            Int?
+  epositions                            epositions?         @relation(fields: [eposition], references: [eposition_id])
+  eposition                             Int?
+  positions                             positions?          @relation(fields: [position], references: [position_id])
+  position                              Int?
+  position_lvs                          position_lvs?       @relation(fields: [position_lv], references: [position_lv_id])
+  position_lv                           Int?
 
   userInst userInst?
   userDep  userDep?

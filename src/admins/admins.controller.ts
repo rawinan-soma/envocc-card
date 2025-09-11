@@ -71,19 +71,17 @@ export class AdminsController {
     @Query() queryParams: GetAllUserQueryDto,
   ) {
     const admin = await this.adminsService.getAdminById(request.user.id);
-    const { page, status, fname_th, lname_th, institution_name } = queryParams;
-    const pageNumber = page === 0 || !page ? 1 : queryParams.page;
-    const adminLevel = admin.level;
-    const adminInst = admin.institution;
+    const { page, status, adminLevel, search_term } = queryParams;
+    const adminInst = admin.adminInst?.institution;
+    const adminDep = admin.adminDep?.department;
 
     return await this.userService.getAllUsers({
       adminInst: adminInst,
       adminLevel: adminLevel,
-      page: pageNumber as number,
+      adminDep: adminDep,
+      page: page as number,
       status: status as string,
-      fname_th: fname_th,
-      institution_name: institution_name,
-      lname_th: lname_th,
+      search_term: search_term,
     });
   }
 
