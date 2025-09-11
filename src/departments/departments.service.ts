@@ -17,8 +17,8 @@ export class DepartmentsService {
       });
 
       return department;
-    } catch (error) {
-      this.logger.error(error);
+    } catch (err) {
+      this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
   }

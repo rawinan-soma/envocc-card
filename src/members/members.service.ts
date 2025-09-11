@@ -60,23 +60,44 @@ export class MembersService {
                   eposition_name_th: true,
                 },
               },
-              institutions: {
+              userInst: {
                 select: {
-                  departments: {
+                  institutions: {
                     select: {
-                      department_id: true,
-                      department_name_th: true,
-                      department_name_eng: true,
-                    },
-                  },
-                  seals: {
-                    select: {
-                      url: true,
-                      filename: true,
+                      departments: {
+                        select: {
+                          id: true,
+                          name_eng: true,
+                          name_th: true,
+                          seals: {
+                            select: {
+                              url: true,
+                              filename: true,
+                            },
+                          },
+                        },
+                      },
                     },
                   },
                 },
               },
+              // institutions: {
+              //   select: {
+              //     departments: {
+              //       select: {
+              //         department_id: true,
+              //         department_name_th: true,
+              //         department_name_eng: true,
+              //       },
+              //     },
+              //     seals: {
+              //       select: {
+              //         url: true,
+              //         filename: true,
+              //       },
+              //     },
+              //   },
+              // },
             },
           },
           sign_persons: {

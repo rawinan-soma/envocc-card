@@ -23,8 +23,8 @@ export class CommonDocumentsService {
     try {
       const documents = await this.prisma.documents.findMany();
       return documents;
-    } catch (error) {
-      this.logger.error(error);
+    } catch (err) {
+      this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
   }
@@ -40,11 +40,11 @@ export class CommonDocumentsService {
       }
 
       return document;
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof NotFoundException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
@@ -55,8 +55,8 @@ export class CommonDocumentsService {
   async createDocument(dto: DocumentCreateDto) {
     try {
       return await this.prisma.documents.create({ data: dto });
-    } catch (error) {
-      this.logger.error(error);
+    } catch (err) {
+      this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
   }
@@ -72,11 +72,11 @@ export class CommonDocumentsService {
       }
       fs.unlinkSync(document.url);
       await this.filesService.deleteFile(document.url);
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof NotFoundException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');

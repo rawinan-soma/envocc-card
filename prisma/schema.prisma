@@ -51,7 +51,6 @@ model admins {
   adminDep           adminDep?
   adminInst          adminInst?
   adminMinis         adminMinis?
-  adminOdpc          adminOdpc[]
 
   @@index([level], map: "level")
 }
@@ -77,14 +76,6 @@ model adminMinis {
   ministry   Int
 }
 
-model adminOdpc {
-  admins admins @relation(references: [id], fields: [admin])
-  admin  Int    @unique
-
-  odpc  Int
-  odpcs odpcs @relation(references: [id], fields: [odpc])
-}
-
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model departments {
   id         Int        @id @unique(map: "department_id")
@@ -93,25 +84,15 @@ model departments {
   ministry   Int
   ministries ministries @relation(fields: [ministry], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "departments_ibfk_1")
 
-  seals        seals          @relation(fields: [sealsId], references: [id])
+  seals        seals          @relation(fields: [seal], references: [id])
   adminDep     adminDep[]
-  sealsId      Int
+  seal         Int
   sign_persons sign_persons[]
   userDep      userDep[]
-  odpcs        odpcs[]
-  instituions  institutions[]
+
+  instituions institutions[]
 
   @@index([ministry], map: "ministry")
-}
-
-model odpcs {
-  id          Int         @id @unique
-  name_th     String
-  name_eng    String
-  department  Int
-  departments departments @relation(fields: [department], references: [id])
-
-  adminOdpc adminOdpc[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -208,11 +189,11 @@ model institutions {
   province      Int
   health_region Int
 
-  epositions    epositions[]
-  adminInst     adminInst[]
-  userInst      userInst[]
-  departments   departments? @relation(fields: [departmentsId], references: [id])
-  departmentsId Int?
+  epositions  epositions[]
+  adminInst   adminInst[]
+  userInst    userInst[]
+  departments departments? @relation(fields: [department], references: [id])
+  department  Int
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments

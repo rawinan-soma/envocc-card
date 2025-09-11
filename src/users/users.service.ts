@@ -31,19 +31,19 @@ export class UsersService {
       if (!user) {
         throw new NotFoundException('user not found');
       }
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof NotFoundException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
       }
     }
   }
-  // TODO: แก้ admin level -> เป็น string, เพิ่ม adminDep query
 
+  // TODO: Test get users
   async getAllUsers(queryData: {
     page: number;
     status: string;
@@ -201,11 +201,11 @@ export class UsersService {
           limit: limit,
         },
       };
-    } catch (error: any) {
-      this.logger.error(error);
-      if (error instanceof BadRequestException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err: any) {
+      this.logger.error(err);
+      if (err instanceof BadRequestException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
@@ -278,11 +278,11 @@ export class UsersService {
         },
       });
       return user;
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof NotFoundException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
@@ -313,11 +313,11 @@ export class UsersService {
       }
 
       return user;
-    } catch (error: any) {
-      this.logger.error(error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err: any) {
+      this.logger.error(err);
+      if (err instanceof NotFoundException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
@@ -342,11 +342,11 @@ export class UsersService {
         where: { id: id },
         data: data as Prisma.usersUpdateInput,
       });
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof NotFoundException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
@@ -367,11 +367,11 @@ export class UsersService {
       return await this.prisma.users.delete({
         where: { id: id },
       });
-    } catch (error: any) {
-      this.logger.error(error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err: any) {
+      this.logger.error(err);
+      if (err instanceof NotFoundException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
@@ -436,14 +436,14 @@ export class UsersService {
           },
         });
       });
-    } catch (error) {
-      this.logger.error(error);
+    } catch (err) {
+      this.logger.error(err);
       if (
-        error instanceof NotFoundException ||
-        error instanceof BadRequestException
+        err instanceof NotFoundException ||
+        err instanceof BadRequestException
       ) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
@@ -469,14 +469,14 @@ export class UsersService {
         where: { id: id },
         data: { is_validate: false },
       });
-    } catch (error) {
-      this.logger.error(error);
+    } catch (err) {
+      this.logger.error(err);
       if (
-        error instanceof NotFoundException ||
-        error instanceof BadRequestException
+        err instanceof NotFoundException ||
+        err instanceof BadRequestException
       ) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
@@ -528,9 +528,9 @@ export class UsersService {
           data: { user: user, request_type: 1, request_status: 4 },
         });
       });
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
+    } catch (err) {
+      this.logger.error(err);
+      throw err;
     }
   }
 }

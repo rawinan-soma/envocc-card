@@ -72,6 +72,7 @@ export class AdminsController {
   ) {
     const admin = await this.adminsService.getAdminById(request.user.id);
     const { page, status, adminLevel, search_term } = queryParams;
+
     const adminInst = admin.adminInst?.institution;
     const adminDep = admin.adminDep?.department;
 
