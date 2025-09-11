@@ -124,11 +124,11 @@ export class FilesService {
       }
 
       return file;
-    } catch (error: unknown) {
-      if (error instanceof NotFoundException) {
-        throw error;
+    } catch (err: unknown) {
+      if (err instanceof NotFoundException) {
+        throw err;
       }
-      if (error instanceof PrismaClientKnownRequestError) {
+      if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request');
       }
       throw new InternalServerErrorException('something went wrong');
@@ -157,11 +157,11 @@ export class FilesService {
 
       await delegate.delete({ where: { id: file.id } });
       return;
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof NotFoundException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
@@ -179,8 +179,8 @@ export class FilesService {
       };
 
       return await delegate.create({ data: data });
-    } catch (error) {
-      this.logger.error(error);
+    } catch (err) {
+      this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
   }
@@ -205,8 +205,8 @@ export class FilesService {
       };
 
       return await delegate.create({ data: data });
-    } catch (error) {
-      this.logger.error(error);
+    } catch (err) {
+      this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
   }

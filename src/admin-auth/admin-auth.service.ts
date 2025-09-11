@@ -14,7 +14,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 export class AdminAuthService {
   private readonly logger = new Logger(AdminAuthService.name);
   constructor(private readonly prisma: PrismaService) {}
-
+  // TODO: create with link in adminDep, adminInst
   async createAdmin(dto: AdminCreateDto) {
     try {
       const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -22,10 +22,10 @@ export class AdminAuthService {
         data: { ...dto, password: hashedPassword },
         select: { username: true, role: true },
       });
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof PrismaClientKnownRequestError) {
-        switch (error.code) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof PrismaClientKnownRequestError) {
+        switch (err.code) {
           case 'P2002':
             throw new BadRequestException('username or email alredy exists');
           default:
@@ -52,11 +52,11 @@ export class AdminAuthService {
       admin.password = '';
 
       return admin;
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof UnauthorizedException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
@@ -98,9 +98,9 @@ export class AdminAuthService {
   }
 
   async removeRefreshToken(id: number) {
-    return this.prisma.admins.update({
+    await this.prisma.admins.update({
       where: { id: id },
-      data: { hashedRefreshToken: null },
+      data: { hashedRefreshToken: '' },
     });
   }
 }

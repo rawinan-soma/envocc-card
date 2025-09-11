@@ -29,8 +29,8 @@ export class RequestService {
       });
 
       return currentStatus;
-    } catch (error: any) {
-      this.logger.error(error);
+    } catch (err: any) {
+      this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
   }
@@ -58,11 +58,11 @@ export class RequestService {
           approver: approver,
         },
       });
-    } catch (error: any) {
-      this.logger.error(error);
-      if (error instanceof BadRequestException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err: any) {
+      this.logger.error(err);
+      if (err instanceof BadRequestException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('somethong went wrong');
@@ -81,8 +81,8 @@ export class RequestService {
       });
 
       return statuses;
-    } catch (error: any) {
-      this.logger.error(error);
+    } catch (err: any) {
+      this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
   }
@@ -99,11 +99,11 @@ export class RequestService {
       data.request_status = 1;
 
       await this.prisma.requests.create({ data: data });
-    } catch (error: any) {
-      this.logger.error(error);
-      if (error instanceof BadRequestException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err: any) {
+      this.logger.error(err);
+      if (err instanceof BadRequestException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
@@ -122,12 +122,12 @@ export class RequestService {
       await this.prisma.requests.delete({
         where: { req_id: request.req_id },
       });
-    } catch (error: any) {
-      this.logger.error(error);
+    } catch (err: any) {
+      this.logger.error(err);
 
-      if (error instanceof BadRequestException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+      if (err instanceof BadRequestException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');

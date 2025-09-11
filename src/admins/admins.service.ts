@@ -24,8 +24,8 @@ export class AdminsService {
 
         // include: { institutions: { include: { departments: true } } },
       });
-    } catch (error) {
-      this.logger.error(error);
+    } catch (err) {
+      this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
   }
@@ -40,12 +40,12 @@ export class AdminsService {
         throw new NotFoundException('admin not found');
       }
       return admin;
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
-      } else if (error instanceof NotFoundException) {
-        throw error;
+      } else if (err instanceof NotFoundException) {
+        throw err;
       } else {
         throw new InternalServerErrorException('something went wrong');
       }
@@ -64,12 +64,12 @@ export class AdminsService {
       }
 
       return admin;
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
-      } else if (error instanceof NotFoundException) {
-        throw error;
+      } else if (err instanceof NotFoundException) {
+        throw err;
       } else {
         throw new InternalServerErrorException('something went wrong');
       }
@@ -88,12 +88,12 @@ export class AdminsService {
         throw new NotFoundException('admin not found');
       }
       return admin;
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
-      } else if (error instanceof NotFoundException) {
-        throw error;
+      } else if (err instanceof NotFoundException) {
+        throw err;
       } else {
         throw new InternalServerErrorException('something went wrong');
       }

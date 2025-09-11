@@ -1,17 +1,17 @@
 [
   {
-    "ministry_id": 15000,
-    "ministry_name_th": "กระทรวงสาธารณสุข",
-    "ministry_name_eng": "Ministry of Public Health"
+    "id": 15000,
+    "name_th": "กระทรวงสาธารณสุข",
+    "name_eng": "Ministry of Public Health"
   },
   {
-    "ministry_id": 21000,
-    "ministry_name_th": "กระทรวงมหาดไทย",
-    "ministry_name_eng": "Ministry of Interior"
+    "id": 21000,
+    "name_th": "กระทรวงมหาดไทย",
+    "name_eng": "Ministry of Interior"
   },
   {
-    "ministry_id": 99999,
-    "ministry_name_th": "IGNORE",
-    "ministry_name_eng": "IGNORE"
+    "id": 99999,
+    "name_th": "IGNORE",
+    "name_eng": "IGNORE"
   }
 ]

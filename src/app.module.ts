@@ -11,12 +11,11 @@ import { RequestModule } from './request/request.module';
 import { DepartmentsModule } from './departments/departments.module';
 import { MinistriesModule } from './ministries/ministries.module';
 import { InstitutionsModule } from './institutions/institutions.module';
-import { FilesModule } from './files/files.module';
+import { FilesModule } from 'src/files/files.module';
 import { CommonDocumentsModule } from './common-documents/common-documents.module';
 import { MembersModule } from './members/members.module';
 import { PublicModule } from './public/public.module';
 import { SignaturesModule } from './signatures/signatures.module';
-import { ReqFilesModule } from './req-files/req-files.module';
 import { ExperiecesModule } from './experiences/experiences.module';
 import Joi from '@hapi/joi';
 
@@ -33,8 +32,9 @@ import Joi from '@hapi/joi';
         REFRESH_TOKEN_EXP: Joi.number().required(),
       }),
     }),
-    AdminsModule,
     PrismaModule,
+    FilesModule,
+    AdminsModule,
     AdminAuthModule,
     UserAuthModule,
     UsersModule,
@@ -42,12 +42,10 @@ import Joi from '@hapi/joi';
     DepartmentsModule,
     MinistriesModule,
     InstitutionsModule,
-    FilesModule,
     CommonDocumentsModule,
     MembersModule,
     PublicModule,
     SignaturesModule,
-    ReqFilesModule,
     ExperiecesModule,
   ],
   controllers: [AppController],

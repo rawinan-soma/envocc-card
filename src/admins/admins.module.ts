@@ -6,10 +6,18 @@ import { RequestModule } from 'src/request/request.module';
 import { RequestService } from 'src/request/request.service';
 import { MembersModule } from 'src/members/members.module';
 import { MembersService } from 'src/members/members.service';
+import { CommonDocumentsModule } from '../common-documents/common-documents.module';
+import { CommonDocumentsService } from 'src/common-documents/common-documents.service';
 
 @Module({
-  imports: [RequestModule, MembersModule],
+  imports: [RequestModule, MembersModule, CommonDocumentsModule],
   controllers: [AdminsController],
-  providers: [AdminsService, UsersService, RequestService, MembersService],
+  providers: [
+    AdminsService,
+    UsersService,
+    RequestService,
+    MembersService,
+    CommonDocumentsService,
+  ],
 })
 export class AdminsModule {}

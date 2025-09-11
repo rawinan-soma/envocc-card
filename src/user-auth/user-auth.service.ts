@@ -30,6 +30,8 @@ export class UserAuthService {
     return yearDiff;
   }
 
+  // TODO: create with link in adminDep, adminInst
+  // TODO: refactor compile from new structure
   async createUser(dto: UserExpCreateDto) {
     try {
       const hashedPassword = await bcrypt.hash(dto.user.password, 10);
@@ -63,12 +65,12 @@ export class UserAuthService {
           requests: { create: { request_status: 0, request_type: 1 } },
         },
       });
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('failed to create user');
-      } else if (error instanceof BadRequestException) {
-        throw error;
+      } else if (err instanceof BadRequestException) {
+        throw err;
       } else {
         throw new InternalServerErrorException('something went wrong');
       }
@@ -90,11 +92,11 @@ export class UserAuthService {
       user.password = '';
 
       return user;
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof UnauthorizedException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
@@ -136,7 +138,7 @@ export class UserAuthService {
   }
 
   async removeRefreshToken(id: number) {
-    return this.prisma.users.update({
+    return await this.prisma.users.update({
       where: { id: id },
       data: { hashedRefreshToken: null },
     });

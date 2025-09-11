@@ -14,8 +14,8 @@ export class MinistriesService {
     try {
       const ministries = await this.prisma.ministries.findMany();
       return ministries;
-    } catch (error: any) {
-      this.logger.error(error);
+    } catch (err: any) {
+      this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
   }

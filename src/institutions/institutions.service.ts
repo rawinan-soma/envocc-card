@@ -33,8 +33,8 @@ export class InstitutionsService {
       });
 
       return institution;
-    } catch (error: any) {
-      this.logger.error(error);
+    } catch (err: any) {
+      this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
   }
@@ -59,8 +59,8 @@ export class InstitutionsService {
       });
 
       return institution;
-    } catch (error: any) {
-      this.logger.error(error);
+    } catch (err: any) {
+      this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
   }
