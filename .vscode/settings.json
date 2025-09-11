@@ -10,5 +10,6 @@
       "username": "postgres",
       "password": "root"
     }
-  ]
+  ],
+  "dbmlERDPreviewer.preferredTheme": "dark"
 }

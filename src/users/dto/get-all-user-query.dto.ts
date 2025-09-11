@@ -1,25 +1,33 @@
 import { Transform } from 'class-transformer';
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+
+enum AdminLevels {
+  provincial = 'provincial',
+  regional = 'regional',
+  national = 'national',
+}
+
+enum Statuses {
+  ongoing = 'ongoing',
+  activated = 'activated',
+  suspended = 'suspended',
+}
 
 export class GetAllUserQueryDto {
   @IsNumber()
   @IsOptional()
   @Transform(({ value }) => parseInt(value as string, 10))
-  page?: number;
+  @Min(1)
+  page?: number = 1;
 
   @IsString()
   @IsOptional()
-  status?: string;
+  search_term?: string;
 
-  @IsString()
+  @IsEnum(AdminLevels)
   @IsOptional()
-  fname_th?: string;
+  adminLevel?: AdminLevels;
 
-  @IsOptional()
-  @IsString()
-  lname_th?: string;
-
-  @IsOptional()
-  @IsString()
-  institution_name?: string;
+  @IsEnum(Statuses)
+  status: Statuses;
 }

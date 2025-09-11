@@ -15,15 +15,15 @@ export class InstitutionsService {
     try {
       const institution = await this.prisma.institutions.findMany({
         where: {
-          institution_name_th: { contains: institution_name_th },
+          name_th: { contains: institution_name_th },
         },
         select: {
-          institution_id: true,
-          institution_name_th: true,
+          id: true,
+          name_th: true,
           departments: {
             select: {
-              department_name_th: true,
-              ministries: { select: { ministry_name_th: true } },
+              name_th: true,
+              ministries: { select: { name_th: true } },
             },
           },
           epositions: {
@@ -42,14 +42,14 @@ export class InstitutionsService {
   async getInstitutionById(institution_id: number) {
     try {
       const institution = await this.prisma.institutions.findFirst({
-        where: { institution_id: institution_id },
+        where: { id: institution_id },
         select: {
-          institution_id: true,
-          institution_name_th: true,
+          id: true,
+          name_th: true,
           departments: {
             select: {
-              department_name_th: true,
-              ministries: { select: { ministry_name_th: true } },
+              name_th: true,
+              ministries: { select: { name_th: true } },
             },
           },
           epositions: {

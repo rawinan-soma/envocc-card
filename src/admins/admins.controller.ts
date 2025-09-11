@@ -10,6 +10,7 @@ import {
   Body,
   Post,
   ParseIntPipe,
+  UseInterceptors,
 } from '@nestjs/common';
 import { AdminsService } from './admins.service';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
@@ -21,6 +22,10 @@ import { RequestService } from 'src/request/request.service';
 import { MembersService } from 'src/members/members.service';
 import { MemeberCreateDto as MemberCreateDto } from 'src/members/dto/create-member.dto';
 import { FileModelMap, FilesService } from 'src/files/files.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { getMulterOptions } from 'src/shared/file-multer-options';
+import { DocumentCreateDto } from 'src/common-documents/dto/document-create.dto';
+import { CommonDocumentsService } from 'src/common-documents/common-documents.service';
 
 @Controller('admins')
 export class AdminsController {
@@ -30,6 +35,7 @@ export class AdminsController {
     private readonly requestService: RequestService,
     private readonly membersService: MembersService,
     private readonly filesService: FilesService,
+    private readonly documentsService: CommonDocumentsService,
   ) {}
 
   @Get('admins')
@@ -37,20 +43,20 @@ export class AdminsController {
     return this.adminsService.getAllAdmins();
   }
 
-  // @Get(':username')
-  // async getAdminByUsernameHandler(@Param('username') username: string) {
-  //   return this.adminsService.getAdminByUsername(username);
-  // }
+  @Get('admins/:username')
+  async getAdminByUsernameHandler(@Param('username') username: string) {
+    return this.adminsService.getAdminByUsername(username);
+  }
 
-  // @Get(':id')
-  // async getAdminByIdHandler(@Param('id') id: number) {
-  //   return this.adminsService.getAdminById(id);
-  // }
+  @Get('admins/:id')
+  async getAdminByIdHandler(@Param('id') id: number) {
+    return this.adminsService.getAdminById(id);
+  }
 
-  // @Get(':email')
-  // async getAdminByEmailHandler(@Param('email') email: string) {
-  //   return this.adminsService.getAdminByEmail(email);
-  // }
+  @Get('admins/:email')
+  async getAdminByEmailHandler(@Param('email') email: string) {
+    return this.adminsService.getAdminByEmail(email);
+  }
 
   @UseGuards(JwtAccessGuardAdmin)
   @Get('me')
@@ -65,19 +71,17 @@ export class AdminsController {
     @Query() queryParams: GetAllUserQueryDto,
   ) {
     const admin = await this.adminsService.getAdminById(request.user.id);
-    const { page, status, fname_th, lname_th, institution_name } = queryParams;
-    const pageNumber = page === 0 || !page ? 1 : queryParams.page;
-    const adminLevel = admin.level;
-    const adminInst = admin.institution;
+    const { page, status, adminLevel, search_term } = queryParams;
+    const adminInst = admin.adminInst?.institution;
+    const adminDep = admin.adminDep?.department;
 
     return await this.userService.getAllUsers({
       adminInst: adminInst,
       adminLevel: adminLevel,
-      page: pageNumber as number,
+      adminDep: adminDep,
+      page: page as number,
       status: status as string,
-      fname_th: fname_th,
-      institution_name: institution_name,
-      lname_th: lname_th,
+      search_term: search_term,
     });
   }
 
@@ -157,5 +161,25 @@ export class AdminsController {
     @Param('userId', ParseIntPipe) userId: number,
   ) {
     return await this.filesService.deleteFileByUserId(file, userId);
+  }
+
+  @Post('documents')
+  @UseInterceptors(
+    FileInterceptor('document', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),
+  )
+  async createdDocumentHandler(
+    @Param('file') file: Express.Multer.File,
+    @Body() data: DocumentCreateDto,
+  ) {
+    return await this.documentsService.createDocument({
+      ...data,
+      doc_file: file.filename,
+      url: file.path,
+    });
+  }
+
+  @Delete('document/:docId')
+  async deleteDocumentHandler(@Param() docId: number) {
+    return await this.documentsService.deleteDocument(docId);
   }
 }
