@@ -18,8 +18,9 @@ export class AdminsService {
       return await this.prisma.admins.findMany({
         omit: { password: true },
         include: {
-          adminInst: { select: { institutions: true } },
-          adminDep: { select: { departments: true } },
+          adminOnOrg: {
+            select: { organization: { select: { id: true, name_th: true } } },
+          },
         },
 
         // include: { institutions: { include: { departments: true } } },
@@ -81,7 +82,11 @@ export class AdminsService {
       const admin = await this.prisma.admins.findUnique({
         where: { id: id },
         omit: { password: true },
-        include: { adminDep: true, adminInst: true },
+        include: {
+          adminOnOrg: {
+            select: { organization: { select: { id: true, name_th: true } } },
+          },
+        },
       });
 
       if (!admin) {

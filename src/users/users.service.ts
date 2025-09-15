@@ -5,13 +5,20 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { OrgLevel, Prisma } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
 import { UserUpdateDto } from './dto/user-update.dto';
 import { StatusCreateDto } from 'src/request/dto/status-create.dto';
 import { FilesService } from 'src/files/files.service';
 import { FileCreateDto } from 'src/files/dto/file-create.dto';
+
+interface OrganizationWithParent {
+  id: number;
+  name_th: string;
+  level: OrgLevel;
+  parent?: OrganizationWithParent | null;
+}
 
 @Injectable()
 export class UsersService {
@@ -20,6 +27,40 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly filesService: FilesService,
   ) {}
+
+  private async getChildIds(orgId: number): Promise<number[]> {
+    const parent = await this.prisma.organizations.findUnique({
+      where: { id: orgId },
+      include: { children: true },
+    });
+
+    if (!parent) return [];
+
+    let ids: number[] = [parent.id];
+    for (const child of parent.children) {
+      const childIds = await this.getChildIds(child.id);
+      ids = ids.concat(childIds);
+    }
+
+    return ids;
+  }
+
+  private pickLevelForRequestForm(
+    org: OrganizationWithParent | undefined | null,
+    levels: string[] = ['UNIT', 'DEPARTMENT', 'MINISTRY'],
+  ): Record<string, string> | null {
+    if (!org) {
+      return null;
+    }
+
+    const result = {};
+    if (levels.includes(org.level)) {
+      result[org.level] = org.name_th;
+    }
+
+    const parentResult = this.pickLevelForRequestForm(org.parent, levels);
+    return { ...parentResult, ...result };
+  }
 
   async getUserById(id: number) {
     try {
@@ -47,9 +88,8 @@ export class UsersService {
   async getAllUsers(queryData: {
     page: number;
     status: string;
-    adminLevel?: string;
-    adminDep?: number;
-    adminInst?: number;
+    adminId: number;
+    orgId: number;
     search_term?: string;
   }) {
     try {
@@ -64,84 +104,25 @@ export class UsersService {
         throw new BadRequestException('Invalid Status query');
       }
 
-      let adminLevelFilter: Prisma.usersWhereInput = {
+      const ids = await this.getChildIds(queryData.orgId);
+
+      const adminLevelFilter: Prisma.usersWhereInput = {
         requests: { some: { request_status: { in: filtered } } },
+        userOnOrg: { some: { orgId: { in: ids } } },
         OR: [
           { fname_th: { contains: queryData.search_term } },
           { lname_th: { contains: queryData.search_term } },
           {
-            userInst: {
-              institutions: {
-                name_th: { contains: queryData.search_term },
-              },
-            },
-            userDep: {
-              departments: {
-                name_th: { contains: queryData.search_term },
+            userOnOrg: {
+              some: {
+                organization: {
+                  name_th: { contains: queryData.search_term },
+                },
               },
             },
           },
         ],
       };
-
-      if (!queryData.adminDep && !queryData.adminInst) {
-        throw new BadRequestException('invalid query');
-      }
-
-      if (
-        queryData.adminInst &&
-        adminLevelFilter.userInst &&
-        !queryData.adminDep
-      ) {
-        adminLevelFilter.userInst.institution = queryData.adminInst;
-      } else {
-        throw new BadRequestException('invalid institution query');
-      }
-
-      if (queryData.adminDep && !queryData.adminInst) {
-        // adminLevelFilter.userDep.department = queryData.adminDep;
-        switch (queryData.adminLevel) {
-          case 'provincial': {
-            adminLevelFilter = {
-              ...adminLevelFilter,
-              OR: [
-                { userDep: { department: queryData.adminDep } },
-                {
-                  userInst: {
-                    institutions: { department: queryData.adminDep },
-                  },
-                },
-              ],
-            };
-            break;
-          }
-          case 'regional': {
-            const region = await this.prisma.institutions.findFirst({
-              where: { department: queryData.adminDep },
-              select: { health_region: true },
-            });
-            adminLevelFilter = {
-              ...adminLevelFilter,
-              OR: [
-                { userDep: { department: queryData.adminDep } },
-                {
-                  userInst: {
-                    institutions: {
-                      health_region: region?.health_region,
-                    },
-                  },
-                },
-              ],
-            };
-            break;
-          }
-          case 'national': {
-            adminLevelFilter = { ...adminLevelFilter };
-          }
-        }
-      } else {
-        throw new BadRequestException('invalid department query');
-      }
 
       const limit = 10;
       const offset = (queryData.page - 1) * limit;
@@ -156,16 +137,39 @@ export class UsersService {
           pname_other_th: true,
           fname_th: true,
           lname_th: true,
-          userInst: {
+          userOnOrg: {
             select: {
-              institutions: {
+              organization: {
                 select: {
+                  id: true,
+                  level: true,
                   name_th: true,
-                  departments: {
+                  parent: {
                     select: {
+                      id: true,
+                      level: true,
                       name_th: true,
-                      sign_persons: { select: { id: true } },
-                      ministries: { select: { name_th: true } },
+                      parent: {
+                        select: {
+                          id: true,
+                          level: true,
+                          name_th: true,
+                          parent: {
+                            select: {
+                              id: true,
+                              level: true,
+                              name_th: true,
+                              parent: {
+                                select: {
+                                  id: true,
+                                  level: true,
+                                  name_th: true,
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
                     },
                   },
                 },
@@ -182,8 +186,8 @@ export class UsersService {
             },
             orderBy: { date_update: 'desc' },
           },
-          positions: { select: { position_name: true } },
-          position_lvs: { select: { position_lv_name: true } },
+          position: { select: { position_name: true } },
+          position_lv: { select: { position_lv_name: true } },
         },
         where: adminLevelFilter,
         orderBy: { id: 'asc' },
@@ -192,8 +196,26 @@ export class UsersService {
       const totalItems = await this.prisma.users.count();
       const totalPages = Math.ceil(totalItems / limit);
 
+      const data = users.map((user) => {
+        const flatOrg = this.pickLevelForRequestForm(
+          user.userOnOrg?.[0]?.organization ?? undefined,
+        );
+
+        return {
+          ...user,
+          start_date: user.members[0].start_date,
+          end_date: user.members[0].end_date,
+          requests: user.requests[0].request_status,
+          position: user.position?.position_name,
+          position_lv: user.position_lv?.position_lv_name,
+          unit: flatOrg?.UNIT ?? null,
+          department: flatOrg?.DEPARTMENT ?? null,
+          ministry: flatOrg?.MINISTRY ?? null,
+        };
+      });
+
       return {
-        data: users,
+        data: data,
         pageData: {
           totalItems: totalItems,
           totalPages: totalPages,
@@ -213,52 +235,20 @@ export class UsersService {
     }
   }
 
-  async getUserPrintForm(id: number) {
+  async getUserRequestForm(id: number) {
     try {
       const user = await this.prisma.users.findUnique({
         where: { id: id },
         include: {
-          members: {
-            orderBy: { create_date: 'desc' },
-            select: { start_date: true, end_date: true, member_no: true },
-            take: 1,
-          },
-          epositions: true,
-          positions: {
+          eposition: true,
+          position: {
             select: {
               position_id: true,
               position_name: true,
               position_name_eng: true,
             },
           },
-          userInst: {
-            select: {
-              institutions: {
-                select: {
-                  name_th: true,
-                  name_eng: true,
-                  departments: {
-                    select: {
-                      name_th: true,
-                      name_eng: true,
-                      seals: { select: { url: true } },
-                      ministries: { select: { name_eng: true, name_th: true } },
-                      sign_persons: {
-                        select: {
-                          sign_person_pname: true,
-                          sign_person_name: true,
-                          sign_person_lname: true,
-                          position: true,
-                          url: true,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          position_lvs: {
+          position_lv: {
             select: {
               position_lv_id: true,
               position_lv_name: true,
@@ -270,14 +260,77 @@ export class UsersService {
               url: true,
             },
           },
+          userOnOrg: {
+            select: {
+              organization: {
+                select: {
+                  id: true,
+                  level: true,
+                  name_th: true,
+                  name_eng: true,
+                  parent: {
+                    select: {
+                      id: true,
+                      level: true,
+                      name_th: true,
+                      name_eng: true,
+                      parent: {
+                        select: {
+                          id: true,
+                          level: true,
+                          name_th: true,
+                          name_eng: true,
+                          parent: {
+                            select: {
+                              id: true,
+                              level: true,
+                              name_th: true,
+                              name_eng: true,
+                              parent: {
+                                select: {
+                                  id: true,
+                                  level: true,
+                                  name_th: true,
+                                  name_eng: true,
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
         omit: {
           password: true,
-          position: true,
-          position_lv: true,
+          positionId: true,
+          position_lvId: true,
         },
       });
-      return user;
+
+      const flatOrg = this.pickLevelForRequestForm(
+        user?.userOnOrg?.[0].organization,
+      );
+
+      const data = {
+        ...user,
+        eposition_name_th: user?.eposition?.eposition_name_th,
+        eposition_name_eng: user?.eposition?.eposition_name_eng,
+        position_name_th: user?.position?.position_name,
+        position_name_eng: user?.position?.position_name_eng,
+        position_level_name_th: user?.position_lv?.position_lv_name,
+        position_level_name_eng: user?.position_lv?.position_lv_name_eng,
+        photo_url: user?.photos[0].url,
+        unit: flatOrg?.UNIT,
+        department: flatOrg?.DEPARTMENT,
+        ministry: flatOrg?.MINISTRY,
+      };
+
+      return data;
     } catch (err) {
       this.logger.error(err);
       if (err instanceof NotFoundException) {
@@ -400,7 +453,7 @@ export class UsersService {
         });
 
         const currentStatus = await tx.requests.findFirst({
-          where: { user: id },
+          where: { userId: id },
           orderBy: { date_update: 'desc' },
         });
 
@@ -424,14 +477,14 @@ export class UsersService {
 
         return await tx.requests.create({
           data: {
-            user: data.user,
+            userId: data.user,
             request_status: data.next_status,
             request_type: data.request_type,
             approver: approver,
           },
           select: {
             user: true,
-            req_id: true,
+            id: true,
             request_status: true,
           },
         });
@@ -484,34 +537,6 @@ export class UsersService {
     }
   }
 
-  // private async transactionDeleteUser(
-  //   tx: Prisma.TransactionClient,
-  //   id: number,
-  // ) {
-  //   const existedUser = await tx.users.findUnique({
-  //     where: { id: id },
-  //   });
-
-  //   if (!existedUser) {
-  //     throw new NotFoundException(`user not found`);
-  //   }
-
-  //   await tx.users.delete({
-  //     where: { id: id },
-  //   });
-  // }
-
-  // async deleteUserAndRequest(id: number) {
-  //   try {
-  //     await this.prisma.$transaction(async (tx) => {
-  //       await this.request.transactionDeleteRequest(tx, id);
-  //       await this.transactionDeleteUser(tx, id);
-  //     });
-  //   } catch (error: any) {
-  //     this.logger.error(error);
-  //   }
-  // }
-
   async txUploadFileandUpdateRequest(
     expFilesDto: FileCreateDto,
     govcardDto: FileCreateDto,
@@ -525,7 +550,7 @@ export class UsersService {
         await this.filesService.txUploadFileForUser('govcard', govcardDto, tx);
         await this.filesService.txUploadFileForUser('reqFile', reqFileDto, tx);
         await tx.requests.create({
-          data: { user: user, request_type: 1, request_status: 4 },
+          data: { userId: user, request_type: 1, request_status: 4 },
         });
       });
     } catch (err) {

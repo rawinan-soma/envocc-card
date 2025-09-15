@@ -86,10 +86,10 @@ export class AdminsController {
     });
   }
 
-  @Get('users/form/:id')
-  async getUserPrintFormHandler(@Param('id') id: number) {
-    return await this.userService.getUserPrintForm(id);
-  }
+  // @Get('users/form/:id')
+  // async getUserPrintFormHandler(@Param('id') id: number) {
+  //   return await this.userService.getUserPrintForm(id);
+  // }
 
   @Get('users/exp/:id')
   async getUserPrintExpHandler(@Param('id') id: number) {

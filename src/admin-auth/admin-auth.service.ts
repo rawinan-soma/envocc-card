@@ -14,12 +14,16 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 export class AdminAuthService {
   private readonly logger = new Logger(AdminAuthService.name);
   constructor(private readonly prisma: PrismaService) {}
-  // TODO: create with link in adminDep, adminInst
+
   async createAdmin(dto: AdminCreateDto) {
     try {
       const hashedPassword = await bcrypt.hash(dto.password, 10);
       return await this.prisma.admins.create({
-        data: { ...dto, password: hashedPassword },
+        data: {
+          ...dto,
+          password: hashedPassword,
+          adminOnOrg: { create: { orgId: dto.orgId } },
+        },
         select: { username: true, role: true },
       });
     } catch (err) {
@@ -41,7 +45,12 @@ export class AdminAuthService {
     try {
       const admin = await this.prisma.admins.findFirst({
         where: { username: username },
-        select: { username: true, password: true, id: true, role: true },
+        select: {
+          username: true,
+          password: true,
+          id: true,
+          role: true,
+        },
       });
 
       if (!admin) {
@@ -51,12 +60,17 @@ export class AdminAuthService {
       await this.verifyPassword(password, admin?.password || '');
       admin.password = '';
 
-      return admin;
-    } catch (err) {
-      this.logger.error(err);
-      if (err instanceof UnauthorizedException) {
-        throw err;
-      } else if (err instanceof PrismaClientKnownRequestError) {
+      return {
+        username: admin.username,
+        id: admin.id,
+        role: admin.role,
+        level: 'MINISTRY',
+      };
+    } catch (error) {
+      this.logger.error(error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      } else if (error instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
