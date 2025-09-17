@@ -2,43 +2,43 @@
   {
     "id": 1,
     "filename": "seal1.jpg",
-    "user": 1,
+    "userId": 1,
     "seal_name": "test1"
   },
   {
     "id": 2,
     "filename": "seal2.jpg",
-    "user": 1,
+    "userId": 1,
     "seal_name": "test1"
   },
   {
     "id": 3,
     "filename": "seal3.jpg",
-    "user": 1,
+    "userId": 1,
     "seal_name": "test1"
   },
   {
     "id": 4,
     "filename": "seal4.jpg",
-    "user": 1,
+    "userId": 1,
     "seal_name": "test1"
   },
   {
     "id": 5,
     "filename": "seal5.jpg",
-    "user": 1,
+    "userId": 1,
     "seal_name": "test1"
   },
   {
     "id": 6,
     "filename": "seal6.jpg",
-    "user": 1,
+    "userId": 1,
     "seal_name": "test1"
   },
   {
     "id": 99999,
     "filename": "nothing",
-    "user": 1,
+    "userId": 1,
     "seal_name": "nothing"
   }
 ]

@@ -21,7 +21,7 @@ export class RequestService {
     try {
       const currentStatus = await this.prisma.requests.findFirst({
         where: {
-          user: id,
+          userId: id,
         },
         orderBy: {
           date_update: 'desc',
@@ -52,7 +52,7 @@ export class RequestService {
 
       return await this.prisma.requests.create({
         data: {
-          user: updated.user,
+          userId: updated.user,
           request_status: updated.next_status,
           request_type: current.request_type,
           approver: approver,
@@ -73,11 +73,11 @@ export class RequestService {
   async getAllLatestStatuses() {
     try {
       const statuses = await this.prisma.requests.groupBy({
-        by: ['user'],
+        by: ['userId'],
         _max: {
           request_status: true,
         },
-        orderBy: { user: 'asc' },
+        orderBy: { userId: 'asc' },
       });
 
       return statuses;
@@ -89,7 +89,7 @@ export class RequestService {
 
   async createNewRequest(data: RequestCreateDto) {
     try {
-      const user = await this.getCurrentStatus(data.user);
+      const user = await this.getCurrentStatus(data.userId);
       if (user) {
         throw new BadRequestException(
           'user already has new card request, please ensure the card from user',
@@ -120,7 +120,7 @@ export class RequestService {
       }
 
       await this.prisma.requests.delete({
-        where: { req_id: request.req_id },
+        where: { id: request.id },
       });
     } catch (err: any) {
       this.logger.error(err);

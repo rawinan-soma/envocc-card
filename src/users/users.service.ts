@@ -66,12 +66,21 @@ export class UsersService {
     try {
       const user = await this.prisma.users.findUnique({
         where: { id: id },
-        omit: { password: true },
+        select: {
+          id: true,
+          username: true,
+          userOnOrg: { select: { orgId: true } },
+        },
       });
 
       if (!user) {
         throw new NotFoundException('user not found');
       }
+      return {
+        id: user.id,
+        username: user.username,
+        org: user.userOnOrg[0].orgId,
+      };
     } catch (err) {
       this.logger.error(err);
       if (err instanceof NotFoundException) {
@@ -132,7 +141,6 @@ export class UsersService {
         take: limit,
         select: {
           id: true,
-          cid: true,
           pname_th: true,
           pname_other_th: true,
           fname_th: true,
@@ -203,8 +211,9 @@ export class UsersService {
 
         return {
           ...user,
-          start_date: user.members[0].start_date,
-          end_date: user.members[0].end_date,
+          userOnOrg: undefined,
+          start_date: user.members[0]?.start_date,
+          end_date: user.members[0]?.end_date,
           requests: user.requests[0].request_status,
           position: user.position?.position_name,
           position_lv: user.position_lv?.position_lv_name,
@@ -240,7 +249,6 @@ export class UsersService {
       const user = await this.prisma.users.findUnique({
         where: { id: id },
         include: {
-          eposition: true,
           position: {
             select: {
               position_id: true,
@@ -259,6 +267,7 @@ export class UsersService {
             select: {
               url: true,
             },
+            orderBy: { create_date: 'desc' },
           },
           userOnOrg: {
             select: {
@@ -318,13 +327,14 @@ export class UsersService {
 
       const data = {
         ...user,
-        eposition_name_th: user?.eposition?.eposition_name_th,
-        eposition_name_eng: user?.eposition?.eposition_name_eng,
+        userOnOrg: undefined,
+        position: undefined,
+        position_lv: undefined,
         position_name_th: user?.position?.position_name,
         position_name_eng: user?.position?.position_name_eng,
         position_level_name_th: user?.position_lv?.position_lv_name,
         position_level_name_eng: user?.position_lv?.position_lv_name_eng,
-        photo_url: user?.photos[0].url,
+        photo_url: user?.photos[0]?.url,
         unit: flatOrg?.UNIT,
         department: flatOrg?.DEPARTMENT,
         ministry: flatOrg?.MINISTRY,

@@ -1,12 +1,6 @@
 import { Transform } from 'class-transformer';
 import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
-enum AdminLevels {
-  provincial = 'provincial',
-  regional = 'regional',
-  national = 'national',
-}
-
 enum Statuses {
   ongoing = 'ongoing',
   activated = 'activated',
@@ -23,10 +17,6 @@ export class GetAllUserQueryDto {
   @IsString()
   @IsOptional()
   search_term?: string;
-
-  @IsEnum(AdminLevels)
-  @IsOptional()
-  adminLevel?: AdminLevels;
 
   @IsEnum(Statuses)
   status: Statuses;

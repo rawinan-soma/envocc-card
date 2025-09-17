@@ -71,22 +71,22 @@ model organizations {
   parent   organizations?  @relation("OrgHierachy", fields: [parentId], references: [id])
   children organizations[] @relation("OrgHierachy")
 
-  eposition      epositions[]
   adminOnOrg     adminOnOrg[]
   userOnOrg      userOnOrg[]
   orgOnSeal      orgOnSeal[]
   orgOnSignature orgOnSignature[]
-  orgOnProvince  orgOnProvince?
+
+  province   province? @relation(fields: [provinceId], references: [provinceId])
+  provinceId Int?
 }
 
-model orgOnProvince {
-  orgId    Int @unique
-  province Int
-  region   Int
+model province {
+  provinceId    Int    @id @unique
+  health_region Int
+  name_th       String
+  name_eng      String
 
-  organization organizations @relation(fields: [orgId], references: [id])
-
-  @@id([orgId, region, province])
+  organization organizations[]
 }
 
 model orgOnSeal {
@@ -134,7 +134,7 @@ model seals {
   filename    String?     @unique @db.VarChar(255)
   url         String?
   create_date DateTime    @default(now()) @db.Timestamptz()
-  user        Int
+  userId      Int
   seal_name   String
   orgOnSeal   orgOnSeal[]
 }
@@ -201,14 +201,14 @@ model envocc_card_files {
   // @@index([user])
 }
 
-model epositions {
-  eposition_id       Int            @id @unique(map: "eposition_id")
-  eposition_name_th  String         @db.VarChar(255)
-  eposition_name_eng String         @db.VarChar(255)
-  institutionId      Int
-  institution        organizations? @relation(fields: [institutionId], references: [id])
-  users              users[]
-}
+// model epositions {
+//   eposition_id       Int            @id @unique(map: "eposition_id")
+//   eposition_name_th  String         @db.VarChar(255)
+//   eposition_name_eng String         @db.VarChar(255)
+//   institutionId      Int
+//   institution        organizations? @relation(fields: [institutionId], references: [id])
+//   users              users[]
+// }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model exp_files {
@@ -444,13 +444,12 @@ model users {
   requests                              requests[]
   resetpass_resetpass_userTousers       resetpass[]         @relation("resetpass_userTousers")
   resetpass_resetpass_user_emailTousers resetpass[]         @relation("resetpass_user_emailTousers")
-  eposition                             epositions?         @relation(fields: [epositionId], references: [eposition_id])
-  epositionId                           Int?
-  position                              positions?          @relation(fields: [positionId], references: [position_id])
-  positionId                            Int?
-  position_lv                           position_lvs?       @relation(fields: [position_lvId], references: [position_lv_id])
-  position_lvId                         Int?
-  userOnOrg                             userOnOrg[]
+
+  position      positions?    @relation(fields: [positionId], references: [position_id])
+  positionId    Int?
+  position_lv   position_lvs? @relation(fields: [position_lvId], references: [position_lv_id])
+  position_lvId Int?
+  userOnOrg     userOnOrg[]
 
   @@id([username, email, id])
 }

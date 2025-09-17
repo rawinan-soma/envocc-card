@@ -4,7 +4,7 @@ import { IsNumber } from 'class-validator';
 export class RequestCreateDto {
   @IsNumber()
   @Type(() => Number)
-  user: number;
+  userId: number;
 
   @IsNumber()
   @Type(() => Number)
