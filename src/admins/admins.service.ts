@@ -84,7 +84,11 @@ export class AdminsService {
         omit: { password: true },
         include: {
           adminOnOrg: {
-            select: { organization: { select: { id: true, name_th: true } } },
+            select: {
+              organization: {
+                select: { id: true, name_th: true, level: true },
+              },
+            },
           },
         },
       });

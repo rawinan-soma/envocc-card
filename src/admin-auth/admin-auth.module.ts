@@ -9,9 +9,11 @@ import { JwtAccessStrategy } from './jwt-access.strategy';
 import { PrismaService } from 'prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { CommonAuthService } from 'src/shared/common-auth.service';
+import { AdminsModule } from 'src/admins/admins.module';
+import { AdminsService } from 'src/admins/admins.service';
 
 @Module({
-  imports: [PassportModule, JwtModule],
+  imports: [PassportModule, JwtModule, AdminsModule],
   controllers: [AdminAuthController],
   providers: [
     AdminAuthService,
@@ -21,6 +23,7 @@ import { CommonAuthService } from 'src/shared/common-auth.service';
     PrismaService,
     ConfigService,
     CommonAuthService,
+    AdminsService,
   ],
 })
 export class AdminAuthModule {}

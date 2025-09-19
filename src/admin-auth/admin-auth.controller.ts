@@ -16,6 +16,7 @@ import { CommonAuthService } from 'src/shared/common-auth.service';
 import { JwtAccessGuardAdmin } from './jwt-access.guard';
 import JwtRefreshGuardAdmin from './jwt-refresh.guard';
 import type { RequestwithAdminData } from './request-admin.interface';
+import { AdminsService } from '../admins/admins.service';
 
 @Controller('admins/auth')
 export class AdminAuthController {
@@ -23,6 +24,7 @@ export class AdminAuthController {
   constructor(
     private readonly adminAuthService: AdminAuthService,
     private readonly commonAuthService: CommonAuthService,
+    private readonly AdminsService: AdminsService,
   ) {}
 
   @Post('register')
@@ -37,6 +39,8 @@ export class AdminAuthController {
   @Post('login')
   async loginHandler(@Req() request: RequestwithAdminData) {
     const { user } = request;
+    const level = (await this.AdminsService.getAdminById(user.id)).adminOnOrg[0]
+      .organization.level;
     const accessTokenCookie = this.commonAuthService.getCookieFromToken(
       Number(user.id),
       'access',
@@ -70,6 +74,7 @@ export class AdminAuthController {
       msg: 'login succesful',
       id: Number(user.id),
       role: user.role,
+      level: level,
     };
   }
 

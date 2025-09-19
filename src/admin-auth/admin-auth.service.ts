@@ -50,6 +50,7 @@ export class AdminAuthService {
           password: true,
           id: true,
           role: true,
+          adminOnOrg: { select: { organization: { select: { level: true } } } },
         },
       });
 
@@ -64,7 +65,7 @@ export class AdminAuthService {
         username: admin.username,
         id: admin.id,
         role: admin.role,
-        level: 'MINISTRY',
+        level: admin.adminOnOrg[0].organization.level,
       };
     } catch (error) {
       this.logger.error(error);

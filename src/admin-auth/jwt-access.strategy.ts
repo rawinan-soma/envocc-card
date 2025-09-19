@@ -39,7 +39,7 @@ export class JwtAccessStrategy extends PassportStrategy(
       username: admin?.username,
       role: admin?.role,
       id: admin?.id,
-      level: 'MINISTRY',
+      level: admin?.adminOnOrg[0].organization.level,
     };
   }
 }
