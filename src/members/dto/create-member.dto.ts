@@ -4,8 +4,8 @@ import { IsNumber } from 'class-validator';
 export class MemeberCreateDto {
   @IsNumber()
   @Type(() => Number)
-  user: number;
+  userId: number;
 
   @Type(() => Number)
-  signer: number;
+  signatureId: number;
 }

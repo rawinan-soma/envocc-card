@@ -56,13 +56,18 @@ export class UserAuthService {
         );
       });
 
+      const { positionId, position_lvId, orgId, ...rest } = dto.user;
+
       return await this.prisma.users.create({
         data: {
-          ...dto.user,
+          ...rest,
           e_learning: 1,
+          position: { connect: { position_id: positionId } },
+          position_lv: { connect: { position_lv_id: position_lvId } },
 
           experiences: { createMany: { data: dto.experiences } },
           requests: { create: { request_status: 0, request_type: 1 } },
+          userOnOrg: { create: { orgId: orgId } },
         },
       });
     } catch (err) {

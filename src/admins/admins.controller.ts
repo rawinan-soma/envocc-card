@@ -11,6 +11,7 @@ import {
   Post,
   ParseIntPipe,
   UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import { AdminsService } from './admins.service';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
@@ -39,23 +40,30 @@ export class AdminsController {
   ) {}
 
   @Get('admins')
-  async getAllAdminsHandler() {
+  async getAdminHandler(
+    @Query('id', ParseIntPipe) id?: number,
+    @Query('username') username?: string,
+    @Query('email') email?: string,
+  ) {
+    const queries = [id, username, email].filter(Boolean);
+    if (queries.length > 1) {
+      throw new BadRequestException(
+        'bad request by user: query must be only 1 or null',
+      );
+    }
+
+    if (id) {
+      return this.adminsService.getAdminById(id);
+    }
+    if (username) {
+      return this.adminsService.getAdminByUsername(username);
+    }
+
+    if (email) {
+      return this.adminsService.getAdminByEmail(email);
+    }
+
     return this.adminsService.getAllAdmins();
-  }
-
-  @Get('admins/:username')
-  async getAdminByUsernameHandler(@Param('username') username: string) {
-    return this.adminsService.getAdminByUsername(username);
-  }
-
-  @Get('admins/:id')
-  async getAdminByIdHandler(@Param('id') id: number) {
-    return this.adminsService.getAdminById(id);
-  }
-
-  @Get('admins/:email')
-  async getAdminByEmailHandler(@Param('email') email: string) {
-    return this.adminsService.getAdminByEmail(email);
   }
 
   @UseGuards(JwtAccessGuardAdmin)
@@ -71,30 +79,26 @@ export class AdminsController {
     @Query() queryParams: GetAllUserQueryDto,
   ) {
     const admin = await this.adminsService.getAdminById(request.user.id);
-    const { page, status, adminLevel, search_term } = queryParams;
-
-    const adminInst = admin.adminInst?.institution;
-    const adminDep = admin.adminDep?.department;
+    const { page, status, search_term } = queryParams;
 
     return await this.userService.getAllUsers({
-      adminInst: adminInst,
-      adminLevel: adminLevel,
-      adminDep: adminDep,
+      adminId: admin.id,
+      orgId: admin.adminOnOrg[0].organization.id,
       page: page as number,
       status: status as string,
       search_term: search_term,
     });
   }
 
-  @Get('users/form/:id')
-  async getUserPrintFormHandler(@Param('id') id: number) {
-    return await this.userService.getUserPrintForm(id);
-  }
+  // @Get('users/form/:id')
+  // async getUserPrintFormHandler(@Param('id') id: number) {
+  //   return await this.userService.getUserPrintForm(id);
+  // }
 
-  @Get('users/exp/:id')
-  async getUserPrintExpHandler(@Param('id') id: number) {
-    return await this.userService.getUserPrintExpForm(id);
-  }
+  // @Get('users/exp/:id')
+  // async getUserPrintExpHandler(@Param('id') id: number) {
+  //   return await this.userService.getUserPrintExpForm(id);
+  // }
 
   @Delete('users/:id')
   async deleteUserHandler(@Param('id') id: number) {

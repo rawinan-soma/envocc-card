@@ -8,9 +8,6 @@ import { ConfigModule } from '@nestjs/config';
 import { UserAuthModule } from './user-auth/user-auth.module';
 import { UsersModule } from './users/users.module';
 import { RequestModule } from './request/request.module';
-import { DepartmentsModule } from './departments/departments.module';
-import { MinistriesModule } from './ministries/ministries.module';
-import { InstitutionsModule } from './institutions/institutions.module';
 import { FilesModule } from 'src/files/files.module';
 import { CommonDocumentsModule } from './common-documents/common-documents.module';
 import { MembersModule } from './members/members.module';
@@ -39,9 +36,7 @@ import Joi from '@hapi/joi';
     UserAuthModule,
     UsersModule,
     RequestModule,
-    DepartmentsModule,
-    MinistriesModule,
-    InstitutionsModule,
+
     CommonDocumentsModule,
     MembersModule,
     PublicModule,
