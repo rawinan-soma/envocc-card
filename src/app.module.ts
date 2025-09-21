@@ -14,6 +14,8 @@ import { MembersModule } from './members/members.module';
 import { PublicModule } from './public/public.module';
 import { SignaturesModule } from './signatures/signatures.module';
 import { ExperiecesModule } from './experiences/experiences.module';
+import { OrganizationsModule } from './organizations/organizations.module';
+import { PositionsModule } from './positions/positions.module';
 import Joi from '@hapi/joi';
 
 @Module({
@@ -42,6 +44,8 @@ import Joi from '@hapi/joi';
     PublicModule,
     SignaturesModule,
     ExperiecesModule,
+    OrganizationsModule,
+    PositionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
