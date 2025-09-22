@@ -19,5 +19,6 @@ import { CommonDocumentsService } from 'src/common-documents/common-documents.se
     MembersService,
     CommonDocumentsService,
   ],
+  exports: [AdminsService],
 })
 export class AdminsModule {}
