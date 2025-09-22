@@ -3,8 +3,9 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+
 import { OrgLevel } from '@prisma/client';
+import { PrismaService } from 'prisma/prisma.service';
 
 interface OrganizationWithParent {
   id: number;
