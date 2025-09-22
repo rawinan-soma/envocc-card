@@ -57,6 +57,7 @@ export class OrganizationService {
       const organization = await this.prismaServicce.organizations.findUnique({
         where: { id: id },
         include: {
+          executive: { select: { position_name: true } },
           parent: {
             include: {
               parent: {
@@ -89,6 +90,7 @@ export class OrganizationService {
         department_name: flatOrg?.DEPARTMENT?.name_th ?? null,
         ministry_id: flatOrg?.MINISTRY?.id,
         ministry_name: flatOrg?.MINISTRY?.name_th,
+        executive: organization?.executive,
       };
     } catch (err) {
       this.logger.error(err);

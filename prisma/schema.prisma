@@ -76,8 +76,9 @@ model organizations {
   orgOnSeal      orgOnSeal[]
   orgOnSignature orgOnSignature[]
 
-  province   province? @relation(fields: [provinceId], references: [provinceId])
+  province   province?   @relation(fields: [provinceId], references: [provinceId])
   provinceId Int?
+  executive  positions[]
 }
 
 model province {
@@ -472,11 +473,13 @@ model users {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model positions {
-  position_id       Int      @id
-  position_name     String?  @db.VarChar(100)
-  position_name_eng String?  @db.VarChar(100)
+  position_id       Int            @id
+  position_name     String?        @db.VarChar(100)
+  position_name_eng String?        @db.VarChar(100)
   users             users[]
   admins            admins[]
+  organization      organizations? @relation(fields: [orgId], references: [id])
+  orgId             Int?
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments

@@ -5,10 +5,17 @@ import { CommonDocumentsModule } from 'src/common-documents/common-documents.mod
 import { CommonDocumentsService } from 'src/common-documents/common-documents.service';
 import { OrganizationsModule } from 'src/organizations/organizations.module';
 import { OrganizationService } from 'src/organizations/organization.service';
+import { PositionsModule } from 'src/positions/positions.module';
+import { PositionsService } from 'src/positions/positions.service';
 
 @Module({
-  imports: [CommonDocumentsModule, OrganizationsModule],
+  imports: [CommonDocumentsModule, OrganizationsModule, PositionsModule],
   controllers: [PublicController],
-  providers: [PublicService, CommonDocumentsService, OrganizationService],
+  providers: [
+    PublicService,
+    CommonDocumentsService,
+    OrganizationService,
+    PositionsService,
+  ],
 })
 export class PublicModule {}
