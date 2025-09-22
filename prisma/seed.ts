@@ -37,6 +37,7 @@ async function main() {
       fs.readFileSync('./prisma/data/signer.json', 'utf-8'),
     );
     await tx.signatures.createMany({ data: signatures });
+
     // const departments = JSON.parse(
     //   fs.readFileSync('./prisma/data/departments.json', 'utf-8'),
     // );
@@ -49,6 +50,20 @@ async function main() {
     // await tx.institutions.createMany({
     //   data: institutions,
     // });
+
+    const org = JSON.parse(
+      fs.readFileSync('./prisma/data/organizations.json', 'utf-8'),
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const orgReady = org.map((o: any) => ({
+      ...o,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      level: OrgLevel[o.level as keyof typeof OrgLevel],
+    }));
+
+    await tx.organizations.createMany({ data: orgReady });
+
     const positions = JSON.parse(
       fs.readFileSync('./prisma/data/position.json', 'utf-8'),
     );
@@ -69,19 +84,6 @@ async function main() {
     // await tx.epositions.createMany({
     //   data: epositions,
     // });
-
-    const org = JSON.parse(
-      fs.readFileSync('./prisma/data/organizations.json', 'utf-8'),
-    );
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const orgReady = org.map((o: any) => ({
-      ...o,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      level: OrgLevel[o.level as keyof typeof OrgLevel],
-    }));
-
-    await tx.organizations.createMany({ data: orgReady });
 
     const request_statuses = JSON.parse(
       fs.readFileSync('./prisma/data/request_statuses.json', 'utf-8'),
