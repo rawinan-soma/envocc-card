@@ -10,6 +10,14 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
 import { MemeberCreateDto } from './dto/create-member.dto';
 import { FilesService } from 'src/files/files.service';
+import { OrgLevel } from '@prisma/client';
+
+interface OrganizationWithParent {
+  id: number;
+  name_th: string;
+  level: OrgLevel;
+  parent?: OrganizationWithParent | null;
+}
 
 @Injectable()
 export class MembersService {
@@ -18,6 +26,24 @@ export class MembersService {
     private readonly prisma: PrismaService,
     private readonly filesService: FilesService,
   ) {}
+
+  private pickLevelForRequestForm(
+    org: OrganizationWithParent | undefined | null,
+    levels: string[] = ['UNIT', 'DEPARTMENT', 'MINISTRY'],
+  ): Record<string, string> | null {
+    if (!org) {
+      return null;
+    }
+
+    const result = {};
+    if (levels.includes(org.level)) {
+      result[org.level] = org.name_th;
+    }
+
+    const parentResult = this.pickLevelForRequestForm(org.parent, levels);
+    return { ...parentResult, ...result };
+  }
+
   async getAllMembers() {
     try {
       const members = await this.prisma.members.findMany();
@@ -32,12 +58,12 @@ export class MembersService {
   async getMember(user_id: number) {
     try {
       const member = await this.prisma.members.findFirst({
-        where: { user: user_id, is_active: true },
+        where: { userId: user_id, is_active: true },
         orderBy: { end_date: 'desc' },
         include: {
-          users: {
+          user: {
             select: {
-              username: true,
+              cid: true,
               pname_th: true,
               pname_other_th: true,
               fname_th: true,
@@ -54,38 +80,27 @@ export class MembersService {
                   url: true,
                 },
               },
-              epositions: {
+              userOnOrg: {
                 select: {
-                  eposition_id: true,
-                  eposition_name_th: true,
-                },
-              },
-              institutions: {
-                select: {
-                  departments: {
-                    select: {
-                      department_id: true,
-                      department_name_th: true,
-                      department_name_eng: true,
+                  organization: {
+                    include: {
+                      parent: {
+                        include: {
+                          parent: {
+                            include: {
+                              parent: {
+                                include: {
+                                  parent: true,
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
                     },
                   },
-                  seals: {
-                    select: {
-                      url: true,
-                      filename: true,
-                    },
-                  },
                 },
               },
-            },
-          },
-          sign_persons: {
-            select: {
-              filename: true,
-              sign_person_pname: true,
-              sign_person_name: true,
-              sign_person_lname: true,
-              position: true,
             },
           },
         },
@@ -95,7 +110,28 @@ export class MembersService {
         throw new NotFoundException('not found member');
       }
 
-      return member;
+      const flatOrg = this.pickLevelForRequestForm(
+        member?.user.userOnOrg[0].organization,
+      );
+
+      const data = {
+        cid: member.user.cid,
+        pname_th: member.user.pname_th,
+        pname_other_th: member.user.pname_other_th,
+        fname_th: member.user.fname_th,
+        lname_th: member.user.lname_th,
+        pname_en: member.user.pname_en,
+        pname_other_en: member.user.pname_other_en,
+        fname_en: member.user.fname_en,
+        lname_en: member.user.lname_en,
+        blood: member.user.blood,
+        position: member.user.position?.position_name,
+        position_lv: member.user.position_lv?.position_lv_name,
+        photo: member.user.photos[0].url,
+        department: flatOrg?.DEPARTMENT,
+      };
+
+      return data;
     } catch (error: any) {
       this.logger.error(error);
       if (error instanceof NotFoundException) {
@@ -111,7 +147,7 @@ export class MembersService {
   async deactivateMember(user_id: number) {
     try {
       const selectedMember = await this.prisma.members.findFirst({
-        where: { user: user_id },
+        where: { userId: user_id },
         orderBy: { start_date: 'desc' },
         select: { member_id: true, is_active: true },
       });
@@ -150,7 +186,7 @@ export class MembersService {
   async setQrPassword(user_id: number, password: string) {
     try {
       const selectedMember = await this.prisma.members.findFirst({
-        where: { user: user_id },
+        where: { userId: user_id },
         orderBy: { start_date: 'desc' },
         select: { member_id: true, is_active: true, qrcode_pass: true },
       });
@@ -206,7 +242,7 @@ export class MembersService {
 
       const fileName = await this.filesService.getFileByUserId(
         'envcard',
-        member.user,
+        member.userId,
       );
 
       return fileName;
@@ -225,7 +261,7 @@ export class MembersService {
       return this.prisma.$transaction(async (tx) => {
         console.log(user);
         const targetMember = await tx.members.findFirst({
-          where: { user: user },
+          where: { userId: user },
           orderBy: { create_date: 'desc' },
           select: { member_id: true },
         });
@@ -245,7 +281,7 @@ export class MembersService {
         });
 
         const current = await tx.requests.findFirst({
-          where: { user: user },
+          where: { userId: user },
           orderBy: { date_update: 'desc' },
         });
 
@@ -255,7 +291,7 @@ export class MembersService {
         if (isReady) {
           return await tx.requests.create({
             data: {
-              user: user,
+              userId: user,
               request_type: 1,
               request_status: current.request_status + 1,
               approver: approver,
@@ -283,7 +319,7 @@ export class MembersService {
         ).toString();
 
         const existedMember = await tx.members.findFirst({
-          where: { user: data.user },
+          where: { userId: data.userId },
         });
 
         const latestMember = await tx.members.findFirst({

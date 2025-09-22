@@ -1,0 +1,1129 @@
+[
+  {
+    "id": 1,
+    "code": "15000",
+    "name_th": "กระทรวงสาธารณสุข",
+    "name_eng": "Ministry of Public Health",
+    "level": "MINISTRY",
+    "parentId": null,
+    "provinceId": 12
+  },
+  {
+    "id": 2,
+    "code": "21000",
+    "name_th": "กระทรวงมหาดไทย",
+    "name_eng": "Ministry of Interior",
+    "level": "MINISTRY",
+    "parentId": null,
+    "provinceId": null
+  },
+  {
+    "id": 3,
+    "code": "21002",
+    "name_th": "สำนักงานปลัดกระทรวงสาธารณสุข",
+    "name_eng": "engname",
+    "level": "DEPARTMENT",
+    "parentId": 1,
+    "provinceId": 12
+  },
+  {
+    "id": 4,
+    "code": "21003",
+    "name_th": "กรมการแพทย์",
+    "name_eng": "engname",
+    "level": "DEPARTMENT",
+    "parentId": 1,
+    "provinceId": 12
+  },
+  {
+    "id": 5,
+    "code": "21004",
+    "name_th": "กรมควบคุมโรค",
+    "name_eng": "engname",
+    "level": "DEPARTMENT",
+    "parentId": 1,
+    "provinceId": 12
+  },
+  {
+    "id": 6,
+    "code": "21009",
+    "name_th": "กรมอนามัย",
+    "name_eng": "engname",
+    "level": "DEPARTMENT",
+    "parentId": 1,
+    "provinceId": 12
+  },
+  {
+    "id": 7,
+    "code": "10000",
+    "name_th": "สำนักอนามัย",
+    "name_eng": "engname",
+    "level": "DEPARTMENT",
+    "parentId": 2,
+    "provinceId": 13
+  },
+  {
+    "id": 8,
+    "code": "10001",
+    "name_th": "เทศบาล",
+    "name_eng": "engname",
+    "level": "DEPARTMENT",
+    "parentId": 2,
+    "provinceId": null
+  },
+
+  {
+    "id": 10,
+    "code": "IA0041129",
+    "name_th": "กองตรวจราชการ",
+    "name_eng": "ENG_กองตรวจราชการ",
+    "level": "UNIT",
+    "parentId": 3,
+    "provinceId": 12
+  },
+  {
+    "id": 11,
+    "code": "IA0041140",
+    "name_th": "กองสาธารณสุขฉุกเฉิน",
+    "name_eng": "ENG_กองสาธารณสุขฉุกเฉิน (กธฉ.)",
+    "level": "UNIT",
+    "parentId": 3,
+    "provinceId": 12
+  },
+  {
+    "id": 12,
+    "code": "AA0000001",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดสมุทรปราการ",
+    "name_eng": "Samut Prakan Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 105,
+    "provinceId": 11
+  },
+  {
+    "id": 13,
+    "code": "AA0000002",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดนนทบุรี",
+    "name_eng": "Nonthaburi Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 103,
+    "provinceId": 12
+  },
+  {
+    "id": 14,
+    "code": "AA0000003",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดปทุมธานี",
+    "name_eng": "Pathum Thani Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 103,
+    "provinceId": 13
+  },
+  {
+    "id": 15,
+    "code": "AA0000004",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดพระนครศรีอยุธยา",
+    "name_eng": "Phra Nakhon Si Ayutthaya Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 103,
+    "provinceId": 14
+  },
+  {
+    "id": 16,
+    "code": "AA0000005",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดอ่างทอง",
+    "name_eng": "Ang Thong Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 103,
+    "provinceId": 15
+  },
+  {
+    "id": 17,
+    "code": "AA0000006",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดลพบุรี",
+    "name_eng": "Lopburi Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 103,
+    "provinceId": 16
+  },
+  {
+    "id": 18,
+    "code": "AA0000007",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดสิงห์บุรี",
+    "name_eng": "Sing Buri Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 103,
+    "provinceId": 17
+  },
+  {
+    "id": 19,
+    "code": "AA0000008",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดชัยนาท",
+    "name_eng": "Chainat Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 102,
+    "provinceId": 18
+  },
+  {
+    "id": 20,
+    "code": "AA0000009",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดสระบุรี",
+    "name_eng": "Saraburi Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 103,
+    "provinceId": 19
+  },
+  {
+    "id": 21,
+    "code": "AA0000010",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดชลบุรี",
+    "name_eng": "Chonburi Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 105,
+    "provinceId": 20
+  },
+  {
+    "id": 22,
+    "code": "AA0000011",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดระยอง",
+    "name_eng": "Ranong Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 105,
+    "provinceId": 21
+  },
+  {
+    "id": 23,
+    "code": "AA0000012",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดจันทบุรี",
+    "name_eng": "Chanthaburi Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 105,
+    "provinceId": 22
+  },
+  {
+    "id": 24,
+    "code": "AA0000013",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดตราด",
+    "name_eng": "Trat Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 105,
+    "provinceId": 23
+  },
+  {
+    "id": 25,
+    "code": "AA0000014",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดฉะเชิงเทรา",
+    "name_eng": "Chachoengsao Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 105,
+    "provinceId": 24
+  },
+  {
+    "id": 26,
+    "code": "AA0000015",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดปราจีนบุรี",
+    "name_eng": "Prachinburi Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 105,
+    "provinceId": 25
+  },
+  {
+    "id": 27,
+    "code": "AA0000016",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดนครนายก",
+    "name_eng": "Nakhon Nayok Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 103,
+    "provinceId": 26
+  },
+  {
+    "id": 28,
+    "code": "AA0000017",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดสระแก้ว",
+    "name_eng": "Sa Kaeo Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 105,
+    "provinceId": 27
+  },
+  {
+    "id": 29,
+    "code": "AA0000018",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดนครราชสีมา",
+    "name_eng": "Nakhon Ratchasima Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 108,
+    "provinceId": 30
+  },
+  {
+    "id": 30,
+    "code": "AA0000019",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดบุรีรัมย์",
+    "name_eng": "Buriram Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 108,
+    "provinceId": 31
+  },
+  {
+    "id": 31,
+    "code": "AA0000020",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดสุรินทร์",
+    "name_eng": "Surin Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 108,
+    "provinceId": 32
+  },
+  {
+    "id": 32,
+    "code": "AA0000021",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดศรีสะเกษ",
+    "name_eng": "Sisaket Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 109,
+    "provinceId": 33
+  },
+  {
+    "id": 33,
+    "code": "AA0000022",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดอุบลราชธานี",
+    "name_eng": "Ubon Ratchathani Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 109,
+    "provinceId": null
+  },
+  {
+    "id": 34,
+    "code": "AA0000023",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดยโสธร",
+    "name_eng": "Yasothon Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 109,
+    "provinceId": 35
+  },
+  {
+    "id": 35,
+    "code": "AA0000024",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดชัยภูมิ",
+    "name_eng": "Chaiyaphum Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 108,
+    "provinceId": 36
+  },
+  {
+    "id": 36,
+    "code": "AA0000025",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดอำนาจเจริญ",
+    "name_eng": "Amnat Charoen Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 109,
+    "provinceId": 37
+  },
+  {
+    "id": 37,
+    "code": "AA0024683",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดบึงกาฬ",
+    "name_eng": "Bueng Kan Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 107,
+    "provinceId": 38
+  },
+  {
+    "id": 38,
+    "code": "AA0000026",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดหนองบัวลำภู",
+    "name_eng": "Nong Bua Lamphu Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 107,
+    "provinceId": 39
+  },
+  {
+    "id": 39,
+    "code": "AA0000027",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดขอนแก่น",
+    "name_eng": "Khon Kaen Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 106,
+    "provinceId": 40
+  },
+  {
+    "id": 40,
+    "code": "AA0000028",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดอุดรธานี",
+    "name_eng": "Udon Thani Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 107,
+    "provinceId": 41
+  },
+  {
+    "id": 41,
+    "code": "AA0000029",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดเลย",
+    "name_eng": "Loei Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 107,
+    "provinceId": 42
+  },
+  {
+    "id": 42,
+    "code": "AA0000030",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดหนองคาย",
+    "name_eng": "Nong Khai Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 107,
+    "provinceId": 43
+  },
+  {
+    "id": 43,
+    "code": "AA0000031",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดมหาสารคาม",
+    "name_eng": "Maha Sarakham Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 106,
+    "provinceId": 44
+  },
+  {
+    "id": 44,
+    "code": "AA0000032",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดร้อยเอ็ด",
+    "name_eng": "Roi Et Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 106,
+    "provinceId": 45
+  },
+  {
+    "id": 45,
+    "code": "AA0000033",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดกาฬสินธุ์",
+    "name_eng": "Kalasin Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 106,
+    "provinceId": 46
+  },
+  {
+    "id": 46,
+    "code": "AA0000034",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดสกลนคร",
+    "name_eng": "Sakon Nakhon Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 107,
+    "provinceId": 47
+  },
+  {
+    "id": 47,
+    "code": "AA0000035",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดนครพนม",
+    "name_eng": "Nakhon Phanom Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 107,
+    "provinceId": 48
+  },
+  {
+    "id": 48,
+    "code": "AA0000036",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดมุกดาหาร",
+    "name_eng": "Mukdahan Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 109,
+    "provinceId": 49
+  },
+  {
+    "id": 49,
+    "code": "AA0000037",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดเชียงใหม่",
+    "name_eng": "Chiang Mai Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 100,
+    "provinceId": 50
+  },
+  {
+    "id": 50,
+    "code": "AA0000038",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดลำพูน",
+    "name_eng": "Lamphun Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 100,
+    "provinceId": 51
+  },
+  {
+    "id": 51,
+    "code": "AA0000039",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดลำปาง",
+    "name_eng": "Lampang Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 100,
+    "provinceId": null
+  },
+  {
+    "id": 52,
+    "code": "AA0000040",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดอุตรดิตถ์",
+    "name_eng": "Uttaradit Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 101,
+    "provinceId": 52
+  },
+  {
+    "id": 53,
+    "code": "AA0000041",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดแพร่",
+    "name_eng": "Phrae Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 100,
+    "provinceId": 54
+  },
+  {
+    "id": 54,
+    "code": "AA0000042",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดน่าน",
+    "name_eng": "Nan Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 100,
+    "provinceId": 55
+  },
+  {
+    "id": 55,
+    "code": "AA0000043",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดพะเยา",
+    "name_eng": "Phayao Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 100,
+    "provinceId": 56
+  },
+  {
+    "id": 56,
+    "code": "AA0000044",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดเชียงราย",
+    "name_eng": "Chiang Rai Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 100,
+    "provinceId": 57
+  },
+  {
+    "id": 57,
+    "code": "AA0000045",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดแม่ฮ่องสอน",
+    "name_eng": "Mae Hong Son Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 100,
+    "provinceId": 58
+  },
+  {
+    "id": 58,
+    "code": "AA0000046",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดนครสวรรค์",
+    "name_eng": "Nakhon Sawan Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 102,
+    "provinceId": 60
+  },
+  {
+    "id": 59,
+    "code": "AA0000047",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดอุทัยธานี",
+    "name_eng": "Uthai Thani Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 102,
+    "provinceId": 61
+  },
+  {
+    "id": 60,
+    "code": "AA0000048",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดกำแพงเพชร",
+    "name_eng": "Kamphaeng Phet Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 102,
+    "provinceId": 62
+  },
+  {
+    "id": 61,
+    "code": "AA0000049",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดตาก",
+    "name_eng": "Tak Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 101,
+    "provinceId": 63
+  },
+  {
+    "id": 62,
+    "code": "AA0000050",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดสุโขทัย",
+    "name_eng": "Sukhothai Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 101,
+    "provinceId": 64
+  },
+  {
+    "id": 63,
+    "code": "AA0000051",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดพิษณุโลก",
+    "name_eng": "Phitsanulok Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 101,
+    "provinceId": 65
+  },
+  {
+    "id": 64,
+    "code": "AA0000052",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดพิจิตร",
+    "name_eng": "Phichit Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 102,
+    "provinceId": 66
+  },
+  {
+    "id": 65,
+    "code": "AA0000053",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดเพชรบูรณ์",
+    "name_eng": "Phetchabun Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 101,
+    "provinceId": 67
+  },
+  {
+    "id": 66,
+    "code": "AA0000054",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดราชบุรี",
+    "name_eng": "Ratchaburi Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 104,
+    "provinceId": 70
+  },
+  {
+    "id": 67,
+    "code": "AA0000055",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดกาญจนบุรี",
+    "name_eng": "Kanchanaburi Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 104,
+    "provinceId": 71
+  },
+  {
+    "id": 68,
+    "code": "AA0000056",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดสุพรรณบุรี",
+    "name_eng": "Suphan Buri Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 104,
+    "provinceId": 72
+  },
+  {
+    "id": 69,
+    "code": "AA0000057",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดนครปฐม",
+    "name_eng": "Nakhon Pathom Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 104,
+    "provinceId": 73
+  },
+  {
+    "id": 70,
+    "code": "AA0000058",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดสมุทรสาคร",
+    "name_eng": "Samut Sakhon Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 104,
+    "provinceId": 74
+  },
+  {
+    "id": 71,
+    "code": "AA0000059",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดสมุทรสงคราม",
+    "name_eng": "Samut Songkhram Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 104,
+    "provinceId": 75
+  },
+  {
+    "id": 72,
+    "code": "AA0000060",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดเพชรบุรี",
+    "name_eng": "Phetchaburi Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 104,
+    "provinceId": 76
+  },
+  {
+    "id": 73,
+    "code": "AA0000061",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดประจวบคีรีขันธ์",
+    "name_eng": "Prachuap Khiri Khan Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 104,
+    "provinceId": 77
+  },
+  {
+    "id": 74,
+    "code": "AA0000062",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดนครศรีธรรมราช",
+    "name_eng": "Nakhon Si Thammarat Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 110,
+    "provinceId": 80
+  },
+  {
+    "id": 75,
+    "code": "AA0000063",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดกระบี่",
+    "name_eng": "Krabi Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 110,
+    "provinceId": 81
+  },
+  {
+    "id": 76,
+    "code": "AA0000064",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดพังงา",
+    "name_eng": "Phang Nga Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 110,
+    "provinceId": 82
+  },
+  {
+    "id": 77,
+    "code": "AA0000065",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดภูเก็ต",
+    "name_eng": "Phuket Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 110,
+    "provinceId": 83
+  },
+  {
+    "id": 78,
+    "code": "AA0000066",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดสุราษฎร์ธานี",
+    "name_eng": "Surat Thani Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 110,
+    "provinceId": 84
+  },
+  {
+    "id": 79,
+    "code": "AA0000067",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดระนอง",
+    "name_eng": "Ranong Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 110,
+    "provinceId": 85
+  },
+  {
+    "id": 80,
+    "code": "AA0000068",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดชุมพร",
+    "name_eng": "Chumphon Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 110,
+    "provinceId": 86
+  },
+  {
+    "id": 81,
+    "code": "AA0000069",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดสงขลา",
+    "name_eng": "Songkhla Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 111,
+    "provinceId": 90
+  },
+  {
+    "id": 82,
+    "code": "AA0000070",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดสตูล",
+    "name_eng": "Satun Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 111,
+    "provinceId": 91
+  },
+  {
+    "id": 83,
+    "code": "AA0000071",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดตรัง",
+    "name_eng": "Trang Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 111,
+    "provinceId": 92
+  },
+  {
+    "id": 84,
+    "code": "AA0000072",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดพัทลุง",
+    "name_eng": "Phatthalung Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 111,
+    "provinceId": 93
+  },
+  {
+    "id": 85,
+    "code": "AA0000073",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดปัตตานี",
+    "name_eng": "Pattani Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 111,
+    "provinceId": 94
+  },
+  {
+    "id": 86,
+    "code": "AA0000074",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดยะลา",
+    "name_eng": "Yala Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 111,
+    "provinceId": 95
+  },
+  {
+    "id": 87,
+    "code": "AA0000075",
+    "name_th": "สำนักงานสาธารณสุขจังหวัดนราธิวาส",
+    "name_eng": "Narathiwat Provincial Pubic Health Office",
+    "level": "PROVINCE",
+    "parentId": 111,
+    "provinceId": 96
+  },
+  {
+    "id": 88,
+    "code": "envocc002",
+    "name_th": "ผู้บริหาร กรมการแพทย์",
+    "name_eng": "ENG_ผู้บริหาร กรมการแพทย์",
+    "level": "UNIT",
+    "parentId": 5,
+    "provinceId": 12
+  },
+  {
+    "id": 89,
+    "code": "IA0041149",
+    "name_th": "สำนักงานเลขานุการกรม กรมการแพทย์",
+    "name_eng": "ENG_สำนักงานเลขานุการกรม กรมการแพทย์",
+    "level": "UNIT",
+    "parentId": 5,
+    "provinceId": 12
+  },
+  {
+    "id": 90,
+    "code": "IA0041146",
+    "name_th": "สำนักดิจิทัลการแพทย์ กรมการแพทย์",
+    "name_eng": "ENG_สำนักดิจิทัลการแพทย์ กรมการแพทย์",
+    "level": "UNIT",
+    "parentId": 5,
+    "provinceId": 12
+  },
+  {
+    "id": 91,
+    "code": "IA0041156",
+    "name_th": "สำนักนิเทศระบบการแพทย์ กรมการแพทย์",
+    "name_eng": "ENG_สำนักนิเทศระบบการแพทย์ กรมการแพทย์",
+    "level": "UNIT",
+    "parentId": 5,
+    "provinceId": 12
+  },
+  {
+    "id": 92,
+    "code": "IA0041152",
+    "name_th": "กลุ่มตรวจสอบภายใน กรมการแพทย์",
+    "name_eng": "ENG_กลุ่มตรวจสอบภายใน กรมการแพทย์",
+    "level": "UNIT",
+    "parentId": 5,
+    "provinceId": 12
+  },
+  {
+    "id": 93,
+    "code": "envocc003",
+    "name_th": "ผู้บริหาร กรมควบคุมโรค",
+    "name_eng": "ENG_ผู้บริหาร กรมควบคุมโรค",
+    "level": "UNIT",
+    "parentId": 5,
+    "provinceId": 12
+  },
+  {
+    "id": 94,
+    "code": "IA0041174",
+    "name_th": "กองโรคจากการประกอบอาชีพและสิ่งแวดล้อม",
+    "name_eng": "ENVOCC",
+    "level": "UNIT",
+    "parentId": 5,
+    "provinceId": 12
+  },
+  {
+    "id": 95,
+    "code": "IA0041159",
+    "name_th": "กองยุทธศาสตร์และแผนงาน",
+    "name_eng": "ENG_กองยุทธศาสตร์และแผนงาน",
+    "level": "UNIT",
+    "parentId": 5,
+    "provinceId": 12
+  },
+  {
+    "id": 96,
+    "code": "IA0041160",
+    "name_th": "กองบริหารทรัพยากรบุคคล",
+    "name_eng": "ENG_กองบริหารทรัพยากรบุคคล",
+    "level": "UNIT",
+    "parentId": 5,
+    "provinceId": 12
+  },
+  {
+    "id": 97,
+    "code": "IA0041163",
+    "name_th": "กองกฎหมาย",
+    "name_eng": "ENG_กองกฎหมาย",
+    "level": "UNIT",
+    "parentId": 5,
+    "provinceId": 12
+  },
+  {
+    "id": 98,
+    "code": "IA0041169",
+    "name_th": "กองโรคติดต่อทั่วไป",
+    "name_eng": "ENG_กองโรคติดต่อทั่วไป",
+    "level": "UNIT",
+    "parentId": 5,
+    "provinceId": 12
+  },
+  {
+    "id": 99,
+    "code": "EA0012252",
+    "name_th": "สถาบันราชประชาสมาสัย",
+    "name_eng": "RAJPRACHASAMASAI INSTITUTE",
+    "level": "UNIT",
+    "parentId": 5,
+    "provinceId": 11
+  },
+  {
+    "id": 100,
+    "code": "GA0013783",
+    "name_th": "สำนักงานป้องกันควบคุมโรคที่ 1จังหวัดเชียงใหม่",
+    "name_eng": "OFFICE OF DISEASE PREVENTION AND CONTROL REGION 1 Chiang Mai",
+    "level": "REGION",
+    "parentId": 5,
+    "provinceId": 50
+  },
+  {
+    "id": 101,
+    "code": "IA0014633",
+    "name_th": "สํานักงานป้องกันควบคุมโรคที่ 2 จังหวัดพิษณุโลก",
+    "name_eng": "ENG_สํานักงานป้องกันควบคุมโรคที่ 2 จังหวัดพิษณุโลก",
+    "level": "REGION",
+    "parentId": 5,
+    "provinceId": 65
+  },
+  {
+    "id": 102,
+    "code": "GA0014639",
+    "name_th": "สำนักงานป้องกันควบคุมโรคที่ 3 จังหวัดนครสวรรค์",
+    "name_eng": "OFFICE OF DISEASE PREVENTION AND CONTROL REGION 3 Nakhon Sawan",
+    "level": "REGION",
+    "parentId": 5,
+    "provinceId": 60
+  },
+  {
+    "id": 103,
+    "code": "GA0012265",
+    "name_th": "สำนักงานป้องกันควบคุมโรคที่ 4 จังหวัดสระบุรี",
+    "name_eng": "OFFICE OF DISEASE PREVENTION AND CONTROL REGION 4 Saraburi",
+    "level": "REGION",
+    "parentId": 5,
+    "provinceId": 19
+  },
+  {
+    "id": 104,
+    "code": "GA0014637",
+    "name_th": "สำนักงานป้องกันควบคุมโรคที่ 5 จังหวัดราชบุรี",
+    "name_eng": "OFFICE OF DISEASE PREVENTION AND CONTROL REGION 5 Ratchaburi",
+    "level": "REGION",
+    "parentId": 5,
+    "provinceId": 70
+  },
+  {
+    "id": 105,
+    "code": "IA0013765",
+    "name_th": "สํานักงานป้องกันควบคุมโรคที่ 6 ชลบุรี",
+    "name_eng": "ENG_สํานักงานป้องกันควบคุมโรคที่ 6 ชลบุรี",
+    "level": "REGION",
+    "parentId": 5,
+    "provinceId": 20
+  },
+  {
+    "id": 106,
+    "code": "GA0014638",
+    "name_th": "สำนักงานป้องกันควบคุมโรคที่ 7 จังหวัดขอนแก่น",
+    "name_eng": "OFFICE OF DISEASE PREVENTION AND CONTROL REGION 7 Khon Kaen",
+    "level": "REGION",
+    "parentId": 5,
+    "provinceId": 40
+  },
+  {
+    "id": 107,
+    "code": "IA0040886",
+    "name_th": "สํานักงานป้องกันควบคุมโรคที่ 8 อุดรธานี",
+    "name_eng": "ENG_สํานักงานป้องกันควบคุมโรคที่ 8 อุดรธานี",
+    "level": "REGION",
+    "parentId": 5,
+    "provinceId": 41
+  },
+  {
+    "id": 108,
+    "code": "GA0014631",
+    "name_th": "สำนักงานป้องกันควบคุมโรคที่ 9 จังหวัดนครราชสีมา",
+    "name_eng": "OFFICE OF DISEASE PREVENTION AND CONTROL REGION 9 Nakhon Ratchasima",
+    "level": "REGION",
+    "parentId": 5,
+    "provinceId": 30
+  },
+  {
+    "id": 109,
+    "code": "GA0014632",
+    "name_th": "สำนักงานป้องกันควบคุมโรคที่ 10 จังหวัดอุบลราชธานี",
+    "name_eng": "OFFICE OF DISEASE PREVENTION AND CONTROL REGION 10 Ubon Ratchathani",
+    "level": "REGION",
+    "parentId": 5,
+    "provinceId": 34
+  },
+  {
+    "id": 110,
+    "code": "GA0013770",
+    "name_th": "สำนักงานป้องกันควบคุมโรคที่11 จังหวัดนครศรีธรรมราช",
+    "name_eng": "OFFICE OF DISEASE PREVENTION AND CONTROL REGION 11 Nakhon Si Thammarat",
+    "level": "REGION",
+    "parentId": 5,
+    "provinceId": 80
+  },
+  {
+    "id": 111,
+    "code": "GA0014906",
+    "name_th": "สำนักงานป้องกันควบคุมโรคที่12จังหวัดสงขลา",
+    "name_eng": "OFFICE OF DISEASE PREVENTION AND CONTROL REGION 12 Songkhla",
+    "level": "REGION",
+    "parentId": 5,
+    "provinceId": 90
+  },
+  {
+    "id": 112,
+    "code": "GA0014189",
+    "name_th": "สถาบันป้องกันควบคุมโรคเขตเมือง",
+    "name_eng": "URBAN INSTITUTE FOR DISEASE PREVENTION AND CONTROL",
+    "level": "REGION",
+    "parentId": 5,
+    "provinceId": 10
+  },
+
+  {
+    "id": 114,
+    "code": "envocc005",
+    "name_th": "ศูนย์อนามัยที่ 1 เชียงใหม่",
+    "name_eng": "REGIONAL HEALTH PROMOTION CENTRE 1",
+    "level": "REGION",
+    "parentId": 6,
+    "provinceId": 50
+  },
+  {
+    "id": 115,
+    "code": "envocc006",
+    "name_th": "ศูนย์อนามัยที่ 2 พิษณุโลก",
+    "name_eng": "REGIONAL HEALTH PROMOTION CENTRE 2",
+    "level": "REGION",
+    "parentId": 6,
+    "provinceId": 65
+  },
+  {
+    "id": 116,
+    "code": "envocc007",
+    "name_th": "ศูนย์อนามัยที่ 3 นครสวรรค์",
+    "name_eng": "REGIONAL HEALTH PROMOTION CENTRE 3",
+    "level": "REGION",
+    "parentId": 6,
+    "provinceId": 60
+  },
+  {
+    "id": 117,
+    "code": "envocc008",
+    "name_th": "ศูนย์อนามัยที่ 4 สระบุรี",
+    "name_eng": "REGIONAL HEALTH PROMOTION CENTRE 4",
+    "level": "REGION",
+    "parentId": 6,
+    "provinceId": 19
+  },
+  {
+    "id": 118,
+    "code": "envocc009",
+    "name_th": "ศูนย์อนามัยที่ 5 ราชบุรี",
+    "name_eng": "REGIONAL HEALTH PROMOTION CENTRE 5",
+    "level": "REGION",
+    "parentId": 6,
+    "provinceId": 70
+  },
+  {
+    "id": 119,
+    "code": "envocc010",
+    "name_th": "ศูนย์อนามัยที่ 6 ชลบุรี",
+    "name_eng": "REGIONAL HEALTH PROMOTION CENTRE 6",
+    "level": "REGION",
+    "parentId": 6,
+    "provinceId": 20
+  },
+  {
+    "id": 120,
+    "code": "envocc011",
+    "name_th": "ศูนย์อนามัยที่ 7 ขอนแก่น",
+    "name_eng": "REGIONAL HEALTH PROMOTION CENTRE 7",
+    "level": "REGION",
+    "parentId": 6,
+    "provinceId": 40
+  },
+  {
+    "id": 121,
+    "code": "EA0041102",
+    "name_th": "ศูนย์อนามัยที่ 8 อุดรธานี",
+    "name_eng": "REGIONAL HEALTH PROMOTION CENTRE 8",
+    "level": "REGION",
+    "parentId": 6,
+    "provinceId": 41
+  },
+  {
+    "id": 122,
+    "code": "EA0012267",
+    "name_th": "ศูนย์อนามัยที่ 9 นครราชสีมา",
+    "name_eng": "REGIONAL HEALTH PROMOTION CENTRE 9",
+    "level": "REGION",
+    "parentId": 6,
+    "provinceId": 30
+  },
+  {
+    "id": 123,
+    "code": "envocc012",
+    "name_th": "ศูนย์อนามัยที่ 10 อุบลราชธานี",
+    "name_eng": "REGIONAL HEALTH PROMOTION CENTRE 10",
+    "level": "REGION",
+    "parentId": 6,
+    "provinceId": 34
+  },
+  {
+    "id": 124,
+    "code": "envocc013",
+    "name_th": "ศูนย์อนามัยที่ 11 นครศรีธรรมราช",
+    "name_eng": "REGIONAL HEALTH PROMOTION CENTRE 11",
+    "level": "REGION",
+    "parentId": 6,
+    "provinceId": 80
+  },
+  {
+    "id": 125,
+    "code": "envocc014",
+    "name_th": "ศูนย์อนามัยที่ 12 ยะลา",
+    "name_eng": "REGIONAL HEALTH PROMOTION CENTRE 12",
+    "level": "REGION",
+    "parentId": 6,
+    "provinceId": 90
+  },
+  {
+    "id": 126,
+    "code": "EA0012243",
+    "name_th": "สถาบันพัฒนาสุขภาวะเขตเมือง",
+    "name_eng": "ENG_สถาบันพัฒนาสุขภาวะเขตเมือง",
+    "level": "REGION",
+    "parentId": 6,
+    "provinceId": 10
+  },
+  {
+    "id": 130,
+    "code": "EA0010685",
+    "name_th": "โรงพยาบาลสมุทรปราการ",
+    "name_eng": "ENG",
+    "level": "UNIT",
+    "parentId": 12,
+    "provinceId": 11
+  }
+]

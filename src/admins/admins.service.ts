@@ -18,14 +18,15 @@ export class AdminsService {
       return await this.prisma.admins.findMany({
         omit: { password: true },
         include: {
-          adminInst: { select: { institutions: true } },
-          adminDep: { select: { departments: true } },
+          adminOnOrg: {
+            select: { organization: { select: { id: true, name_th: true } } },
+          },
         },
 
         // include: { institutions: { include: { departments: true } } },
       });
-    } catch (error) {
-      this.logger.error(error);
+    } catch (err) {
+      this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
   }
@@ -40,12 +41,12 @@ export class AdminsService {
         throw new NotFoundException('admin not found');
       }
       return admin;
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
-      } else if (error instanceof NotFoundException) {
-        throw error;
+      } else if (err instanceof NotFoundException) {
+        throw err;
       } else {
         throw new InternalServerErrorException('something went wrong');
       }
@@ -64,12 +65,12 @@ export class AdminsService {
       }
 
       return admin;
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
-      } else if (error instanceof NotFoundException) {
-        throw error;
+      } else if (err instanceof NotFoundException) {
+        throw err;
       } else {
         throw new InternalServerErrorException('something went wrong');
       }
@@ -81,19 +82,27 @@ export class AdminsService {
       const admin = await this.prisma.admins.findUnique({
         where: { id: id },
         omit: { password: true },
-        include: { adminDep: true, adminInst: true },
+        include: {
+          adminOnOrg: {
+            select: {
+              organization: {
+                select: { id: true, name_th: true, level: true },
+              },
+            },
+          },
+        },
       });
 
       if (!admin) {
         throw new NotFoundException('admin not found');
       }
       return admin;
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
-      } else if (error instanceof NotFoundException) {
-        throw error;
+      } else if (err instanceof NotFoundException) {
+        throw err;
       } else {
         throw new InternalServerErrorException('something went wrong');
       }

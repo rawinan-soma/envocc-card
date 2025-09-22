@@ -23,10 +23,5 @@
     "position_lv_id": 5,
     "position_lv_name": "ทรงคุณวุฒิ",
     "position_lv_name_eng": "Advisory level"
-  },
-  {
-    "position_lv_id": 99,
-    "position_lv_name": "Other",
-    "position_lv_name_eng": "Other"
   }
 ]

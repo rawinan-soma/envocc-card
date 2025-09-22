@@ -7,12 +7,6 @@ export class AdminCreateDto {
   @IsString()
   password: string;
 
-  @IsNumber()
-  institution: number;
-
-  @IsNumber()
-  level: number;
-
   @IsString()
   pname: string;
 
@@ -35,8 +29,11 @@ export class AdminCreateDto {
   email: string;
 
   @IsNumber()
-  position: number;
+  positionId: number;
 
   @IsNumber()
-  position_lv: number;
+  positionLvId: number;
+
+  @IsNumber()
+  orgId: number;
 }

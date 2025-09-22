@@ -19,13 +19,17 @@ export class AdminAuthService {
     try {
       const hashedPassword = await bcrypt.hash(dto.password, 10);
       return await this.prisma.admins.create({
-        data: { ...dto, password: hashedPassword },
+        data: {
+          ...dto,
+          password: hashedPassword,
+          adminOnOrg: { create: { orgId: dto.orgId } },
+        },
         select: { username: true, role: true },
       });
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof PrismaClientKnownRequestError) {
-        switch (error.code) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof PrismaClientKnownRequestError) {
+        switch (err.code) {
           case 'P2002':
             throw new BadRequestException('username or email alredy exists');
           default:
@@ -41,7 +45,13 @@ export class AdminAuthService {
     try {
       const admin = await this.prisma.admins.findFirst({
         where: { username: username },
-        select: { username: true, password: true, id: true, role: true },
+        select: {
+          username: true,
+          password: true,
+          id: true,
+          role: true,
+          adminOnOrg: { select: { organization: { select: { level: true } } } },
+        },
       });
 
       if (!admin) {
@@ -51,7 +61,12 @@ export class AdminAuthService {
       await this.verifyPassword(password, admin?.password || '');
       admin.password = '';
 
-      return admin;
+      return {
+        username: admin.username,
+        id: admin.id,
+        role: admin.role,
+        level: admin.adminOnOrg[0].organization.level,
+      };
     } catch (error) {
       this.logger.error(error);
       if (error instanceof UnauthorizedException) {
@@ -98,9 +113,9 @@ export class AdminAuthService {
   }
 
   async removeRefreshToken(id: number) {
-    return this.prisma.admins.update({
+    await this.prisma.admins.update({
       where: { id: id },
-      data: { hashedRefreshToken: null },
+      data: { hashedRefreshToken: '' },
     });
   }
 }

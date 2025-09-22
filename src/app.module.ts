@@ -8,16 +8,14 @@ import { ConfigModule } from '@nestjs/config';
 import { UserAuthModule } from './user-auth/user-auth.module';
 import { UsersModule } from './users/users.module';
 import { RequestModule } from './request/request.module';
-import { DepartmentsModule } from './departments/departments.module';
-import { MinistriesModule } from './ministries/ministries.module';
-import { InstitutionsModule } from './institutions/institutions.module';
-import { FilesModule } from './files/files.module';
+import { FilesModule } from 'src/files/files.module';
 import { CommonDocumentsModule } from './common-documents/common-documents.module';
 import { MembersModule } from './members/members.module';
 import { PublicModule } from './public/public.module';
 import { SignaturesModule } from './signatures/signatures.module';
-import { ReqFilesModule } from './req-files/req-files.module';
 import { ExperiecesModule } from './experiences/experiences.module';
+import { OrganizationsModule } from './organizations/organizations.module';
+import { PositionsModule } from './positions/positions.module';
 import Joi from '@hapi/joi';
 
 @Module({
@@ -33,22 +31,21 @@ import Joi from '@hapi/joi';
         REFRESH_TOKEN_EXP: Joi.number().required(),
       }),
     }),
-    AdminsModule,
     PrismaModule,
+    FilesModule,
+    AdminsModule,
     AdminAuthModule,
     UserAuthModule,
     UsersModule,
     RequestModule,
-    DepartmentsModule,
-    MinistriesModule,
-    InstitutionsModule,
-    FilesModule,
+
     CommonDocumentsModule,
     MembersModule,
     PublicModule,
     SignaturesModule,
-    ReqFilesModule,
     ExperiecesModule,
+    OrganizationsModule,
+    PositionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

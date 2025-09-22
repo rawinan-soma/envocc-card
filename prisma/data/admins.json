@@ -2,15 +2,13 @@
   {
     "username": "test01",
     "password": "$2a$10$gkG0q7S5LTsaqt6BrZaqTe4EqXtTSqf76B60kChdki5/TaJGuxUh6",
-    "institution": 1,
-    "level": 3,
     "pname": "นาย",
     "fname": "จอน",
     "lname": "สมิทธ์",
     "private_number": "0987654321",
     "work_number": "012345678",
     "email": "john.smith2@university.edu",
-    "position": 5,
-    "position_lv": 2
+    "positionId": 203,
+    "positionLvId": 2
   }
 ]

@@ -127,19 +127,11 @@ export class UserCreateDto {
 
   @IsNumber()
   @Type(() => Number)
-  institution: number;
+  positionId: number;
 
   @IsNumber()
   @Type(() => Number)
-  eposition: number;
-
-  @IsNumber()
-  @Type(() => Number)
-  position: number;
-
-  @IsNumber()
-  @Type(() => Number)
-  position_lv: number;
+  position_lvId: number;
 
   @IsNumber()
   @Type(() => Number)
@@ -147,4 +139,7 @@ export class UserCreateDto {
 
   @IsBoolean()
   approve: boolean;
+
+  @IsNumber()
+  orgId: number;
 }
