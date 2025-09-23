@@ -17,6 +17,8 @@ async function bootstrap() {
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('apidoc', app, documentFactory);
 
+  app.enableCors();
+
   app.use(cookieParser());
   app.setGlobalPrefix(
     configService.get('ENDPOINT_PREFIX') ?? 'envocc-card/api/v2',
