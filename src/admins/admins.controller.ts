@@ -41,7 +41,7 @@ export class AdminsController {
 
   @Get('admins')
   async getAdminHandler(
-    @Query('id', ParseIntPipe) id?: number,
+    @Query('id') id?: number,
     @Query('username') username?: string,
     @Query('email') email?: string,
   ) {
