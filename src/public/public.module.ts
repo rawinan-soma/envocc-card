@@ -7,15 +7,23 @@ import { OrganizationsModule } from 'src/organizations/organizations.module';
 import { OrganizationService } from 'src/organizations/organization.service';
 import { PositionsModule } from 'src/positions/positions.module';
 import { PositionsService } from 'src/positions/positions.service';
+import { MembersModule } from 'src/members/members.module';
+import { MembersService } from 'src/members/members.service';
 
 @Module({
-  imports: [CommonDocumentsModule, OrganizationsModule, PositionsModule],
+  imports: [
+    CommonDocumentsModule,
+    OrganizationsModule,
+    PositionsModule,
+    MembersModule,
+  ],
   controllers: [PublicController],
   providers: [
     PublicService,
     CommonDocumentsService,
     OrganizationService,
     PositionsService,
+    MembersService,
   ],
 })
 export class PublicModule {}
