@@ -38,7 +38,6 @@ import Joi from '@hapi/joi';
     UserAuthModule,
     UsersModule,
     RequestModule,
-
     CommonDocumentsModule,
     MembersModule,
     PublicModule,

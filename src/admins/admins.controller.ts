@@ -187,4 +187,7 @@ export class AdminsController {
   async deleteDocumentHandler(@Param() docId: number) {
     return await this.documentsService.deleteDocument(docId);
   }
+
+  // @Post('signatures')
+  // async createNewSignatureHandler(@Body() dto: )
 }

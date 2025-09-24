@@ -2,14 +2,15 @@ import {
   Controller,
   Get,
   Param,
-  ParseBoolPipe,
   ParseIntPipe,
   Query,
+  Body,
 } from '@nestjs/common';
 import { PublicService } from './public.service';
 import { CommonDocumentsService } from 'src/common-documents/common-documents.service';
 import { OrganizationService } from 'src/organizations/organization.service';
 import { PositionsService } from 'src/positions/positions.service';
+import { MembersService } from '../members/members.service';
 
 @Controller('public')
 export class PublicController {
@@ -18,6 +19,7 @@ export class PublicController {
     private readonly documentsService: CommonDocumentsService,
     private readonly organizationsService: OrganizationService,
     private readonly positionsService: PositionsService,
+    private readonly membersService: MembersService,
   ) {}
 
   @Get('documents')
@@ -49,20 +51,28 @@ export class PublicController {
     return await this.positionsService.getAllPositions(orgId);
   }
 
-  @Get('positions/:id')
-  async getPositionById(@Param('id', ParseIntPipe) id: number) {
-    return await this.positionsService.getNonExecutiveById(id);
-  }
+  // @Get('positions/:id')
+  // async getPositionById(@Param('id', ParseIntPipe) id: number) {
+  //   return await this.positionsService.getNonExecutiveById(id);
+  // }
 
-  @Get('positionLevels')
-  async getAllPositionLevels(
-    @Query('executive', ParseBoolPipe) executive: boolean,
+  // @Get('positionLevels')
+  // async getAllPositionLevels(
+  //   @Query('executive', ParseBoolPipe) executive: boolean,
+  // ) {
+  //   return await this.positionsService.getAllPositionLevels(executive);
+  // }
+
+  // @Get('positionLevels/:id')
+  // async getPositionLevelById(@Param('id', ParseIntPipe) id: number) {
+  //   return await this.positionsService.getPositionLevelById(id);
+  // }
+
+  @Get('card')
+  async getCardByQRcodeHandler(
+    @Body() qrcode: string,
+    @Body() password: string,
   ) {
-    return await this.positionsService.getAllPositionLevels(executive);
-  }
-
-  @Get('positionLevels/:id')
-  async getPositionLevelById(@Param('id', ParseIntPipe) id: number) {
-    return await this.positionsService.getPositionLevelById(id);
+    return this.membersService.validateQrCode(qrcode, password);
   }
 }

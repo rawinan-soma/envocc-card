@@ -11,6 +11,7 @@ import { PrismaService } from 'prisma/prisma.service';
 import { MemeberCreateDto } from './dto/create-member.dto';
 import { FilesService } from 'src/files/files.service';
 import { OrgLevel } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 interface OrganizationWithParent {
   id: number;
@@ -195,18 +196,20 @@ export class MembersService {
         throw new NotFoundException('member not found');
       }
 
+      const hashedPassword = await bcrypt.hash(password, 10);
+
       return this.prisma.members.update({
         where: { member_id: selectedMember.member_id },
-        data: { qrcode_pass: password },
+        data: { qrcode_pass: hashedPassword },
         omit: {
           qrcode_pass: true,
         },
       });
-    } catch (error: any) {
-      this.logger.error(error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err: any) {
+      this.logger.error(err);
+      if (err instanceof NotFoundException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
@@ -214,17 +217,17 @@ export class MembersService {
     }
   }
 
-  async getMemberByQrcode(qrcode_no: string) {
-    try {
-      return this.prisma.members.findFirst({
-        where: { qrcode: qrcode_no },
-        select: { user: true },
-      });
-    } catch (error) {
-      console.log(error);
-      throw new InternalServerErrorException('something went wrong');
-    }
-  }
+  // async getMemberByQrcode(qrcode_no: string) {
+  //   try {
+  //     return this.prisma.members.findFirst({
+  //       where: { qrcode: qrcode_no },
+  //       select: { user: true },
+  //     });
+  //   } catch (error) {
+  //     console.log(error);
+  //     throw new InternalServerErrorException('something went wrong');
+  //   }
+  // }
 
   async validateQrCode(qrcode: string, inputPassword: string) {
     try {
@@ -233,21 +236,22 @@ export class MembersService {
       });
 
       if (!member) {
-        return new NotFoundException('member not found');
+        throw new NotFoundException('member not found');
       }
 
-      if (member.qrcode_pass !== inputPassword) {
-        throw new UnauthorizedException('password incorrect');
+      if (await bcrypt.compare(inputPassword, member.qrcode_pass as string)) {
+        return await this.getMember(member.userId);
       }
 
-      const fileName = await this.filesService.getFileByUserId(
-        'envcard',
-        member.userId,
-      );
-
-      return fileName;
-    } catch (error) {
-      console.log(error);
+      throw new UnauthorizedException('qrcode or password incorrect');
+    } catch (err) {
+      console.log(err);
+      if (
+        err instanceof NotFoundException ||
+        err instanceof UnauthorizedException
+      ) {
+        throw err;
+      }
       throw new InternalServerErrorException('something went wrong');
     }
   }
@@ -301,9 +305,9 @@ export class MembersService {
           throw new BadRequestException('Error Setting start date see-logs');
         }
       });
-    } catch (error) {
-      console.log(error);
-      throw new BadRequestException(error);
+    } catch (err) {
+      console.log(err);
+      throw new BadRequestException(err);
     }
   }
 
@@ -345,9 +349,9 @@ export class MembersService {
           select: { member_id: true },
         });
       });
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');

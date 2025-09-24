@@ -81,6 +81,11 @@ export class UsersController {
     return dto;
   }
 
+  @Get('me/requests/exp')
+  async createExpFormHandler(@Req() request: RequestwithUserData) {
+    return this.usersService.getUserPrintExpForm(request.user.id);
+  }
+
   @Post('me/envcard')
   @UseInterceptors(
     FileInterceptor('envcard', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),
@@ -212,5 +217,10 @@ export class UsersController {
     @Req() request: RequestwithUserData,
   ) {
     return this.membersService.setQrPassword(request.user.id, password);
+  }
+
+  @Get('me/envcard/qrcode')
+  async getMemberForOnlineCard(@Req() request: RequestwithUserData) {
+    return this.membersService.getMember(request.user.id);
   }
 }
