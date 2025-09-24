@@ -10,7 +10,7 @@ import { PublicService } from './public.service';
 import { CommonDocumentsService } from 'src/common-documents/common-documents.service';
 import { OrganizationService } from 'src/organizations/organization.service';
 import { PositionsService } from 'src/positions/positions.service';
-import { MembersService } from '../members/members.service';
+import { MembersService } from 'src/members/members.service';
 
 @Controller('public')
 export class PublicController {
