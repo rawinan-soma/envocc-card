@@ -93,7 +93,6 @@ export class UsersService {
     }
   }
 
-  // TODO: Test get users
   async getAllUsers(queryData: {
     page: number;
     status: string;

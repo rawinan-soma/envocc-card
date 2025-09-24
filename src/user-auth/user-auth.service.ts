@@ -30,8 +30,6 @@ export class UserAuthService {
     return yearDiff;
   }
 
-  // TODO: create with link in adminDep, adminInst
-  // TODO: refactor compile from new structure
   async createUser(dto: UserExpCreateDto) {
     try {
       const hashedPassword = await bcrypt.hash(dto.user.password, 10);

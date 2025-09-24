@@ -104,8 +104,6 @@ export class UsersController {
     return { msg: 'envcard create', id: envcard?.id };
   }
 
-  // TODO: Map controller to all file
-
   // @Post('me/govcard')
   // @UseInterceptors(
   //   FileInterceptor('govcard', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),

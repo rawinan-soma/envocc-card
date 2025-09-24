@@ -12,23 +12,22 @@ export class PositionsService {
 
   async getAllPositions(orgId?: number) {
     try {
-      const nonExecutiveId = [201, 202, 203, 204, 205, 206, 207];
+      // const nonExecutiveId = [201, 202, 203, 204, 205, 206, 207];
       if (!orgId) {
         return await this.prisma.positions.findMany({
-          where: { position_id: { in: nonExecutiveId } },
+          where: { orgId: null },
           select: { position_name: true, position_id: true },
         });
       }
 
       const executiveResponse = await this.prisma.positions.findFirst({
-        where: { position_id: { notIn: nonExecutiveId }, orgId: orgId },
+        where: { orgId: orgId },
         select: { position_name: true, position_id: true },
       });
 
       return {
         executive_id: executiveResponse?.position_id,
         executive_position_name: executiveResponse?.position_name,
-        other: 'อื่นๆ',
       };
     } catch (err) {
       this.logger.error(err);

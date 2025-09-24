@@ -16,6 +16,7 @@ import { SignaturesModule } from './signatures/signatures.module';
 import { ExperiecesModule } from './experiences/experiences.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PositionsModule } from './positions/positions.module';
+import { SealsModule } from './seals/seals.module';
 import Joi from '@hapi/joi';
 
 @Module({
@@ -45,6 +46,7 @@ import Joi from '@hapi/joi';
     ExperiecesModule,
     OrganizationsModule,
     PositionsModule,
+    SealsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
