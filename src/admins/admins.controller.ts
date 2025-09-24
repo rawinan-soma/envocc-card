@@ -27,6 +27,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { getMulterOptions } from 'src/shared/file-multer-options';
 import { DocumentCreateDto } from 'src/common-documents/dto/document-create.dto';
 import { CommonDocumentsService } from 'src/common-documents/common-documents.service';
+import { OrgCreateDto } from 'src/organizations/dto/org-create.dto';
+import { OrganizationService } from 'src/organizations/organization.service';
 
 @Controller('admins')
 export class AdminsController {
@@ -37,6 +39,7 @@ export class AdminsController {
     private readonly membersService: MembersService,
     private readonly filesService: FilesService,
     private readonly documentsService: CommonDocumentsService,
+    private readonly organizationService: OrganizationService,
   ) {}
 
   @Get('admins')
@@ -150,7 +153,6 @@ export class AdminsController {
       request.user.id,
     );
   }
-  // TODO: Map controller to all files (Delete)
 
   @Get('users/:userId/files/:file')
   async getUsersFilesHandler(
@@ -188,6 +190,22 @@ export class AdminsController {
     return await this.documentsService.deleteDocument(docId);
   }
 
-  // @Post('signatures')
-  // async createNewSignatureHandler(@Body() dto: )
+  @Post('organizations')
+  async createOrganizationHandler(
+    @Req() request: RequestwithAdminData,
+    @Body() dto: OrgCreateDto,
+  ) {
+    const admin = await this.adminsService.getAdminById(request.user.id);
+    const seal = admin.adminOnOrg[0].organization.orgOnSeal[0].sealId;
+    const signature =
+      admin.adminOnOrg[0].organization.orgOnSignature[0].signatureId;
+    const parent = admin.adminOnOrg[0].organization.id;
+
+    return await this.organizationService.createOrganization(
+      dto,
+      seal,
+      signature,
+      parent,
+    );
+  }
 }

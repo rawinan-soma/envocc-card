@@ -86,7 +86,13 @@ export class AdminsService {
           adminOnOrg: {
             select: {
               organization: {
-                select: { id: true, name_th: true, level: true },
+                select: {
+                  id: true,
+                  name_th: true,
+                  level: true,
+                  orgOnSeal: true,
+                  orgOnSignature: true,
+                },
               },
             },
           },

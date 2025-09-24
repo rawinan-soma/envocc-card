@@ -8,9 +8,16 @@ import { MembersModule } from 'src/members/members.module';
 import { MembersService } from 'src/members/members.service';
 import { CommonDocumentsModule } from '../common-documents/common-documents.module';
 import { CommonDocumentsService } from 'src/common-documents/common-documents.service';
+import { OrganizationsModule } from 'src/organizations/organizations.module';
+import { OrganizationService } from 'src/organizations/organization.service';
 
 @Module({
-  imports: [RequestModule, MembersModule, CommonDocumentsModule],
+  imports: [
+    RequestModule,
+    MembersModule,
+    CommonDocumentsModule,
+    OrganizationsModule,
+  ],
   controllers: [AdminsController],
   providers: [
     AdminsService,
@@ -18,6 +25,7 @@ import { CommonDocumentsService } from 'src/common-documents/common-documents.se
     RequestService,
     MembersService,
     CommonDocumentsService,
+    OrganizationService,
   ],
   exports: [AdminsService],
 })

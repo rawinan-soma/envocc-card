@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -6,6 +7,7 @@ import {
 
 import { OrgLevel } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
+import { OrgCreateDto } from './dto/org-create.dto';
 
 interface OrganizationWithParent {
   id: number;
@@ -18,13 +20,13 @@ interface OrganizationWithParent {
 export class OrganizationService {
   private readonly logger = new Logger(OrganizationService.name);
 
-  constructor(private readonly prismaServicce: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   // private flattenOrg();
 
   async getOrganizationsOnQuery(search_term?: string) {
     try {
-      const organizations = await this.prismaServicce.organizations.findMany({
+      const organizations = await this.prismaService.organizations.findMany({
         where: { name_th: { contains: search_term } },
         select: { name_th: true, id: true },
       });
@@ -55,10 +57,10 @@ export class OrganizationService {
 
   async getOrganizationById(id: number) {
     try {
-      const organization = await this.prismaServicce.organizations.findUnique({
+      const organization = await this.prismaService.organizations.findUnique({
         where: { id: id },
         include: {
-          executive: { select: { position_name: true } },
+          executive: { select: { position_name: true, position_id: true } },
           parent: {
             include: {
               parent: {
@@ -91,7 +93,8 @@ export class OrganizationService {
         department_name: flatOrg?.DEPARTMENT?.name_th ?? null,
         ministry_id: flatOrg?.MINISTRY?.id,
         ministry_name: flatOrg?.MINISTRY?.name_th,
-        executive: organization?.executive,
+        executive_name: organization?.executive[0].position_name,
+        executive_id: organization?.executive[0].position_id,
       };
     } catch (err) {
       this.logger.error(err);
@@ -99,5 +102,36 @@ export class OrganizationService {
     }
   }
 
-  // TODO: เพิ่มหน่วยงาน
+  async createOrganization(
+    dto: OrgCreateDto,
+    seal: number,
+    signature: number,
+    parentId?: number,
+  ) {
+    try {
+      const org = await this.prismaService.organizations.findFirst({
+        where: { code: dto.code },
+      });
+
+      if (org) {
+        throw new BadRequestException('organization already exists');
+      }
+
+      return await this.prismaService.organizations.create({
+        data: {
+          ...dto,
+          parentId: parentId,
+          orgOnSeal: { create: { sealId: seal } },
+          orgOnSignature: { create: { signatureId: signature } },
+        },
+      });
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof BadRequestException) {
+        throw err;
+      }
+
+      throw new InternalServerErrorException('something went wrong');
+    }
+  }
 }
