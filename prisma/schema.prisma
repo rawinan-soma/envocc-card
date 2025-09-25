@@ -383,7 +383,6 @@ model signatures {
   sign_person_lname  String   @db.VarChar(255)
   filename           String   @unique @db.VarChar(255)
   url                String?
-  position           String   @db.VarChar(255)
   sign_person_active Boolean  @default(true)
   create_date        DateTime @default(now()) @db.Timestamptz()
   admin              Int
@@ -430,8 +429,6 @@ model users {
   amphures2                             Int
   district2                             Int
   zip_code2                             Int
-  e_learning                            Int
-  approve                               Boolean
   is_validate                           Boolean             @default(false)
   create_date                           DateTime            @default(now()) @db.Timestamptz()
   hashedRefreshToken                    String?

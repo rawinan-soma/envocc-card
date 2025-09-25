@@ -1,11 +1,11 @@
 import {
   IsString,
   IsEmail,
-  IsBoolean,
   IsDate,
   IsNumber,
   Matches,
   IsEnum,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EngNamePrefix, ThaiNamePrefix, BloodGroup } from './users.enum';
@@ -17,9 +17,13 @@ export class UserCreateDto {
   cid: string;
 
   @IsString()
+  @Matches(/^[A-Za-z]{5,20}$/)
   username: string;
 
   @IsString()
+  @Matches(
+    /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&])[A-Za-z\d!@#$%^&]{8,20}$/,
+  )
   password: string;
 
   @IsString()
@@ -130,15 +134,9 @@ export class UserCreateDto {
   positionId: number;
 
   @IsNumber()
+  @IsOptional()
   @Type(() => Number)
-  position_lvId: number;
-
-  @IsNumber()
-  @Type(() => Number)
-  e_learning: number;
-
-  @IsBoolean()
-  approve: boolean;
+  position_lvId?: number;
 
   @IsNumber()
   orgId: number;

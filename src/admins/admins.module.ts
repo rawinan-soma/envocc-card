@@ -10,6 +10,10 @@ import { CommonDocumentsModule } from '../common-documents/common-documents.modu
 import { CommonDocumentsService } from 'src/common-documents/common-documents.service';
 import { OrganizationsModule } from 'src/organizations/organizations.module';
 import { OrganizationService } from 'src/organizations/organization.service';
+import { SignaturesModule } from 'src/signatures/signatures.module';
+import { SealsModule } from 'src/seals/seals.module';
+import { SignaturesService } from 'src/signatures/signatures.service';
+import { SealsService } from 'src/seals/seals.service';
 
 @Module({
   imports: [
@@ -17,6 +21,8 @@ import { OrganizationService } from 'src/organizations/organization.service';
     MembersModule,
     CommonDocumentsModule,
     OrganizationsModule,
+    SignaturesModule,
+    SealsModule,
   ],
   controllers: [AdminsController],
   providers: [
@@ -26,6 +32,8 @@ import { OrganizationService } from 'src/organizations/organization.service';
     MembersService,
     CommonDocumentsService,
     OrganizationService,
+    SignaturesService,
+    SealsService,
   ],
   exports: [AdminsService],
 })
