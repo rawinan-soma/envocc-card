@@ -2,6 +2,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { SignatureCreateDto } from './dto/signature-create.dto';
@@ -10,6 +11,7 @@ import { SignatureCreateDto } from './dto/signature-create.dto';
 export class SignaturesService {
   private readonly logger = new Logger(SignaturesService.name);
   constructor(private readonly prisma: PrismaService) {}
+
   async createSignature(orgId: number, signature: SignatureCreateDto) {
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -39,4 +41,28 @@ export class SignaturesService {
       throw new InternalServerErrorException('something went wrong');
     }
   }
+
+  async getSignatureById(id: number) {
+    try {
+      const signature = await this.prisma.signatures.findUnique({
+        where: { id: id },
+      });
+
+      if (!signature) {
+        throw new NotFoundException('signature not found');
+      }
+
+      return signature;
+    } catch (err) {
+      this.logger.error(err);
+
+      if (err instanceof NotFoundException) {
+        throw err;
+      }
+
+      throw new InternalServerErrorException('something went wrong');
+    }
+  }
+  // TODO: get all sig
+  // async getAllSignature(orgId: number) {}
 }

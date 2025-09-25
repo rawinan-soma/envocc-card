@@ -62,4 +62,6 @@ export class SealsService {
       throw new InternalServerErrorException(err);
     }
   }
+
+  // TODO: get all seals
 }
