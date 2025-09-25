@@ -4,7 +4,7 @@ import { IsString, IsNumber } from 'class-validator';
 export class FileCreateDto {
   @IsNumber()
   @Type(() => Number)
-  user: number;
+  userId: number;
 
   @IsString()
   file_name: string;

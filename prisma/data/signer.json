@@ -6,7 +6,6 @@
     "sign_person_lname": "ผดุงทศ",
     "filename": "filetest",
     "url": "localhost",
-    "position": "Director",
     "sign_person_active": true,
     "create_date": "1990-01-01T00:00:00.000Z",
     "admin": 1
@@ -18,7 +17,6 @@
     "sign_person_lname": "นามวิชา",
     "filename": "filetest2",
     "url": "localhost",
-    "position": "Deputy Director",
     "sign_person_active": true,
     "create_date": "1990-01-01T00:00:00.000Z",
     "admin": 1
@@ -30,7 +28,6 @@
     "sign_person_lname": "ไม่ใช้",
     "filename": "filetest3",
     "url": "localhost",
-    "position": "ไม่ใช้",
     "sign_person_active": true,
     "create_date": "1990-01-01T00:00:00.000Z",
     "admin": 1
