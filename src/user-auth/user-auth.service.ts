@@ -59,7 +59,6 @@ export class UserAuthService {
       return await this.prisma.users.create({
         data: {
           ...rest,
-          e_learning: 1,
           position: { connect: { position_id: positionId } },
           position_lv: { connect: { position_lv_id: position_lvId } },
 
@@ -84,7 +83,13 @@ export class UserAuthService {
     try {
       const user = await this.prisma.users.findFirst({
         where: { username: username },
-        select: { username: true, password: true, id: true, role: true },
+        select: {
+          username: true,
+          password: true,
+          id: true,
+          role: true,
+          position: true,
+        },
       });
 
       if (!user) {
@@ -94,7 +99,13 @@ export class UserAuthService {
       await this.verifyPassword(password, user?.password || '');
       user.password = '';
 
-      return user;
+      const { position, ...rest } = user;
+
+      return {
+        ...rest,
+        postionId: position?.position_id,
+        executive: position?.orgId ? 'executive' : 'non-executive',
+      };
     } catch (err) {
       this.logger.error(err);
       if (err instanceof UnauthorizedException) {

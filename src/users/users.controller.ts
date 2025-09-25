@@ -74,7 +74,7 @@ export class UsersController {
 
   private createFileDtoMapper(user: number, filename: string, url: string) {
     const dto = new FileCreateDto();
-    dto.user = user;
+    dto.userId = user;
     dto.file_name = filename;
     dto.url = url;
 
@@ -171,7 +171,7 @@ export class UsersController {
     files: {
       requestFile: Express.Multer.File[];
       govcard: Express.Multer.File[];
-      experienceForm: Express.Multer.File[];
+      experienceForm?: Express.Multer.File[];
     },
     @Req() request: RequestwithUserData,
   ) {
@@ -185,13 +185,23 @@ export class UsersController {
       files.govcard[0].filename,
       files.govcard[0].path,
     );
-    const experienceFormDto = this.createFileDtoMapper(
-      request.user.id,
-      files.experienceForm[0].filename,
-      files.experienceForm[0].path,
-    );
+
+    let experienceFormDto: FileCreateDto;
+    if (files.experienceForm?.[0]) {
+      experienceFormDto = this.createFileDtoMapper(
+        request.user.id,
+        files.experienceForm[0].filename,
+        files.experienceForm[0].path,
+      );
+
+      return await this.usersService.txUploadFileandUpdateRequest(
+        govcardDto,
+        requestFileDto,
+        request.user.id,
+        experienceFormDto,
+      );
+    }
     return await this.usersService.txUploadFileandUpdateRequest(
-      experienceFormDto,
       govcardDto,
       requestFileDto,
       request.user.id,

@@ -12,6 +12,7 @@ import {
   ParseIntPipe,
   UseInterceptors,
   BadRequestException,
+  UploadedFile,
 } from '@nestjs/common';
 import { AdminsService } from './admins.service';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
@@ -29,6 +30,10 @@ import { DocumentCreateDto } from 'src/common-documents/dto/document-create.dto'
 import { CommonDocumentsService } from 'src/common-documents/common-documents.service';
 import { OrgCreateDto } from 'src/organizations/dto/org-create.dto';
 import { OrganizationService } from 'src/organizations/organization.service';
+import { FileCreateDto } from 'src/files/dto/file-create.dto';
+import { SignatureCreateDto } from 'src/signatures/dto/signature-create.dto';
+import { SealsService } from 'src/seals/seals.service';
+import { SignaturesService } from 'src/signatures/signatures.service';
 
 @Controller('admins')
 export class AdminsController {
@@ -40,6 +45,8 @@ export class AdminsController {
     private readonly filesService: FilesService,
     private readonly documentsService: CommonDocumentsService,
     private readonly organizationService: OrganizationService,
+    private readonly sealsService: SealsService,
+    private readonly signatureService: SignaturesService,
   ) {}
 
   @Get('admins')
@@ -206,6 +213,58 @@ export class AdminsController {
       seal,
       signature,
       parent,
+    );
+  }
+
+  private createFileDtoMapper(user: number, filename: string, url: string) {
+    const dto = new FileCreateDto();
+    dto.userId = user;
+    dto.file_name = filename;
+    dto.url = url;
+
+    return dto;
+  }
+
+  @Post('seals')
+  @UseInterceptors(
+    FileInterceptor('seal', getMulterOptions(['.png'], 10 * 1024 * 1024)),
+  )
+  async createSealHandler(
+    @UploadedFile() seal: Express.Multer.File,
+    @Req() request: RequestwithAdminData,
+    @Body() seal_name: string,
+  ) {
+    const sealDto = this.createFileDtoMapper(
+      request.user.id,
+      seal.filename,
+      seal.path,
+    );
+
+    const admin = await this.adminsService.getAdminById(request.user.id);
+
+    return await this.sealsService.createAndUpdateSealTx(
+      sealDto,
+      admin.adminOnOrg[0].organization.id,
+      seal_name,
+    );
+  }
+
+  @Post('signatures')
+  @UseInterceptors(
+    FileInterceptor('signature', getMulterOptions(['.png'], 10 * 1024 * 1024)),
+  )
+  async createSignatureHandler(
+    @UploadedFile() signature: Express.Multer.File,
+    @Req() request: RequestwithAdminData,
+    @Body() dto: SignatureCreateDto,
+  ) {
+    dto.filename = signature.filename;
+    dto.url = signature.path;
+    dto.admin = request.user.id;
+    const admin = await this.adminsService.getAdminById(request.user.id);
+    return await this.signatureService.createSignature(
+      admin.adminOnOrg[0].organization.id,
+      dto,
     );
   }
 }
