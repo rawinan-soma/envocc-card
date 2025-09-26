@@ -139,7 +139,7 @@ export class OrganizationService {
     try {
       const children = this.prismaService.organizations.findMany({
         where: { parentId: parentId },
-        select: { id: true, name_th: true },
+        select: { id: true, name_th: true, level: true },
       });
 
       return children;
