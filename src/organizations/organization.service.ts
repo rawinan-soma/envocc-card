@@ -134,4 +134,18 @@ export class OrganizationService {
       throw new InternalServerErrorException('something went wrong');
     }
   }
+
+  async getOrganizationChildren(parentId: number) {
+    try {
+      const children = this.prismaService.organizations.findMany({
+        where: { parentId: parentId },
+        select: { id: true, name_th: true },
+      });
+
+      return children;
+    } catch (err) {
+      this.logger.error(err);
+      throw new InternalServerErrorException('something went wrong');
+    }
+  }
 }

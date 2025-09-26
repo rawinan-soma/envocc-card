@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req } from '@nestjs/common';
 import { OrganizationService } from './organization.service';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
 import { OrgCreateDto } from './dto/org-create.dto';
@@ -27,6 +27,14 @@ export class AdminOrgController {
       seal,
       signature,
       parent,
+    );
+  }
+
+  @Get('organizations')
+  async getOrgChildrenHandler(@Req() request: RequestwithAdminData) {
+    const admin = await this.adminsService.getAdminById(request.user.id);
+    return await this.organizationService.getOrganizationChildren(
+      admin.adminOnOrg[0].organization.id,
     );
   }
 }
