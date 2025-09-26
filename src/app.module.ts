@@ -17,6 +17,14 @@ import { UsersModule } from './users/users.module';
 // import { SealsModule } from './seals/seals.module';
 import Joi from '@hapi/joi';
 import { PrismaModule } from 'prisma/prisma.module';
+import { CommonDocumentsModule } from './common-documents/common-documents.module';
+import { FilesModule } from './files/files.module';
+import { MembersModule } from './members/members.module';
+import { OrganizationsModule } from './organizations/organizations.module';
+import { PositionsModule } from './positions/positions.module';
+import { RequestModule } from './request/request.module';
+import { SealsModule } from './seals/seals.module';
+import { SignaturesModule } from './signatures/signatures.module';
 
 @Module({
   imports: [
@@ -37,6 +45,14 @@ import { PrismaModule } from 'prisma/prisma.module';
     AdminAuthModule,
     UserAuthModule,
     UsersModule,
+    CommonDocumentsModule,
+    FilesModule,
+    MembersModule,
+    OrganizationsModule,
+    PositionsModule,
+    RequestModule,
+    SealsModule,
+    SignaturesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
