@@ -69,7 +69,8 @@ export class UsersService {
         select: {
           id: true,
           username: true,
-          userOnOrg: { select: { orgId: true } },
+          userOnOrg: { select: { organization: true } },
+          position: true,
         },
       });
 
@@ -79,7 +80,9 @@ export class UsersService {
       return {
         id: user.id,
         username: user.username,
-        org: user.userOnOrg[0].orgId,
+        org: user.userOnOrg[0].organization.id,
+        level: user.userOnOrg[0].organization.level,
+        executive: user.position?.orgId ? 'executive' : 'non-executive',
       };
     } catch (err) {
       this.logger.error(err);

@@ -89,6 +89,7 @@ export class UserAuthService {
           id: true,
           role: true,
           position: true,
+          userOnOrg: { include: { organization: true } },
         },
       });
 
@@ -104,6 +105,7 @@ export class UserAuthService {
       return {
         ...rest,
         postionId: position?.position_id,
+        level: rest.userOnOrg[0].organization.level,
         executive: position?.orgId ? 'executive' : 'non-executive',
       };
     } catch (err) {

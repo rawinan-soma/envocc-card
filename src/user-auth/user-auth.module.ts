@@ -7,7 +7,6 @@ import { UserLocalStrategy } from './user-local.strategy';
 import { JwtAccessStrategy } from './jwt-access.strategy';
 import { JwtRefreshStrategy } from './jwt-refresh.strategy';
 import { PrismaService } from 'prisma/prisma.service';
-import { ConfigService } from '@nestjs/config';
 import { CommonAuthService } from 'src/shared/common-auth.service';
 
 @Module({
@@ -19,7 +18,6 @@ import { CommonAuthService } from 'src/shared/common-auth.service';
     JwtAccessStrategy,
     JwtRefreshStrategy,
     PrismaService,
-    ConfigService,
     CommonAuthService,
   ],
 })

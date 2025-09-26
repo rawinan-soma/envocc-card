@@ -228,7 +228,7 @@ export class UsersController {
   }
 
   @Get('me/envcard/qrcode')
-  async getMemberForOnlineCard(@Req() request: RequestwithUserData) {
+  async getMemberForOnlineCardHandler(@Req() request: RequestwithUserData) {
     return this.membersService.getMember(request.user.id);
   }
 }

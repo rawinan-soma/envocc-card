@@ -6,21 +6,18 @@ import { JwtModule } from '@nestjs/jwt';
 import { AdminLocalStrategy } from './admin-local.strategy';
 import { JwtRefreshStrategy } from './jwt-refresh.strategy';
 import { JwtAccessStrategy } from './jwt-access.strategy';
-import { PrismaService } from 'prisma/prisma.service';
-import { ConfigService } from '@nestjs/config';
 import { CommonAuthService } from 'src/shared/common-auth.service';
 import { AdminsModule } from 'src/admins/admins.module';
+import { PrismaModule } from 'prisma/prisma.module';
 
 @Module({
-  imports: [PassportModule, JwtModule, AdminsModule],
+  imports: [PassportModule, JwtModule, AdminsModule, PrismaModule],
   controllers: [AdminAuthController],
   providers: [
     AdminAuthService,
     AdminLocalStrategy,
     JwtRefreshStrategy,
     JwtAccessStrategy,
-    PrismaService,
-    ConfigService,
     CommonAuthService,
   ],
 })

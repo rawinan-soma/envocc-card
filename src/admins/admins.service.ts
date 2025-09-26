@@ -7,15 +7,11 @@ import {
 } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
-import { FilesService } from 'src/files/files.service';
 
 @Injectable()
 export class AdminsService {
   private readonly logger = new Logger(AdminsService.name);
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly filesService: FilesService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getAllAdmins() {
     try {
