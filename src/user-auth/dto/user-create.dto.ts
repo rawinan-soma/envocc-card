@@ -76,8 +76,9 @@ export class UserCreateDto {
   @IsString()
   house_number1: string;
 
+  @IsNumber()
   @Type(() => Number)
-  moo1?: number | null;
+  moo1?: number;
 
   @IsString()
   alley1?: string | null;
@@ -104,8 +105,9 @@ export class UserCreateDto {
   @IsString()
   house_number2: string;
 
+  @IsNumber()
   @Type(() => Number)
-  moo2?: number | null;
+  moo2?: number;
 
   @IsString()
   alley2?: string | null;

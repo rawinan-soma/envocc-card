@@ -210,4 +210,13 @@ export class FilesService {
       throw new InternalServerErrorException('something went wrong');
     }
   }
+
+  createFileDtoMapper(user: number, filename: string, url: string) {
+    const dto = new FileCreateDto();
+    dto.userId = user;
+    dto.file_name = filename;
+    dto.url = url;
+
+    return dto;
+  }
 }

@@ -97,7 +97,7 @@ export class UserAuthController {
 
   @Post('register')
   async createUserHandler(@Body() user: UserExpCreateDto) {
-    const newUser = await this.userAuthService.createUser(user);
-    return { msg: 'user created', user: newUser };
+    await this.userAuthService.createUser(user);
+    return { msg: 'user created' };
   }
 }

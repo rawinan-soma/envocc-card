@@ -81,7 +81,7 @@ export class AdminAuthController {
   @UseGuards(JwtRefreshGuardAdmin)
   @Post('refresh')
   @HttpCode(200)
-  refreshTokenHandler(@Req() request: RequestwithAdminData) {
+  async refreshTokenHandler(@Req() request: RequestwithAdminData) {
     const accessTokenCookie = this.commonAuthService.getCookieFromToken(
       Number(request.user.id),
       'access',
@@ -97,10 +97,13 @@ export class AdminAuthController {
       `user: ${request.user.id},  role: ${request.user.role} refreshed cookie`,
     );
 
+    const admin = await this.adminsService.getAdminById(request.user.id);
+
     return {
       msg: 'token refreshed',
       id: Number(request.user.id),
       role: request.user.role,
+      level: admin.adminOnOrg[0].organization.level,
     };
   }
 
