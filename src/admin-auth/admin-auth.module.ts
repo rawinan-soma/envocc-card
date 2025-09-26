@@ -7,11 +7,11 @@ import { AdminLocalStrategy } from './admin-local.strategy';
 import { JwtRefreshStrategy } from './jwt-refresh.strategy';
 import { JwtAccessStrategy } from './jwt-access.strategy';
 import { CommonAuthService } from 'src/shared/common-auth.service';
-import { AdminsModule } from 'src/admins/admins.module';
 import { PrismaModule } from 'prisma/prisma.module';
+import { AdminsService } from 'src/admins/admins.service';
 
 @Module({
-  imports: [PassportModule, JwtModule, AdminsModule, PrismaModule],
+  imports: [PassportModule, JwtModule, PrismaModule],
   controllers: [AdminAuthController],
   providers: [
     AdminAuthService,
@@ -19,6 +19,7 @@ import { PrismaModule } from 'prisma/prisma.module';
     JwtRefreshStrategy,
     JwtAccessStrategy,
     CommonAuthService,
+    AdminsService,
   ],
 })
 export class AdminAuthModule {}

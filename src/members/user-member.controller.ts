@@ -2,7 +2,7 @@ import { Body, Controller, Get, Patch, Req } from '@nestjs/common';
 import { MembersService } from './members.service';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
 
-@Controller('user-member')
+@Controller('users')
 export class UserMemberController {
   constructor(private readonly membersService: MembersService) {}
 
