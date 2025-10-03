@@ -1,8 +1,10 @@
-import { Body, Controller, Post, Req } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { RequestService } from './request.service';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
 import { StatusCreateDto } from './dto/status-create.dto';
+import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 
+@UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
 export class AdminRequestController {
   constructor(private readonly requestService: RequestService) {}

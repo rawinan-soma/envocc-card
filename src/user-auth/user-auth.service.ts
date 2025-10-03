@@ -10,6 +10,7 @@ import { PrismaService } from 'prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { UserExpCreateDto } from './dto/user-exp-create.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UserAuthService {
@@ -64,7 +65,8 @@ export class UserAuthService {
 
           experiences: { createMany: { data: dto.experiences } },
           requests: { create: { request_status: 0, request_type: 1 } },
-          userOnOrg: { create: { orgId: orgId } },
+          organization: { connect: { id: orgId } },
+          // userOnOrg: { create: { orgId: orgId } },
         },
       });
     } catch (err) {
@@ -81,17 +83,19 @@ export class UserAuthService {
 
   async getAuthenticatedUser(username: string, password: string) {
     try {
-      const user = await this.prisma.users.findFirst({
-        where: { username: username },
-        select: {
-          username: true,
-          password: true,
-          id: true,
-          role: true,
-          position: true,
-          userOnOrg: { include: { organization: true } },
-        },
-      });
+      const user = await this.prisma.users.findFirst(
+        Prisma.validator<Prisma.usersFindFirstArgs>()({
+          where: { username: username },
+          select: {
+            username: true,
+            password: true,
+            id: true,
+            role: true,
+            position: true,
+            organization: true,
+          },
+        }),
+      );
 
       if (!user) {
         throw new UnauthorizedException('invalid credential');
@@ -105,7 +109,7 @@ export class UserAuthService {
       return {
         ...rest,
         postionId: position?.position_id,
-        level: rest.userOnOrg[0].organization.level,
+        level: rest.organization.level,
         executive: position?.orgId ? 'executive' : 'non-executive',
       };
     } catch (err) {

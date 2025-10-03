@@ -17,11 +17,11 @@ import { FileCreateDto } from 'src/files/dto/file-create.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { getMulterOptions } from 'src/shared/file-multer-options';
 
+@UseGuards(JwtAccessGuardUser)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @UseGuards(JwtAccessGuardUser)
   @Get('me')
   async getCurrentUserHandler(@Req() request: RequestwithUserData) {
     return this.usersService.getUserById(Number(request.user.id));
@@ -35,7 +35,6 @@ export class UsersController {
     return this.usersService.updateUser(request.user.id, user);
   }
 
-  @UseGuards(JwtAccessGuardUser)
   @Get('me/requests/form')
   async createRequestFormHandler(@Req() request: RequestwithUserData) {
     const id = request.user.id;

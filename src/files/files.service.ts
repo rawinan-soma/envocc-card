@@ -81,7 +81,10 @@ export class FilesService {
       },
       storage: diskStorage({
         destination(req, file, callback) {
-          callback(null, join(process.cwd(), 'assets'));
+          const uploadPath = join(process.cwd(), 'assets');
+          fs.mkdir(uploadPath, { recursive: true })
+            .then(() => callback(null, uploadPath))
+            .catch((err) => callback(err as Error, uploadPath));
         },
         filename: (req, file, cb) => {
           const suffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -115,12 +118,12 @@ export class FilesService {
       };
 
       const file = await delegate.findFirst({
-        where: { user: userId },
+        where: { userId: userId },
         orderBy: { create_date: 'desc' },
       });
 
       if (!file) {
-        throw new NotFoundException(`${model} not found`);
+        throw new NotFoundException('file(s) not found');
       }
 
       return file;
@@ -145,7 +148,7 @@ export class FilesService {
         delete: (args: any) => Promise<FileModelMap[T] | null>;
       };
       const file = await delegate.findFirst({
-        where: { user: userId },
+        where: { userId: userId },
         orderBy: { create_date: 'desc' },
       });
 
@@ -175,12 +178,33 @@ export class FilesService {
   ) {
     try {
       const delegate = this.modelMap[model] as {
+        findFirst: (args: any) => Promise<FileModelMap[T] | null>;
         create: (args: any) => Promise<FileModelMap[T] | null>;
+        // delete: (args: any) => Promise<FileModelMap[T] | null>;
       };
 
-      return await delegate.create({ data: data });
+      const file = await delegate.findFirst({
+        where: { userId: data.userId },
+        orderBy: { create_date: 'desc' },
+      });
+
+      if (file) {
+        await fs.unlink(data.url);
+        throw new BadRequestException('user already has file(s)');
+      }
+
+      return await delegate.create({
+        data: {
+          filename: data.file_name,
+          url: data.url,
+          user: { connect: { id: data.userId } },
+        },
+      });
     } catch (err) {
       this.logger.error(err);
+      if (err instanceof BadRequestException) {
+        throw err;
+      }
       throw new InternalServerErrorException('something went wrong');
     }
   }

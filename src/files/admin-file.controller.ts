@@ -1,7 +1,16 @@
-import { Controller, Delete, Get, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { FileModelMap, FilesService } from './files.service';
+import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 // import { FileCreateDto } from './dto/file-create.dto'
 
+@UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
 export class AdminFileController {
   constructor(private readonly filesService: FilesService) {}

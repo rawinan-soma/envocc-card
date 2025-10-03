@@ -4,6 +4,7 @@ import {
   Post,
   Req,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { SignaturesService } from './signatures.service';
@@ -12,7 +13,9 @@ import { getMulterOptions } from 'src/shared/file-multer-options';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
 import { SignatureCreateDto } from './dto/signature-create.dto';
 import { AdminsService } from 'src/admins/admins.service';
+import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 
+@UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
 export class AdminSignatureController {
   constructor(
@@ -33,8 +36,8 @@ export class AdminSignatureController {
     dto.url = signature.path;
     dto.admin = request.user.id;
     const admin = await this.adminsService.getAdminById(request.user.id);
-    return await this.signatureService.createSignature(
-      admin.adminOnOrg[0].organization.id,
+    return await this.signatureService.createAndUpdateSignature(
+      admin.organizationId,
       dto,
     );
   }

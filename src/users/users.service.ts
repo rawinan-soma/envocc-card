@@ -64,15 +64,17 @@ export class UsersService {
 
   async getUserById(id: number) {
     try {
-      const user = await this.prisma.users.findUnique({
-        where: { id: id },
-        select: {
-          id: true,
-          username: true,
-          userOnOrg: { select: { organization: true } },
-          position: true,
-        },
-      });
+      const user = await this.prisma.users.findUnique(
+        Prisma.validator<Prisma.usersFindUniqueArgs>()({
+          where: { id: id },
+          select: {
+            id: true,
+            username: true,
+            organization: true,
+            position: true,
+          },
+        }),
+      );
 
       if (!user) {
         throw new NotFoundException('user not found');
@@ -80,8 +82,8 @@ export class UsersService {
       return {
         id: user.id,
         username: user.username,
-        org: user.userOnOrg[0].organization.id,
-        level: user.userOnOrg[0].organization.level,
+        org: user.organization.id,
+        level: user.organization.level,
         executive: user.position?.orgId ? 'executive' : 'non-executive',
       };
     } catch (err) {
@@ -119,62 +121,52 @@ export class UsersService {
 
       const adminLevelFilter: Prisma.usersWhereInput = {
         requests: { some: { request_status: { in: filtered } } },
-        userOnOrg: { some: { orgId: { in: ids } } },
+        organizationId: { in: ids },
         OR: [
           { fname_th: { contains: queryData.search_term } },
           { lname_th: { contains: queryData.search_term } },
-          {
-            userOnOrg: {
-              some: {
-                organization: {
-                  name_th: { contains: queryData.search_term },
-                },
-              },
-            },
-          },
+          { organization: { name_th: { contains: queryData.search_term } } },
         ],
       };
 
       const limit = 10;
       const offset = (queryData.page - 1) * limit;
 
-      const users = await this.prisma.users.findMany({
-        skip: offset,
-        take: limit,
-        select: {
-          id: true,
-          pname_th: true,
-          pname_other_th: true,
-          fname_th: true,
-          lname_th: true,
-          userOnOrg: {
-            select: {
-              organization: {
-                select: {
-                  id: true,
-                  level: true,
-                  name_th: true,
-                  parent: {
-                    select: {
-                      id: true,
-                      level: true,
-                      name_th: true,
-                      parent: {
-                        select: {
-                          id: true,
-                          level: true,
-                          name_th: true,
-                          parent: {
-                            select: {
-                              id: true,
-                              level: true,
-                              name_th: true,
-                              parent: {
-                                select: {
-                                  id: true,
-                                  level: true,
-                                  name_th: true,
-                                },
+      const users = await this.prisma.users.findMany(
+        Prisma.validator<Prisma.usersFindManyArgs>()({
+          skip: offset,
+          take: limit,
+          select: {
+            id: true,
+            pname_th: true,
+            pname_other_th: true,
+            fname_th: true,
+            lname_th: true,
+            organization: {
+              select: {
+                id: true,
+                level: true,
+                name_th: true,
+                parent: {
+                  select: {
+                    id: true,
+                    level: true,
+                    name_th: true,
+                    parent: {
+                      select: {
+                        id: true,
+                        level: true,
+                        name_th: true,
+                        parent: {
+                          select: {
+                            id: true,
+                            level: true,
+                            name_th: true,
+                            parent: {
+                              select: {
+                                id: true,
+                                level: true,
+                                name_th: true,
                               },
                             },
                           },
@@ -185,38 +177,39 @@ export class UsersService {
                 },
               },
             },
-          },
-          members: {
-            select: { start_date: true, end_date: true },
-            orderBy: { end_date: 'desc' },
-          },
-          requests: {
-            select: {
-              request_status: true,
+            members: {
+              select: { start_date: true, end_date: true },
+              orderBy: { end_date: 'desc' },
             },
-            orderBy: { date_update: 'desc' },
+            requests: {
+              select: {
+                request_status: true,
+              },
+              orderBy: { date_update: 'desc' },
+            },
+            position: { select: { position_name: true } },
+            position_lv: { select: { position_lv_name: true } },
           },
-          position: { select: { position_name: true } },
-          position_lv: { select: { position_lv_name: true } },
-        },
-        where: adminLevelFilter,
-        orderBy: { id: 'asc' },
-      });
+          where: adminLevelFilter,
+          orderBy: { id: 'asc' },
+        }),
+      );
 
       const totalItems = await this.prisma.users.count();
       const totalPages = Math.ceil(totalItems / limit);
 
       const data = users.map((user) => {
         const flatOrg = this.pickLevelForRequestForm(
-          user.userOnOrg?.[0]?.organization ?? undefined,
+          user?.organization ?? undefined,
         );
 
         return {
           ...user,
-          userOnOrg: undefined,
+          requests: undefined,
+          organization: undefined,
           start_date: user.members[0]?.start_date,
           end_date: user.members[0]?.end_date,
-          requests: user.requests[0].request_status,
+          request_status: user.requests[0].request_status,
           position: user.position?.position_name,
           position_lv: user.position_lv?.position_lv_name,
           unit: flatOrg?.UNIT ?? null,
@@ -248,62 +241,61 @@ export class UsersService {
 
   async getUserRequestForm(id: number) {
     try {
-      const user = await this.prisma.users.findUnique({
-        where: { id: id },
-        include: {
-          position: {
-            select: {
-              position_id: true,
-              position_name: true,
-              position_name_eng: true,
+      const user = await this.prisma.users.findUnique(
+        Prisma.validator<Prisma.usersFindUniqueArgs>()({
+          where: { id: id },
+          include: {
+            position: {
+              select: {
+                position_id: true,
+                position_name: true,
+                position_name_eng: true,
+              },
             },
-          },
-          position_lv: {
-            select: {
-              position_lv_id: true,
-              position_lv_name: true,
-              position_lv_name_eng: true,
+            position_lv: {
+              select: {
+                position_lv_id: true,
+                position_lv_name: true,
+                position_lv_name_eng: true,
+              },
             },
-          },
-          photos: {
-            select: {
-              url: true,
+            photos: {
+              select: {
+                url: true,
+              },
+              orderBy: { create_date: 'desc' },
             },
-            orderBy: { create_date: 'desc' },
-          },
-          userOnOrg: {
-            select: {
-              organization: {
-                select: {
-                  id: true,
-                  level: true,
-                  name_th: true,
-                  name_eng: true,
-                  parent: {
-                    select: {
-                      id: true,
-                      level: true,
-                      name_th: true,
-                      name_eng: true,
-                      parent: {
-                        select: {
-                          id: true,
-                          level: true,
-                          name_th: true,
-                          name_eng: true,
-                          parent: {
-                            select: {
-                              id: true,
-                              level: true,
-                              name_th: true,
-                              name_eng: true,
-                              parent: {
-                                select: {
-                                  id: true,
-                                  level: true,
-                                  name_th: true,
-                                  name_eng: true,
-                                },
+
+            organization: {
+              select: {
+                id: true,
+                level: true,
+                name_th: true,
+                name_eng: true,
+                parent: {
+                  select: {
+                    id: true,
+                    level: true,
+                    name_th: true,
+                    name_eng: true,
+                    parent: {
+                      select: {
+                        id: true,
+                        level: true,
+                        name_th: true,
+                        name_eng: true,
+                        parent: {
+                          select: {
+                            id: true,
+                            level: true,
+                            name_th: true,
+                            name_eng: true,
+                            parent: {
+                              select: {
+                                id: true,
+                                level: true,
+                                name_th: true,
+                                name_eng: true,
                               },
                             },
                           },
@@ -315,21 +307,18 @@ export class UsersService {
               },
             },
           },
-        },
-        omit: {
-          password: true,
-          positionId: true,
-          position_lvId: true,
-        },
-      });
-
-      const flatOrg = this.pickLevelForRequestForm(
-        user?.userOnOrg?.[0].organization,
+          omit: {
+            password: true,
+            positionId: true,
+            position_lvId: true,
+          },
+        }),
       );
+
+      const flatOrg = this.pickLevelForRequestForm(user?.organization);
 
       const data = {
         ...user,
-        userOnOrg: undefined,
         position: undefined,
         position_lv: undefined,
         position_name_th: user?.position?.position_name,

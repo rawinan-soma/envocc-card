@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
+import { Prisma } from '@prisma/client';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from 'prisma/prisma.service';
@@ -26,20 +27,22 @@ export class JwtAccessStrategy extends PassportStrategy(
   }
 
   async validate(payload: TokenPayload) {
-    const admin = await this.prisma.admins.findUnique({
-      where: { id: payload.id },
-      select: {
-        username: true,
-        role: true,
-        id: true,
-        adminOnOrg: { select: { organization: { select: { level: true } } } },
-      },
-    });
+    const admin = await this.prisma.admins.findUnique(
+      Prisma.validator<Prisma.adminsFindUniqueArgs>()({
+        where: { id: payload.id },
+        select: {
+          username: true,
+          role: true,
+          id: true,
+          organization: { select: { level: true } },
+        },
+      }),
+    );
     return {
       username: admin?.username,
       role: admin?.role,
       id: admin?.id,
-      level: admin?.adminOnOrg[0].organization.level,
+      level: admin?.organization.level,
     };
   }
 }

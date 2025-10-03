@@ -10,7 +10,7 @@ services:
     volumes:
       - postgres_data-docker:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,7 +29,7 @@ services:
     volumes:
       - postgres_data-local:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -47,6 +47,8 @@ services:
       - envocc-card
     env_file:
       - docker.env
+    volumes:
+      - ./assets:/app/assets
     command: |
       sh -c "
         bun prisma migrate deploy
@@ -54,7 +56,7 @@ services:
         bun run start:prod
       "
     healthcheck:
-      test: ['CMD', 'curl', 'http://localhost:3000/envocc-card/api/v2/']
+      test: ["CMD", "curl", "http://localhost:3000/envocc-card/api/v2/"]
       interval: 10s
       timeout: 5s
       retries: 5

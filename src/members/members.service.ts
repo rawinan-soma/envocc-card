@@ -10,7 +10,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
 import { MemeberCreateDto } from './dto/create-member.dto';
 import { FilesService } from 'src/files/files.service';
-import { OrgLevel } from '@prisma/client';
+import { OrgLevel, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 interface OrganizationWithParent {
@@ -58,41 +58,39 @@ export class MembersService {
 
   async getMember(user_id: number) {
     try {
-      const member = await this.prisma.members.findFirst({
-        where: { userId: user_id, is_active: true },
-        orderBy: { end_date: 'desc' },
-        include: {
-          user: {
-            select: {
-              cid: true,
-              pname_th: true,
-              pname_other_th: true,
-              fname_th: true,
-              lname_th: true,
-              pname_en: true,
-              pname_other_en: true,
-              fname_en: true,
-              lname_en: true,
-              blood: true,
-              position: true,
-              position_lv: true,
-              photos: {
-                select: {
-                  url: true,
+      const member = await this.prisma.members.findFirst(
+        Prisma.validator<Prisma.membersFindFirstArgs>()({
+          where: { userId: user_id, is_active: true },
+          orderBy: { end_date: 'desc' },
+          include: {
+            user: {
+              select: {
+                cid: true,
+                pname_th: true,
+                pname_other_th: true,
+                fname_th: true,
+                lname_th: true,
+                pname_en: true,
+                pname_other_en: true,
+                fname_en: true,
+                lname_en: true,
+                blood: true,
+                position: true,
+                position_lv: true,
+                photos: {
+                  select: {
+                    url: true,
+                  },
                 },
-              },
-              userOnOrg: {
-                select: {
-                  organization: {
-                    include: {
-                      parent: {
-                        include: {
-                          parent: {
-                            include: {
-                              parent: {
-                                include: {
-                                  parent: true,
-                                },
+                organization: {
+                  include: {
+                    parent: {
+                      include: {
+                        parent: {
+                          include: {
+                            parent: {
+                              include: {
+                                parent: true,
                               },
                             },
                           },
@@ -104,16 +102,14 @@ export class MembersService {
               },
             },
           },
-        },
-      });
+        }),
+      );
 
       if (!member) {
         throw new NotFoundException('not found member');
       }
 
-      const flatOrg = this.pickLevelForRequestForm(
-        member?.user.userOnOrg[0].organization,
-      );
+      const flatOrg = this.pickLevelForRequestForm(member?.user.organization);
 
       const data = {
         cid: member.user.cid,

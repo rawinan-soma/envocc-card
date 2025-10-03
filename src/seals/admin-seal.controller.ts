@@ -4,6 +4,7 @@ import {
   Post,
   Req,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { SealsService } from './seals.service';
@@ -12,7 +13,9 @@ import { FilesService } from 'src/files/files.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { getMulterOptions } from 'src/shared/file-multer-options';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
+import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 
+@UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
 export class AdminSealController {
   constructor(
@@ -40,7 +43,7 @@ export class AdminSealController {
 
     return await this.sealsService.createAndUpdateSealTx(
       sealDto,
-      admin.adminOnOrg[0].organization.id,
+      admin.organizationId,
       seal_name,
     );
   }

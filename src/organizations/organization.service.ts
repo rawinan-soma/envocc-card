@@ -121,8 +121,8 @@ export class OrganizationService {
         data: {
           ...dto,
           parentId: parentId,
-          orgOnSeal: { create: { sealId: seal } },
-          orgOnSignature: { create: { signatureId: signature } },
+          sealId: seal,
+          signatureId: signature,
         },
       });
     } catch (err) {

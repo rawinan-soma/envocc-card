@@ -17,7 +17,7 @@ export class UserCreateDto {
   cid: string;
 
   @IsString()
-  @Matches(/^[A-Za-z]{5,20}$/)
+  @Matches(/^[A-Za-z0-9]{5,20}$/)
   username: string;
 
   @IsString()

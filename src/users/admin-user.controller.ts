@@ -8,12 +8,15 @@ import {
   Patch,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { AdminsService } from 'src/admins/admins.service';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
 import { GetAllUserQueryDto } from './dto/get-all-user-query.dto';
+import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 
+@UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
 export class AdminUserController {
   constructor(
@@ -21,7 +24,6 @@ export class AdminUserController {
     private readonly adminsService: AdminsService,
   ) {}
 
-  // @UseGuards(JwtAccessGuardAdmin)
   @Get('users')
   async getAllUserHandler(
     @Req() request: RequestwithAdminData,
@@ -32,7 +34,7 @@ export class AdminUserController {
 
     return await this.usersService.getAllUsers({
       adminId: admin.id,
-      orgId: admin.adminOnOrg[0].organization.id,
+      orgId: admin.organization.id,
       page: page as number,
       status: status as string,
       search_term: search_term,

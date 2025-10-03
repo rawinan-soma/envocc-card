@@ -49,11 +49,9 @@ export class SealsService {
         });
 
         for (const updateOrg of updateOrgs) {
-          await tx.orgOnSeal.create({
-            data: {
-              organization: { connect: { id: updateOrg.id } },
-              seal: { connect: { id: updateSeal.id } },
-            },
+          await tx.organizations.update({
+            where: { id: updateOrg.id },
+            data: { seal: { connect: { id: updateSeal.id } } },
           });
         }
       });

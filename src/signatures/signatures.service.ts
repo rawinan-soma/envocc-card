@@ -12,7 +12,7 @@ export class SignaturesService {
   private readonly logger = new Logger(SignaturesService.name);
   constructor(private readonly prisma: PrismaService) {}
 
-  async createSignature(orgId: number, signature: SignatureCreateDto) {
+  async createAndUpdateSignature(orgId: number, signature: SignatureCreateDto) {
     try {
       await this.prisma.$transaction(async (tx) => {
         const updateSignature = await tx.signatures.create({
@@ -28,9 +28,9 @@ export class SignaturesService {
         });
 
         for (const org of updateOrgs) {
-          await tx.orgOnSignature.create({
+          await tx.organizations.update({
+            where: { id: org.id },
             data: {
-              organization: { connect: { id: org.id } },
               signature: { connect: { id: updateSignature.id } },
             },
           });

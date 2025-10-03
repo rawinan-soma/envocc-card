@@ -56,6 +56,7 @@ export class RequestService {
           request_status: updated.next_status,
           request_type: current.request_type,
           approver: approver,
+          description: updated.description,
         },
       });
     } catch (err: any) {

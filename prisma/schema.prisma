@@ -48,7 +48,8 @@ model admins {
   requests           requests[]
   position           positions           @relation(fields: [positionId], references: [position_id])
   position_lv        position_lvs        @relation(fields: [positionLvId], references: [position_lv_id])
-  adminOnOrg         adminOnOrg[]
+  organizationId     Int
+  organization       organizations       @relation(fields: [organizationId], references: [id])
 
   // @@index([level], map: "level")
 }
@@ -62,23 +63,24 @@ enum OrgLevel {
 }
 
 model organizations {
-  id       Int             @id @unique @default(autoincrement())
-  code     String
-  name_th  String
-  name_eng String
-  level    OrgLevel
-  parentId Int?
-  parent   organizations?  @relation("OrgHierachy", fields: [parentId], references: [id])
-  children organizations[] @relation("OrgHierachy")
-
-  adminOnOrg     adminOnOrg[]
-  userOnOrg      userOnOrg[]
-  orgOnSeal      orgOnSeal[]
-  orgOnSignature orgOnSignature[]
+  id          Int             @id @unique @default(autoincrement())
+  code        String
+  name_th     String
+  name_eng    String
+  level       OrgLevel
+  parentId    Int?
+  parent      organizations?  @relation("OrgHierachy", fields: [parentId], references: [id])
+  children    organizations[] @relation("OrgHierachy")
+  sealId      Int
+  seal        seals           @relation(fields: [sealId], references: [id])
+  signatureId Int
+  signature   signatures      @relation(fields: [signatureId], references: [id])
 
   province   province?   @relation(fields: [provinceId], references: [provinceId])
   provinceId Int?
   executive  positions[]
+  admins     admins[]
+  users      users[]
 }
 
 model province {
@@ -90,54 +92,54 @@ model province {
   organization organizations[]
 }
 
-model orgOnSeal {
-  orgId  Int
-  sealId Int
+// model orgOnSeal {
+//   orgId  Int
+//   sealId Int
 
-  organization organizations @relation(fields: [orgId], references: [id])
-  seal         seals         @relation(fields: [sealId], references: [id])
+//   organization organizations @relation(fields: [orgId], references: [id])
+//   seal         seals         @relation(fields: [sealId], references: [id])
 
-  @@id([orgId, sealId])
-}
+//   @@id([orgId])
+// }
 
-model orgOnSignature {
-  orgId       Int
-  signatureId Int
+// model orgOnSignature {
+//   orgId       Int
+//   signatureId Int
 
-  organization organizations @relation(fields: [orgId], references: [id])
-  signature    signatures    @relation(fields: [signatureId], references: [id])
+//   organization organizations @relation(fields: [orgId], references: [id])
+//   signature    signatures    @relation(fields: [signatureId], references: [id])
 
-  @@id([orgId, signatureId])
-}
+//   @@id([orgId])
+// }
 
-model adminOnOrg {
-  adminId Int
-  orgId   Int
+// model adminOnOrg {
+//   adminId Int
+//   orgId   Int
 
-  admin        admins        @relation(fields: [adminId], references: [id])
-  organization organizations @relation(fields: [orgId], references: [id])
+//   admin        admins        @relation(fields: [adminId], references: [id])
+//   organization organizations @relation(fields: [orgId], references: [id])
 
-  @@id([adminId, orgId])
-}
+//   @@id([adminId, orgId])
+// }
 
-model userOnOrg {
-  userId Int
-  orgId  Int
+// model userOnOrg {
+//   userId Int
+//   orgId  Int
 
-  user         users         @relation(fields: [userId], references: [id])
-  organization organizations @relation(fields: [orgId], references: [id])
+//   user         users         @relation(fields: [userId], references: [id])
+//   organization organizations @relation(fields: [orgId], references: [id])
 
-  @@id([userId, orgId])
-}
+//   @@id([userId, orgId])
+// }
 
 model seals {
-  id          Int         @id @unique(map: "seal_id") @default(autoincrement())
-  filename    String?     @unique @db.VarChar(255)
-  url         String?
-  create_date DateTime    @default(now()) @db.Timestamptz()
-  userId      Int
-  seal_name   String
-  orgOnSeal   orgOnSeal[]
+  id            Int             @id @unique(map: "seal_id") @default(autoincrement())
+  filename      String?         @unique @db.VarChar(255)
+  url           String?
+  create_date   DateTime        @default(now()) @db.Timestamptz()
+  userId        Int
+  seal_name     String
+  organizations organizations[]
 }
 
 // model adminDep {
@@ -387,9 +389,8 @@ model signatures {
   create_date        DateTime @default(now()) @db.Timestamptz()
   admin              Int
 
-  members members[]
-
-  orgOnSignature orgOnSignature[]
+  members       members[]
+  organizations organizations[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -443,11 +444,12 @@ model users {
   resetpass_resetpass_userTousers       resetpass[]         @relation("resetpass_userTousers")
   resetpass_resetpass_user_emailTousers resetpass[]         @relation("resetpass_user_emailTousers")
 
-  position      positions?    @relation(fields: [positionId], references: [position_id])
-  positionId    Int?
-  position_lv   position_lvs? @relation(fields: [position_lvId], references: [position_lv_id])
-  position_lvId Int?
-  userOnOrg     userOnOrg[]
+  position       positions?    @relation(fields: [positionId], references: [position_id])
+  positionId     Int?
+  position_lv    position_lvs? @relation(fields: [position_lvId], references: [position_lv_id])
+  position_lvId  Int?
+  organizationId Int
+  organization   organizations @relation(fields: [organizationId], references: [id])
 
   @@id([username, email, id])
 }

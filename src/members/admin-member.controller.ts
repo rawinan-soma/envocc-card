@@ -7,11 +7,14 @@ import {
   Patch,
   Post,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { MembersService } from './members.service';
 import { MemeberCreateDto } from './dto/create-member.dto';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
+import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 
+@UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
 export class AdminMemberController {
   constructor(private readonly membersService: MembersService) {}
