@@ -33,8 +33,7 @@ export class UserAuthService {
 
   async createUser(dto: UserExpCreateDto) {
     try {
-      const hashedPassword = await bcrypt.hash(dto.user.password, 10);
-      dto.user.password = hashedPassword;
+      dto.user.password = await bcrypt.hash(dto.user.password, 10);
       const existingUser = await this.prisma.users.findFirst({
         where: {
           OR: [
@@ -66,7 +65,6 @@ export class UserAuthService {
           experiences: { createMany: { data: dto.experiences } },
           requests: { create: { request_status: 0, request_type: 1 } },
           organization: { connect: { id: orgId } },
-          // userOnOrg: { create: { orgId: orgId } },
         },
       });
     } catch (err) {
@@ -93,11 +91,12 @@ export class UserAuthService {
             role: true,
             position: true,
             organization: true,
+            is_validate: true,
           },
         }),
       );
 
-      if (!user) {
+      if (!user || user.is_validate === false) {
         throw new UnauthorizedException('invalid credential');
       }
 
@@ -108,7 +107,7 @@ export class UserAuthService {
 
       return {
         ...rest,
-        postionId: position?.position_id,
+        positionId: position?.position_id,
         level: rest.organization.level,
         executive: position?.orgId ? 'executive' : 'non-executive',
       };
@@ -158,7 +157,7 @@ export class UserAuthService {
   }
 
   async removeRefreshToken(id: number) {
-    return await this.prisma.users.update({
+    return this.prisma.users.update({
       where: { id: id },
       data: { hashedRefreshToken: null },
     });

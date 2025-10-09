@@ -4,13 +4,13 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  UseGuards,
+  // UseGuards,
 } from '@nestjs/common';
 import { FileModelMap, FilesService } from './files.service';
-import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
+// import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 // import { FileCreateDto } from './dto/file-create.dto'
 
-@UseGuards(JwtAccessGuardAdmin)
+// @UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
 export class AdminFileController {
   constructor(private readonly filesService: FilesService) {}
