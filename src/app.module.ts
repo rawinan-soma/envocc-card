@@ -25,6 +25,8 @@ import { PositionsModule } from './positions/positions.module';
 import { RequestModule } from './request/request.module';
 import { SealsModule } from './seals/seals.module';
 import { SignaturesModule } from './signatures/signatures.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -53,6 +55,10 @@ import { SignaturesModule } from './signatures/signatures.module';
     RequestModule,
     SealsModule,
     SignaturesModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '..', 'assets'),
+      serveRoot: '/app/assets',
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],

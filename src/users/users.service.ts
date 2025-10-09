@@ -484,7 +484,6 @@ export class UsersService {
             approver: approver,
           },
           select: {
-            user: true,
             id: true,
             request_status: true,
           },
