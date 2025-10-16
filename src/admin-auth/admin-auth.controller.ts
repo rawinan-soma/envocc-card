@@ -39,8 +39,8 @@ export class AdminAuthController {
   @Post('login')
   async loginHandler(@Req() request: RequestwithAdminData) {
     const { user } = request;
-    const level = (await this.adminsService.getAdminById(user.id)).adminOnOrg[0]
-      .organization.level;
+    const admin = await this.adminsService.getAdminById(user.id);
+
     const accessTokenCookie = this.commonAuthService.getCookieFromToken(
       Number(user.id),
       'access',
@@ -74,7 +74,7 @@ export class AdminAuthController {
       msg: 'login succesful',
       id: Number(user.id),
       role: user.role,
-      level: level,
+      level: admin.organization.level,
     };
   }
 
@@ -103,7 +103,7 @@ export class AdminAuthController {
       msg: 'token refreshed',
       id: Number(request.user.id),
       role: request.user.role,
-      level: admin.adminOnOrg[0].organization.level,
+      level: admin.organization.level,
     };
   }
 

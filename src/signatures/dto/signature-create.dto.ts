@@ -20,4 +20,7 @@ export class SignatureCreateDto {
   @IsOptional()
   @IsString()
   admin?: number;
+
+  @IsString()
+  sign_person_position: string;
 }

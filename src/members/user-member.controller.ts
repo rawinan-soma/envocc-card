@@ -1,8 +1,10 @@
-import { Body, Controller, Get, Patch, Req } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Req, UseGuards } from '@nestjs/common';
 import { MembersService } from './members.service';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
+import { JwtAccessGuardUser } from 'src/user-auth/jwt-access.guard';
 
-@Controller('user-member')
+@UseGuards(JwtAccessGuardUser)
+@Controller('users')
 export class UserMemberController {
   constructor(private readonly membersService: MembersService) {}
 

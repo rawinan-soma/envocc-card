@@ -9,6 +9,7 @@ import { PrismaService } from 'prisma/prisma.service';
 import { AdminCreateDto } from './dto/admin-create.dto/admin-create.dto';
 import * as bcrypt from 'bcrypt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { $Enums } from '@prisma/client';
 
 @Injectable()
 export class AdminAuthService {
@@ -18,11 +19,12 @@ export class AdminAuthService {
   async createAdmin(dto: AdminCreateDto) {
     try {
       const hashedPassword = await bcrypt.hash(dto.password, 10);
+      const { orgId, ...rest } = dto;
       return await this.prisma.admins.create({
         data: {
-          ...dto,
+          ...rest,
           password: hashedPassword,
-          adminOnOrg: { create: { orgId: dto.orgId } },
+          organizationId: orgId,
         },
         select: { username: true, role: true },
       });
@@ -43,14 +45,22 @@ export class AdminAuthService {
 
   async getAuthenticatedAdmin(username: string, password: string) {
     try {
-      const admin = await this.prisma.admins.findFirst({
+      const admin: {
+        username: string;
+        password: string;
+        role: string;
+        organization: {
+          level: $Enums.OrgLevel;
+        };
+        id: number;
+      } | null = await this.prisma.admins.findFirst({
         where: { username: username },
         select: {
           username: true,
           password: true,
           id: true,
           role: true,
-          adminOnOrg: { select: { organization: { select: { level: true } } } },
+          organization: { select: { level: true } },
         },
       });
 
@@ -65,13 +75,13 @@ export class AdminAuthService {
         username: admin.username,
         id: admin.id,
         role: admin.role,
-        level: admin.adminOnOrg[0].organization.level,
+        level: admin.organization.level,
       };
-    } catch (error) {
-      this.logger.error(error);
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      } else if (error instanceof PrismaClientKnownRequestError) {
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof UnauthorizedException) {
+        throw err;
+      } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');

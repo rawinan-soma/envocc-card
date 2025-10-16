@@ -64,3 +64,6 @@ docker-compose.yaml
 *.code-workspace
 .vscode
 .vscode/
+assets/
+assets/*
+!assets/.gitkeep

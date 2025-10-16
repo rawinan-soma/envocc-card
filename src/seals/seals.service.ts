@@ -41,7 +41,12 @@ export class SealsService {
     try {
       await this.prismaService.$transaction(async (tx) => {
         const updateSeal = await tx.seals.create({
-          data: { ...seal, seal_name: seal_name },
+          data: {
+            seal_name: seal_name,
+            adminId: seal.adminId!,
+            filename: seal.file_name,
+            url: seal.file_name,
+          },
         });
 
         const updateOrgs = await this.prismaService.organizations.findMany({
@@ -49,11 +54,9 @@ export class SealsService {
         });
 
         for (const updateOrg of updateOrgs) {
-          await tx.orgOnSeal.create({
-            data: {
-              organization: { connect: { id: updateOrg.id } },
-              seal: { connect: { id: updateSeal.id } },
-            },
+          await tx.organizations.update({
+            where: { id: updateOrg.id },
+            data: { seal: { connect: { id: updateSeal.id } } },
           });
         }
       });

@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { MembersService } from './members.service';
-import { FilesModule } from 'src/files/files.module';
 import { AdminMemberController } from './admin-member.controller';
 import { UserMemberController } from './user-member.controller';
+import { FilesService } from 'src/files/files.service';
+import { AdminsService } from 'src/admins/admins.service';
 
 @Module({
-  imports: [FilesModule],
-  providers: [MembersService],
+  providers: [MembersService, FilesService, AdminsService],
   exports: [MembersService],
   controllers: [AdminMemberController, UserMemberController],
 })

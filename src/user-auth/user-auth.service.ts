@@ -10,6 +10,7 @@ import { PrismaService } from 'prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { UserExpCreateDto } from './dto/user-exp-create.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UserAuthService {
@@ -32,8 +33,7 @@ export class UserAuthService {
 
   async createUser(dto: UserExpCreateDto) {
     try {
-      const hashedPassword = await bcrypt.hash(dto.user.password, 10);
-      dto.user.password = hashedPassword;
+      dto.user.password = await bcrypt.hash(dto.user.password, 10);
       const existingUser = await this.prisma.users.findFirst({
         where: {
           OR: [
@@ -64,7 +64,7 @@ export class UserAuthService {
 
           experiences: { createMany: { data: dto.experiences } },
           requests: { create: { request_status: 0, request_type: 1 } },
-          userOnOrg: { create: { orgId: orgId } },
+          organization: { connect: { id: orgId } },
         },
       });
     } catch (err) {
@@ -81,19 +81,22 @@ export class UserAuthService {
 
   async getAuthenticatedUser(username: string, password: string) {
     try {
-      const user = await this.prisma.users.findFirst({
-        where: { username: username },
-        select: {
-          username: true,
-          password: true,
-          id: true,
-          role: true,
-          position: true,
-          userOnOrg: { include: { organization: true } },
-        },
-      });
+      const user = await this.prisma.users.findFirst(
+        Prisma.validator<Prisma.usersFindFirstArgs>()({
+          where: { username: username, is_validate: true },
+          select: {
+            username: true,
+            password: true,
+            id: true,
+            role: true,
+            position: true,
+            organization: true,
+            is_validate: true,
+          },
+        }),
+      );
 
-      if (!user) {
+      if (!user || user.is_validate === false) {
         throw new UnauthorizedException('invalid credential');
       }
 
@@ -104,8 +107,8 @@ export class UserAuthService {
 
       return {
         ...rest,
-        postionId: position?.position_id,
-        level: rest.userOnOrg[0].organization.level,
+        positionId: position?.position_id,
+        level: rest.organization.level,
         executive: position?.orgId ? 'executive' : 'non-executive',
       };
     } catch (err) {
@@ -154,7 +157,7 @@ export class UserAuthService {
   }
 
   async removeRefreshToken(id: number) {
-    return await this.prisma.users.update({
+    return this.prisma.users.update({
       where: { id: id },
       data: { hashedRefreshToken: null },
     });

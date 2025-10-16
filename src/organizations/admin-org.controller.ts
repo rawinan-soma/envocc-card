@@ -1,9 +1,11 @@
-import { Body, Controller, Get, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { OrganizationService } from './organization.service';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
 import { OrgCreateDto } from './dto/org-create.dto';
 import { AdminsService } from 'src/admins/admins.service';
+import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 
+@UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
 export class AdminOrgController {
   constructor(
@@ -17,10 +19,9 @@ export class AdminOrgController {
     @Body() dto: OrgCreateDto,
   ) {
     const admin = await this.adminsService.getAdminById(request.user.id);
-    const seal = admin.adminOnOrg[0].organization.orgOnSeal[0].sealId;
-    const signature =
-      admin.adminOnOrg[0].organization.orgOnSignature[0].signatureId;
-    const parent = admin.adminOnOrg[0].organization.id;
+    const seal = admin.organization.sealId;
+    const signature = admin.organization.signatureId;
+    const parent = admin.organization.id;
 
     return await this.organizationService.createOrganization(
       dto,
@@ -34,7 +35,7 @@ export class AdminOrgController {
   async getOrgChildrenHandler(@Req() request: RequestwithAdminData) {
     const admin = await this.adminsService.getAdminById(request.user.id);
     return await this.organizationService.getOrganizationChildren(
-      admin.adminOnOrg[0].organization.id,
+      admin.organization.id,
     );
   }
 }

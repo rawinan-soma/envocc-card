@@ -100,21 +100,6 @@ async function main() {
       data: admins,
     });
 
-    const adminOnOrg = JSON.parse(
-      fs.readFileSync('./prisma/data/adminOnOrg.json', 'utf-8'),
-    );
-    await tx.adminOnOrg.createMany({ data: adminOnOrg });
-
-    const orgOnSig = JSON.parse(
-      fs.readFileSync('./prisma/data/orgOnSignature.json', 'utf-8'),
-    );
-    await tx.orgOnSignature.createMany({ data: orgOnSig });
-
-    const orgOnSeal = JSON.parse(
-      fs.readFileSync('./prisma/data/orgOnSeal.json', 'utf-8'),
-    );
-    await tx.orgOnSeal.createMany({ data: orgOnSeal });
-
     // // TODO:seed user -> Remove on production
     // const users = JSON.parse(
     //   fs.readFileSync('./prisma/data/users.json', 'utf-8'),

@@ -4,10 +4,10 @@ import { FilesModule } from 'src/files/files.module';
 // import { CommonDocumentsController } from './common-documents.controller';
 import { PublicDocumentController } from './public-document.controller';
 import { AdminDocumentController } from './admin-document.controller';
+import { FilesService } from 'src/files/files.service';
 
 @Module({
-  imports: [FilesModule],
-  providers: [CommonDocumentsService],
+  providers: [CommonDocumentsService, FilesService],
   exports: [CommonDocumentsService],
   controllers: [PublicDocumentController, AdminDocumentController],
 })

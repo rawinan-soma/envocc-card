@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
+import { $Enums } from '@prisma/client';
 
 @Injectable()
 export class AdminsService {
@@ -18,9 +19,7 @@ export class AdminsService {
       return await this.prisma.admins.findMany({
         omit: { password: true },
         include: {
-          adminOnOrg: {
-            select: { organization: { select: { id: true, name_th: true } } },
-          },
+          organization: true,
         },
 
         // include: { institutions: { include: { departments: true } } },
@@ -79,23 +78,41 @@ export class AdminsService {
 
   async getAdminById(id: number) {
     try {
-      const admin = await this.prisma.admins.findUnique({
+      const admin:
+        | ({
+            organization: {
+              id: number;
+              code: string;
+              name_th: string;
+              name_eng: string;
+              level: $Enums.OrgLevel;
+              parentId: number | null;
+              sealId: number;
+              signatureId: number;
+              provinceId: number | null;
+            };
+          } & {
+            role: string;
+            username: string;
+            pname: string;
+            fname: string;
+            lname: string;
+            private_number: string;
+            work_number: string;
+            email: string;
+            is_validate: boolean;
+            create_date: Date;
+            hashedRefreshToken: string | null;
+            id: number;
+            positionId: number;
+            positionLvId: number;
+            organizationId: number;
+          })
+        | null = await this.prisma.admins.findUnique({
         where: { id: id },
         omit: { password: true },
         include: {
-          adminOnOrg: {
-            select: {
-              organization: {
-                select: {
-                  id: true,
-                  name_th: true,
-                  level: true,
-                  orgOnSeal: true,
-                  orgOnSignature: true,
-                },
-              },
-            },
-          },
+          organization: true,
         },
       });
 
