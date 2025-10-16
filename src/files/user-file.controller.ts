@@ -4,7 +4,7 @@ import {
   Param,
   Post,
   Req,
-  UnauthorizedException,
+  // UnauthorizedException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -73,9 +73,6 @@ export class UserFileController {
     @Param('file') file: keyof FileModelMap,
     @Req() request: RequestwithUserData,
   ) {
-    if (file === 'seal') {
-      throw new UnauthorizedException('cannot getting seals');
-    }
     return await this.filesService.getFileByUserId(file, request.user.id);
   }
 }

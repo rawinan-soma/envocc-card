@@ -27,31 +27,34 @@ datasource db {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model admins {
-  id                 Int                 @id @unique() @default(autoincrement())
-  role               String              @default("admin")
-  username           String              @unique @db.VarChar(255)
-  password           String              @db.VarChar(255)
+  id                 Int           @id @unique() @default(autoincrement())
+  role               String        @default("admin")
+  username           String        @unique @db.VarChar(255)
+  password           String        @db.VarChar(255)
   // level              Int
-  pname              String              @db.VarChar(255)
-  fname              String              @db.VarChar(255)
-  lname              String              @db.VarChar(255)
-  private_number     String              @db.VarChar(255)
+  pname              String        @db.VarChar(255)
+  fname              String        @db.VarChar(255)
+  lname              String        @db.VarChar(255)
+  private_number     String        @db.VarChar(255)
   work_number        String
-  email              String              @unique @db.VarChar(255)
+  email              String        @unique @db.VarChar(255)
   positionId         Int
   positionLvId       Int
-  is_validate        Boolean             @default(true)
-  create_date        DateTime            @default(now()) @db.Timestamptz()
+  is_validate        Boolean       @default(true)
+  create_date        DateTime      @default(now()) @db.Timestamptz()
   hashedRefreshToken String?
   // access_levels      access_levels       @relation(fields: [level], references: [level_id], onDelete: Cascade, onUpdate: NoAction, map: "admins_ibfk_1")
-  experiences_files  experiences_files[]
+  // experiences_files  experiences_files[]
   requests           requests[]
-  position           positions           @relation(fields: [positionId], references: [position_id])
-  position_lv        position_lvs        @relation(fields: [positionLvId], references: [position_lv_id])
+  position           positions     @relation(fields: [positionId], references: [position_id])
+  position_lv        position_lvs  @relation(fields: [positionLvId], references: [position_lv_id])
   organizationId     Int
-  organization       organizations       @relation(fields: [organizationId], references: [id])
+  organization       organizations @relation(fields: [organizationId], references: [id])
 
   // @@index([level], map: "level")
+  exp_files      exp_files[]
+  gov_card_files gov_card_files[]
+  request_files  request_files[]
 }
 
 enum OrgLevel {
@@ -137,7 +140,7 @@ model seals {
   filename      String?         @unique @db.VarChar(255)
   url           String?
   create_date   DateTime        @default(now()) @db.Timestamptz()
-  userId        Int
+  adminId       Int
   seal_name     String
   organizations organizations[]
 }
@@ -216,11 +219,13 @@ model envocc_card_files {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model exp_files {
   id          Int       @id @unique() @default(autoincrement())
-  userId      Int?
+  adminId     Int
   filename    String?   @unique @db.VarChar(255)
   url         String?
   create_date DateTime? @default(now()) @db.Timestamptz()
-  user        users?    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "exp_files_ibfk_1")
+  admin       admins?   @relation(fields: [adminId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "exp_files_ibfk_1")
+  user        users     @relation(fields: [userId], references: [id])
+  userId      Int
 
   // @@index([user])
 }
@@ -245,11 +250,10 @@ model experiences {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model experiences_files {
   experience_file_id Int       @id @unique(map: "experience_file_id") @default(autoincrement())
-  adminId            Int?
+  adminId            Int
   exp_file           String?   @unique @db.VarChar(255)
   url                String?
   create_date        DateTime? @default(now()) @db.Timestamptz()
-  admin              admins?   @relation(fields: [adminId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "experiences_files_ibfk_1")
 
   // @@index([admin], map: "admin")
 }
@@ -257,11 +261,13 @@ model experiences_files {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model gov_card_files {
   id          Int       @id @unique(map: "gov_card_file_id") @default(autoincrement())
-  userId      Int?
+  adminId     Int
   filename    String?   @unique @db.VarChar(255)
   url         String?
   create_date DateTime? @default(now()) @db.Timestamptz()
-  user        users?    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "gov_card_files_ibfk_1")
+  admin       admins    @relation(fields: [adminId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "gov_card_files_ibfk_1")
+  userId      Int
+  user        users     @relation(fields: [userId], references: [id])
 
   // @@index([user])
 }
@@ -326,11 +332,13 @@ model photos {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model request_files {
   id          Int       @id @unique(map: "request_file_id") @default(autoincrement())
-  userId      Int?
+  adminId     Int?
   filename    String?   @unique @db.VarChar(255)
   url         String?
   create_date DateTime? @default(now()) @db.Timestamptz()
-  user        users?    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "request_files_ibfk_1")
+  admin       admins?   @relation(fields: [adminId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "request_files_ibfk_1")
+  userId      Int
+  user        users     @relation(fields: [userId], references: [id])
 
   // @@index([user])
 }
@@ -351,7 +359,7 @@ model requests {
   approver         Int?
   description      String?          @default("")
   date_update      DateTime         @default(now()) @db.Timestamptz()
-  user             users            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "requests_ibfk_1")
+  user             users?           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "requests_ibfk_1")
   admins           admins?          @relation(fields: [approver], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "requests_ibfk_2")
   request_statuses request_statuses @relation(fields: [request_status], references: [status_id], onDelete: Cascade, onUpdate: NoAction, map: "requests_ibfk_3")
   // @@index([user])
@@ -379,15 +387,16 @@ model resetpass {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model signatures {
-  id                 Int      @id @unique(map: "sign_person_id") @default(autoincrement())
-  sign_person_pname  String   @db.VarChar(100)
-  sign_person_name   String   @db.VarChar(255)
-  sign_person_lname  String   @db.VarChar(255)
-  filename           String   @unique @db.VarChar(255)
-  url                String?
-  sign_person_active Boolean  @default(true)
-  create_date        DateTime @default(now()) @db.Timestamptz()
-  admin              Int
+  id                   Int      @id @unique(map: "sign_person_id") @default(autoincrement())
+  sign_person_position String
+  sign_person_pname    String   @db.VarChar(100)
+  sign_person_name     String   @db.VarChar(255)
+  sign_person_lname    String   @db.VarChar(255)
+  filename             String   @unique @db.VarChar(255)
+  url                  String?
+  sign_person_active   Boolean  @default(true)
+  create_date          DateTime @default(now()) @db.Timestamptz()
+  admin                Int
 
   members       members[]
   organizations organizations[]
@@ -395,61 +404,64 @@ model signatures {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model users {
-  id                                    Int                 @unique(map: "id") @default(autoincrement())
-  cid                                   String              @unique
-  username                              String              @unique @db.VarChar(255)
-  password                              String              @db.VarChar(255)
-  role                                  String              @default("user")
-  pname_th                              String
-  pname_other_th                        String              @db.VarChar(255)
-  fname_th                              String              @db.VarChar(255)
-  lname_th                              String              @db.VarChar(255)
-  pname_en                              String
-  pname_other_en                        String              @db.VarChar(255)
-  fname_en                              String              @db.VarChar(255)
-  lname_en                              String              @db.VarChar(255)
-  birthday                              DateTime            @db.Date
-  nationality                           String              @db.VarChar(255)
-  blood                                 String
-  work_number                           String
-  private_number                        String
-  email                                 String              @unique(map: "email") @db.VarChar(255)
-  house_number1                         String              @db.VarChar(255)
-  moo1                                  Int?
-  alley1                                String?             @db.VarChar(255)
-  road1                                 String?             @db.VarChar(255)
-  province1                             Int
-  amphures1                             Int
-  district1                             Int
-  zip_code1                             Int
-  house_number2                         String              @db.VarChar(255)
-  moo2                                  Int?
-  alley2                                String?             @db.VarChar(255)
-  road2                                 String?             @db.VarChar(255)
-  province2                             Int
-  amphures2                             Int
-  district2                             Int
-  zip_code2                             Int
-  is_validate                           Boolean             @default(false)
-  create_date                           DateTime            @default(now()) @db.Timestamptz()
-  hashedRefreshToken                    String?
-  envocc_card_files                     envocc_card_files[]
-  exp_files                             exp_files[]
-  experiences                           experiences[]
-  gov_card_files                        gov_card_files[]
-  members                               members[]
-  photos                                photos[]
-  request_files                         request_files[]
-  requests                              requests[]
-  resetpass_resetpass_userTousers       resetpass[]         @relation("resetpass_userTousers")
-  resetpass_resetpass_user_emailTousers resetpass[]         @relation("resetpass_user_emailTousers")
+  id                 Int                 @unique(map: "id") @default(autoincrement())
+  cid                String              @unique
+  username           String              @unique @db.VarChar(255)
+  password           String              @db.VarChar(255)
+  role               String              @default("user")
+  pname_th           String
+  pname_other_th     String              @db.VarChar(255)
+  fname_th           String              @db.VarChar(255)
+  lname_th           String              @db.VarChar(255)
+  pname_en           String
+  pname_other_en     String              @db.VarChar(255)
+  fname_en           String              @db.VarChar(255)
+  lname_en           String              @db.VarChar(255)
+  birthday           DateTime            @db.Date
+  nationality        String              @db.VarChar(255)
+  blood              String
+  work_number        String
+  private_number     String
+  email              String              @unique(map: "email") @db.VarChar(255)
+  house_number1      String              @db.VarChar(255)
+  moo1               Int?
+  alley1             String?             @db.VarChar(255)
+  road1              String?             @db.VarChar(255)
+  province1          Int
+  amphures1          Int
+  district1          Int
+  zip_code1          Int
+  house_number2      String              @db.VarChar(255)
+  moo2               Int?
+  alley2             String?             @db.VarChar(255)
+  road2              String?             @db.VarChar(255)
+  province2          Int
+  amphures2          Int
+  district2          Int
+  zip_code2          Int
+  is_validate        Boolean             @default(false)
+  create_date        DateTime            @default(now()) @db.Timestamptz()
+  hashedRefreshToken String?
+  envocc_card_files  envocc_card_files[]
 
-  position       positions?    @relation(fields: [positionId], references: [position_id])
+  experiences experiences[]
+
+  members members[]
+  photos  photos[]
+
+  requests                              requests[]
+  resetpass_resetpass_userTousers       resetpass[] @relation("resetpass_userTousers")
+  resetpass_resetpass_user_emailTousers resetpass[] @relation("resetpass_user_emailTousers")
+
+  position       positions?       @relation(fields: [positionId], references: [position_id])
   positionId     Int?
-  position_lv    position_lvs? @relation(fields: [position_lvId], references: [position_lv_id])
+  position_lv    position_lvs?    @relation(fields: [position_lvId], references: [position_lv_id])
   position_lvId  Int?
   organizationId Int
-  organization   organizations @relation(fields: [organizationId], references: [id])
+  organization   organizations    @relation(fields: [organizationId], references: [id])
+  gov_card_files gov_card_files[]
+  exp_files      exp_files[]
+  request_files  request_files[]
 
   @@id([username, email, id])
 }

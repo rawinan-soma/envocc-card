@@ -13,7 +13,7 @@ import {
   exp_files,
   gov_card_files,
   photos,
-  seals,
+  // seals,
   Prisma,
   request_files,
 
@@ -32,7 +32,7 @@ type FileModels =
   | 'envcard'
   | 'expfile'
   | 'govcard'
-  | 'seal'
+  // | 'seal'
   | 'photo'
   | 'reqFile';
 
@@ -40,7 +40,7 @@ export type FileModelMap = {
   envcard: envocc_card_files;
   expfile: exp_files;
   govcard: gov_card_files;
-  seal: seals;
+  // seal: seals;
   photo: photos;
   reqFile: request_files;
 
@@ -58,7 +58,7 @@ export class FilesService {
       envcard: this.prisma.envocc_card_files,
       expfile: this.prisma.exp_files,
       govcard: this.prisma.gov_card_files,
-      seal: this.prisma.seals,
+      // seal: this.prisma.seals,
       photo: this.prisma.photos,
       reqFile: this.prisma.request_files,
 
@@ -197,7 +197,7 @@ export class FilesService {
         data: {
           filename: data.file_name,
           url: data.url,
-          user: { connect: { id: data.userId } },
+          userId: data.userId,
         },
       });
     } catch (err) {
@@ -219,7 +219,7 @@ export class FilesService {
         envcard: tx.envocc_card_files,
         expfile: tx.exp_files,
         govcard: tx.gov_card_files,
-        seal: tx.seals,
+        // seal: tx.seals,
         photo: tx.photos,
         reqFile: tx.request_files,
       } satisfies Record<FileModels, any>;
@@ -228,16 +228,29 @@ export class FilesService {
         create: (args: any) => Promise<FileModelMap[T] | null>;
       };
 
-      return await delegate.create({ data: data });
+      return await delegate.create({
+        data: {
+          userId: data.userId,
+          adminId: data.adminId,
+          filename: data.file_name,
+          url: data.url,
+        },
+      });
     } catch (err) {
       this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
   }
 
-  createFileDtoMapper(user: number, filename: string, url: string) {
+  createFileDtoMapper(
+    filename: string,
+    url: string,
+    user?: number,
+    admin?: number,
+  ) {
     const dto = new FileCreateDto();
-    dto.userId = user;
+    dto.userId = user ?? null;
+    dto.adminId = admin ?? null;
     dto.file_name = filename;
     dto.url = url;
 

@@ -34,9 +34,10 @@ export class AdminSealController {
     @Body() seal_name: string,
   ) {
     const sealDto = this.filesService.createFileDtoMapper(
-      request.user.id,
       seal.filename,
       seal.path,
+      undefined,
+      request.user.id,
     );
 
     const admin = await this.adminsService.getAdminById(request.user.id);

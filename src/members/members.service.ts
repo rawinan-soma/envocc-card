@@ -12,6 +12,7 @@ import { MemeberCreateDto } from './dto/create-member.dto';
 import { FilesService } from 'src/files/files.service';
 import { OrgLevel, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+// import { RequestService } from 'src/request/request.service';
 
 interface OrganizationWithParent {
   id: number;
@@ -26,11 +27,12 @@ export class MembersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly filesService: FilesService,
+    // private readonly requestService: RequestService,
   ) {}
 
   private pickLevelForRequestForm(
     org: OrganizationWithParent | undefined | null,
-    levels: string[] = ['UNIT', 'DEPARTMENT', 'MINISTRY'],
+    levels: string[] = ['UNIT', 'PROVINCE', 'DEPARTMENT', 'MINISTRY'],
   ): Record<string, string> | null {
     if (!org) {
       return null;
@@ -82,6 +84,7 @@ export class MembersService {
                     url: true,
                   },
                 },
+                organizationId: true,
                 organization: {
                   include: {
                     parent: {
@@ -110,6 +113,12 @@ export class MembersService {
       }
 
       const flatOrg = this.pickLevelForRequestForm(member?.user.organization);
+      const organization = await this.prisma.organizations.findFirst({
+        where: {
+          id: member.user.organizationId,
+        },
+        include: { signature: true, seal: true },
+      });
 
       const data = {
         cid: member.user.cid,
@@ -125,7 +134,17 @@ export class MembersService {
         position: member.user.position?.position_name,
         position_lv: member.user.position_lv?.position_lv_name,
         photo: member.user.photos[0].url,
+        seal: organization?.seal.url,
         department: flatOrg?.DEPARTMENT,
+        province_org: flatOrg?.PROVINCE,
+        member_no: member.member_no,
+        start_date: member.start_date,
+        end_date: member.end_date,
+        signature_name: organization?.signature.sign_person_name,
+        signature_lname: organization?.signature.sign_person_lname,
+        signature_pname: organization?.signature.sign_person_pname,
+        signature_file: organization?.signature.url,
+        signature_position: organization?.signature.sign_person_position,
       };
 
       return data;
@@ -259,7 +278,7 @@ export class MembersService {
   ) {
     try {
       return this.prisma.$transaction(async (tx) => {
-        console.log(user);
+        // console.log(user);
         const targetMember = await tx.members.findFirst({
           where: { userId: user },
           orderBy: { create_date: 'desc' },
@@ -307,8 +326,9 @@ export class MembersService {
     }
   }
 
-  async transactionCreateMember(data: MemeberCreateDto) {
+  async transactionCreateMember(data: MemeberCreateDto, admin: number) {
     try {
+      const { signature_method, ...rest } = data;
       return this.prisma.$transaction(async (tx) => {
         const initPassword = Math.floor(
           10000000 + Math.random() * 90000000,
@@ -335,12 +355,21 @@ export class MembersService {
           nextMemberNo = (latestMember.member_no as number) + 1;
         }
 
+        await tx.requests.create({
+          data: {
+            request_type: 1,
+            approver: admin,
+            request_status: signature_method,
+            userId: data.userId,
+          },
+        });
+
         return await tx.members.create({
           data: {
             member_no: nextMemberNo,
             qrcode: initQRCode,
             qrcode_pass: initPassword,
-            ...data,
+            ...rest,
           },
           select: { member_id: true },
         });

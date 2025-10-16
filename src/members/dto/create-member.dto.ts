@@ -1,11 +1,16 @@
 import { Type } from 'class-transformer';
-import { IsNumber } from 'class-validator';
+import { IsNumber, IsOptional } from 'class-validator';
 
 export class MemeberCreateDto {
   @IsNumber()
   @Type(() => Number)
   userId: number;
 
+  @IsNumber()
   @Type(() => Number)
-  signatureId: number;
+  signature_method: number;
+
+  // @Type(() => Number)
+  @IsOptional()
+  signatureId?: number;
 }

@@ -13,11 +13,15 @@ import { MembersService } from './members.service';
 import { MemeberCreateDto } from './dto/create-member.dto';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
+import { AdminsService } from 'src/admins/admins.service';
 
 @UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
 export class AdminMemberController {
-  constructor(private readonly membersService: MembersService) {}
+  constructor(
+    private readonly membersService: MembersService,
+    private readonly adminsService: AdminsService,
+  ) {}
 
   @Get('members/:userId')
   async getMemberByIdHandler(@Param('userId', ParseIntPipe) userId: number) {
@@ -25,8 +29,14 @@ export class AdminMemberController {
   }
 
   @Post('members')
-  async createMemberHandler(@Body() dto: MemeberCreateDto) {
-    return this.membersService.transactionCreateMember(dto);
+  async createMemberHandler(
+    @Req() request: RequestwithAdminData,
+    @Body() dto: MemeberCreateDto,
+  ) {
+    dto.signatureId = (
+      await this.adminsService.getAdminById(request.user.id)
+    ).organization.signatureId;
+    return this.membersService.transactionCreateMember(dto, request.user.id);
   }
 
   @Patch('members/:userId/deactivate')
