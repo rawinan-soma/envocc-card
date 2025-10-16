@@ -4,13 +4,16 @@ import {
   Delete,
   Param,
   Post,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { CommonDocumentsService } from './common-documents.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { getMulterOptions } from 'src/shared/file-multer-options';
 import { DocumentCreateDto } from './dto/document-create.dto';
+import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 
+@UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
 export class AdminDocumentController {
   constructor(private readonly commondocService: CommonDocumentsService) {}

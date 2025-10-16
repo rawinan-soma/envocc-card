@@ -10,6 +10,7 @@ import { AdminsService } from './admins.service';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
 
+@UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
 export class AdminsController {
   constructor(private readonly adminsService: AdminsService) {}
@@ -41,7 +42,6 @@ export class AdminsController {
     return this.adminsService.getAllAdmins();
   }
 
-  @UseGuards(JwtAccessGuardAdmin)
   @Get('me')
   async getCurrentAdminHandler(@Req() request: RequestwithAdminData) {
     return this.adminsService.getAdminById(Number(request.user.id));
