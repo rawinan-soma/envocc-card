@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { OrgLevel, PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 

@@ -97,7 +97,12 @@ export class UserAuthController {
 
   @Post('register')
   async createUserHandler(@Body() user: UserExpCreateDto) {
-    await this.userAuthService.createUser(user);
-    return { msg: 'user created' };
+    if (user.experiences?.length === 0 || !user.experiences) {
+      await this.userAuthService.createExecutiveUser(user);
+      return { msg: 'user created' };
+    } else {
+      await this.userAuthService.createUser(user);
+      return { msg: 'user created' };
+    }
   }
 }

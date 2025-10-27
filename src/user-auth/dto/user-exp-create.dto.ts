@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { ValidateNested } from 'class-validator';
+import { IsOptional, ValidateNested } from 'class-validator';
 import { UserCreateDto } from './user-create.dto';
 import { ExpCreateDto } from './exp-create.dto';
 
@@ -10,5 +10,6 @@ export class UserExpCreateDto {
 
   @ValidateNested({ each: true })
   @Type(() => ExpCreateDto)
-  experiences: ExpCreateDto[];
+  @IsOptional()
+  experiences?: ExpCreateDto[];
 }

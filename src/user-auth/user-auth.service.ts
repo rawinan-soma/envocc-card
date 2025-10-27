@@ -48,6 +48,12 @@ export class UserAuthService {
         throw new BadRequestException('user already exists');
       }
 
+      if (!dto.experiences || dto.experiences.length === 0) {
+        throw new BadRequestException(
+          'experiences is required for creating user',
+        );
+      }
+
       dto.experiences.map((item) => {
         item.exp_years = Number(
           this.calculateExpYears(item.exp_ldate, item.exp_fdate),
@@ -63,6 +69,54 @@ export class UserAuthService {
           position_lv: { connect: { position_lv_id: position_lvId } },
 
           experiences: { createMany: { data: dto.experiences } },
+          requests: { create: { request_status: 0, request_type: 1 } },
+          organization: { connect: { id: orgId } },
+        },
+      });
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof PrismaClientKnownRequestError) {
+        throw new BadRequestException('failed to create user');
+      } else if (err instanceof BadRequestException) {
+        throw err;
+      } else {
+        throw new InternalServerErrorException('something went wrong');
+      }
+    }
+  }
+
+  async createExecutiveUser(dto: UserExpCreateDto) {
+    try {
+      const nonExecutivePositions = [201, 202, 203, 204, 205, 206, 207];
+      if (nonExecutivePositions.includes(dto.user.positionId)) {
+        throw new BadRequestException(
+          'non-executive user required experiences',
+        );
+      }
+
+      dto.user.password = await bcrypt.hash(dto.user.password, 10);
+      const existingUser = await this.prisma.users.findFirst({
+        where: {
+          OR: [
+            { username: dto.user.username },
+            { email: dto.user.email },
+            { cid: dto.user.cid },
+          ],
+        },
+      });
+
+      if (existingUser) {
+        throw new BadRequestException('user already exists');
+      }
+
+      const { positionId, position_lvId, orgId, ...rest } = dto.user;
+
+      return await this.prisma.users.create({
+        data: {
+          ...rest,
+          position: { connect: { position_id: positionId } },
+          position_lv: { connect: { position_lv_id: position_lvId } },
+
           requests: { create: { request_status: 0, request_type: 1 } },
           organization: { connect: { id: orgId } },
         },
