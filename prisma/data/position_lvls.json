@@ -23,5 +23,10 @@
     "position_lv_id": 5,
     "position_lv_name": "ทรงคุณวุฒิ",
     "position_lv_name_eng": "Advisory level"
+  },
+  {
+    "position_lv_id": 0,
+    "position_lv_name": "ผู้บริหาร",
+    "position_lv_name_eng": "Executives"
   }
 ]

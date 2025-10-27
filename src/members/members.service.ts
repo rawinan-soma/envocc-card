@@ -120,6 +120,10 @@ export class MembersService {
         include: { signature: true, seal: true },
       });
 
+      const department = await this.prisma.organizations.findFirst({
+        where: { name_th: flatOrg?.DEPARTMENT },
+      });
+
       const data = {
         cid: member.user.cid,
         pname_th: member.user.pname_th,
@@ -136,6 +140,7 @@ export class MembersService {
         photo: member.user.photos[0].url,
         seal: organization?.seal.url,
         department: flatOrg?.DEPARTMENT,
+        department_en: department?.name_eng,
         province_org: flatOrg?.PROVINCE,
         member_no: member.member_no,
         start_date: member.start_date,

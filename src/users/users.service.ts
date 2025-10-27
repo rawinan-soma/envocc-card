@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
   Injectable,
@@ -47,7 +48,7 @@ export class UsersService {
 
   private pickLevelForRequestForm(
     org: OrganizationWithParent | undefined | null,
-    levels: string[] = ['UNIT', 'DEPARTMENT', 'MINISTRY'],
+    levels: string[] = ['UNIT', 'PROVINCE', 'DEPARTMENT', 'MINISTRY'],
   ): Record<string, string> | null {
     if (!org) {
       return null;
@@ -108,9 +109,9 @@ export class UsersService {
     try {
       let filtered: number[];
       if (queryData.status === 'ongoing') {
-        filtered = [0, 1, 2, 3, 4, 5, 6, 7];
+        filtered = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
       } else if (queryData.status === 'activated') {
-        filtered = [8, 9, 10, 11, 12, 13, 14, 15];
+        filtered = [15];
       } else if (queryData.status === 'suspended') {
         filtered = [16];
       } else {
@@ -119,8 +120,11 @@ export class UsersService {
 
       const ids = await this.getChildIds(queryData.orgId);
 
-      const adminLevelFilter: Prisma.usersWhereInput = {
-        requests: { some: { request_status: { in: filtered } } },
+      const adminLevelFilter = {
+        requests: {
+          some: { request_status: { in: filtered } },
+          // none: { request_status: { notIn: filtered } },
+        },
         organizationId: { in: ids },
         OR: [
           { fname_th: { contains: queryData.search_term } },
@@ -186,6 +190,8 @@ export class UsersService {
                 request_status: true,
               },
               orderBy: { date_update: 'desc' },
+              // where: { request_status: { in: filtered } },
+              take: 1,
             },
             position: { select: { position_name: true } },
             position_lv: { select: { position_lv_name: true } },
@@ -218,8 +224,12 @@ export class UsersService {
         };
       });
 
+      const filteredData = data.filter((d) =>
+        filtered.includes(d.request_status),
+      );
+
       return {
-        data: data,
+        data: filteredData,
         pageData: {
           totalItems: totalItems,
           totalPages: totalPages,
@@ -316,6 +326,43 @@ export class UsersService {
       );
 
       const flatOrg = this.pickLevelForRequestForm(user?.organization);
+      const unit = await this.prisma.organizations.findUnique(
+        Prisma.validator<Prisma.organizationsFindUniqueArgs>()({
+          where: {
+            id: user!.organizationId,
+          },
+          include: {
+            signature: {
+              select: {
+                sign_person_position: true,
+              },
+            },
+          },
+        }),
+      );
+
+      let department: any;
+      let province: any;
+      let region: any;
+      let ministry: any;
+
+      if (flatOrg?.DEPARTMENT) {
+        department = await this.prisma.organizations.findFirst({
+          where: { name_th: flatOrg?.DEPARTMENT },
+        });
+      }
+
+      if (flatOrg?.PROVINCE) {
+        province = await this.prisma.organizations.findFirst({
+          where: { name_th: flatOrg?.PROVINCE },
+        });
+      }
+
+      if (flatOrg?.MINISTRY) {
+        ministry = await this.prisma.organizations.findFirst({
+          where: { name_th: flatOrg?.MINISTRY },
+        });
+      }
 
       const data = {
         ...user,
@@ -326,9 +373,17 @@ export class UsersService {
         position_level_name_th: user?.position_lv?.position_lv_name,
         position_level_name_eng: user?.position_lv?.position_lv_name_eng,
         photo_url: user?.photos[0]?.url,
-        unit: flatOrg?.UNIT,
-        department: flatOrg?.DEPARTMENT,
-        ministry: flatOrg?.MINISTRY,
+        unit_en: unit?.name_eng,
+        unit: unit?.name_th,
+        province: province?.name_th,
+        province_en: province?.name_eng,
+        region: region?.name_th,
+        region_en: region?.name_eng,
+        department: department?.name_th,
+        department_en: department?.name_eng,
+        ministry: ministry?.name_th,
+        ministry_en: ministry?.name_eng,
+        signature_position: unit?.signature.sign_person_position,
       };
 
       return data;

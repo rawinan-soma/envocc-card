@@ -1,4 +1,12 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { RequestService } from './request.service';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
 import { StatusCreateDto } from './dto/status-create.dto';
@@ -16,5 +24,10 @@ export class AdminRequestController {
   ) {
     const approver = request.user.id;
     return await this.requestService.updateStatus(updated, approver);
+  }
+
+  @Delete('users/request/:id')
+  async deleteRequestHandler(@Param('id') id: number) {
+    return await this.requestService.deleteRequestByID(id);
   }
 }
