@@ -138,8 +138,6 @@ export class UsersService {
 
       const users = await this.prisma.users.findMany(
         Prisma.validator<Prisma.usersFindManyArgs>()({
-          skip: offset,
-          take: limit,
           select: {
             id: true,
             pname_th: true,
@@ -201,9 +199,6 @@ export class UsersService {
         }),
       );
 
-      const totalItems = await this.prisma.users.count();
-      const totalPages = Math.ceil(totalItems / limit);
-
       const data = users.map((user) => {
         const flatOrg = this.pickLevelForRequestForm(
           user?.organization ?? undefined,
@@ -228,8 +223,11 @@ export class UsersService {
         filtered.includes(d.request_status),
       );
 
+      const totalItems = filteredData.length;
+      const totalPages = Math.ceil(totalItems / limit);
+
       return {
-        data: filteredData,
+        data: filteredData.slice(offset, offset + limit),
         pageData: {
           totalItems: totalItems,
           totalPages: totalPages,

@@ -36,16 +36,16 @@ export class SealsService {
   async createAndUpdateSealTx(
     seal: FileCreateDto,
     orgId: number,
-    seal_name: string,
+    // seal_name: string,
   ) {
     try {
       await this.prismaService.$transaction(async (tx) => {
         const updateSeal = await tx.seals.create({
           data: {
-            seal_name: seal_name,
+            // seal_name: seal_name,
             adminId: seal.adminId!,
             filename: seal.file_name,
-            url: seal.file_name,
+            url: seal.url,
           },
         });
 
@@ -65,6 +65,4 @@ export class SealsService {
       throw new InternalServerErrorException(err);
     }
   }
-
-  // TODO: get all seals
 }

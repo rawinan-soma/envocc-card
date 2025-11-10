@@ -63,5 +63,97 @@
     "positionId": 203,
     "positionLvId": 2,
     "organizationId": 130
+  },
+
+  {
+    "username": "test06",
+    "password": "$2a$10$gkG0q7S5LTsaqt6BrZaqTe4EqXtTSqf76B60kChdki5/TaJGuxUh6",
+    "pname": "นาย",
+    "fname": "จอน",
+    "lname": "สมิทธ์",
+    "private_number": "0987654321",
+    "work_number": "012345678",
+    "email": "john.smith6@university.edu",
+    "positionId": 203,
+    "positionLvId": 2,
+    "organizationId": 1
+  },
+  {
+    "username": "test07",
+    "password": "$2a$10$gkG0q7S5LTsaqt6BrZaqTe4EqXtTSqf76B60kChdki5/TaJGuxUh6",
+    "pname": "นาย",
+    "fname": "จอน",
+    "lname": "สมิทธ์",
+    "private_number": "0987654321",
+    "work_number": "012345678",
+    "email": "john.smith7@university.edu",
+    "positionId": 203,
+    "positionLvId": 2,
+    "organizationId": 3
+  },
+  {
+    "username": "test08",
+    "password": "$2a$10$gkG0q7S5LTsaqt6BrZaqTe4EqXtTSqf76B60kChdki5/TaJGuxUh6",
+    "pname": "นาย",
+    "fname": "จอน",
+    "lname": "สมิทธ์",
+    "private_number": "0987654321",
+    "work_number": "012345678",
+    "email": "john.smith8@university.edu",
+    "positionId": 203,
+    "positionLvId": 2,
+    "organizationId": 105
+  },
+  {
+    "username": "test09",
+    "password": "$2a$10$gkG0q7S5LTsaqt6BrZaqTe4EqXtTSqf76B60kChdki5/TaJGuxUh6",
+    "pname": "นาย",
+    "fname": "จอน",
+    "lname": "สมิทธ์",
+    "private_number": "0987654321",
+    "work_number": "012345678",
+    "email": "john.smith9@university.edu",
+    "positionId": 203,
+    "positionLvId": 2,
+    "organizationId": 12
+  },
+  {
+    "username": "test10",
+    "password": "$2a$10$gkG0q7S5LTsaqt6BrZaqTe4EqXtTSqf76B60kChdki5/TaJGuxUh6",
+    "pname": "นาย",
+    "fname": "จอน",
+    "lname": "สมิทธ์",
+    "private_number": "0987654321",
+    "work_number": "012345678",
+    "email": "john.smith10@university.edu",
+    "positionId": 203,
+    "positionLvId": 2,
+    "organizationId": 130
+  },
+  {
+    "username": "test11",
+    "password": "$2a$10$gkG0q7S5LTsaqt6BrZaqTe4EqXtTSqf76B60kChdki5/TaJGuxUh6",
+    "pname": "นาย",
+    "fname": "จอน",
+    "lname": "สมิทธ์",
+    "private_number": "0987654321",
+    "work_number": "012345678",
+    "email": "john.smith11@university.edu",
+    "positionId": 203,
+    "positionLvId": 2,
+    "organizationId": 78
+  },
+  {
+    "username": "test12",
+    "password": "$2a$10$gkG0q7S5LTsaqt6BrZaqTe4EqXtTSqf76B60kChdki5/TaJGuxUh6",
+    "pname": "นาย",
+    "fname": "จอน",
+    "lname": "สมิทธ์",
+    "private_number": "0987654321",
+    "work_number": "012345678",
+    "email": "john.smith12@university.edu",
+    "positionId": 203,
+    "positionLvId": 2,
+    "organizationId": 130
   }
 ]

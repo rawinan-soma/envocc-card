@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -40,5 +42,11 @@ export class AdminSignatureController {
       admin.organizationId,
       dto,
     );
+  }
+
+  // TODO: GET PATCH
+  @Get('signatures')
+  async getSignatureByIdHandler(@Query() signatureId: number) {
+    return await this.signatureService.getSignatureById(signatureId);
   }
 }

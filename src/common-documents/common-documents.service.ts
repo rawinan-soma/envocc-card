@@ -9,7 +9,6 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
 import { DocumentCreateDto } from './dto/document-create.dto';
 import { FilesService } from 'src/files/files.service';
-import * as fs from 'fs';
 
 @Injectable()
 export class CommonDocumentsService {
@@ -54,7 +53,14 @@ export class CommonDocumentsService {
 
   async createDocument(dto: DocumentCreateDto) {
     try {
-      return await this.prisma.documents.create({ data: dto });
+      return await this.prisma.documents.create({
+        data: {
+          doc_name: dto.doc_name,
+          doc_type: Number(dto.doc_type),
+          filename: dto.filename,
+          url: dto.url,
+        },
+      });
     } catch (err) {
       this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
@@ -70,8 +76,9 @@ export class CommonDocumentsService {
       if (!document || !document.url) {
         throw new NotFoundException('document not found');
       }
-      fs.unlinkSync(document.url);
+
       await this.filesService.deleteFile(document.url);
+      await this.prisma.documents.delete({ where: { id: document.id } });
     } catch (err) {
       this.logger.error(err);
       if (err instanceof NotFoundException) {

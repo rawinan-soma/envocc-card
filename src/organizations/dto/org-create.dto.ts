@@ -1,5 +1,4 @@
-import { OrgLevel } from '@prisma/client';
-import { IsEnum, IsNumber, IsString } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 // enum OrgLevel {
 //   MINISTRY = "MINISTRY",
@@ -19,9 +18,7 @@ export class OrgCreateDto {
   @IsString()
   name_eng: string;
 
-  @IsEnum(OrgLevel)
-  level: OrgLevel;
-
   @IsNumber()
-  provinceId: number;
+  @IsOptional()
+  provinceId?: number;
 }

@@ -19,12 +19,20 @@ export class AdminAuthService {
   async createAdmin(dto: AdminCreateDto) {
     try {
       const hashedPassword = await bcrypt.hash(dto.password, 10);
-      const { orgId, ...rest } = dto;
+      // const { orgId, ...rest } = dto;
       return await this.prisma.admins.create({
         data: {
-          ...rest,
+          email: dto.email,
+          fname: dto.fname,
+          lname: dto.lname,
+          pname: dto.pname,
+          positionId: dto.positionId,
+          positionLvId: dto.positionLvId,
+          private_number: dto.private_number,
+          username: dto.username,
+          work_number: dto.work_number,
           password: hashedPassword,
-          organizationId: orgId,
+          organizationId: dto.orgId,
         },
         select: { username: true, role: true },
       });

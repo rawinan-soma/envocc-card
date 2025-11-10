@@ -141,7 +141,7 @@ model seals {
   url           String?
   create_date   DateTime        @default(now()) @db.Timestamptz()
   adminId       Int
-  seal_name     String
+  // seal_name     String
   organizations organizations[]
 }
 

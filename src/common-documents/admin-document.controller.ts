@@ -3,7 +3,9 @@ import {
   Controller,
   Delete,
   Param,
+  ParseIntPipe,
   Post,
+  UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -23,18 +25,19 @@ export class AdminDocumentController {
     FileInterceptor('document', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),
   )
   async createdDocumentHandler(
-    @Param('file') file: Express.Multer.File,
+    @UploadedFile() file: Express.Multer.File,
     @Body() data: DocumentCreateDto,
   ) {
+    data.filename = file.filename;
+    data.url = file.path;
+    // console.log(data);
     return await this.commondocService.createDocument({
       ...data,
-      doc_file: file.filename,
-      url: file.path,
     });
   }
 
-  @Delete('document/:docId')
-  async deleteDocumentHandler(@Param() docId: number) {
+  @Delete('documents/:docId')
+  async deleteDocumentHandler(@Param('docId', ParseIntPipe) docId: number) {
     return await this.commondocService.deleteDocument(docId);
   }
 }

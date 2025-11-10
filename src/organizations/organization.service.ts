@@ -8,6 +8,7 @@ import {
 import { OrgLevel } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
 import { OrgCreateDto } from './dto/org-create.dto';
+import { OrgUpdateDto } from './dto/org-update.dto';
 
 interface OrganizationWithParent {
   id: number;
@@ -102,6 +103,42 @@ export class OrganizationService {
     }
   }
 
+  async getAllOrganization(pages: number = 1) {
+    const limit = 10;
+    const offset = (pages - 1) * limit;
+    const orgs = await this.prismaService.organizations.findMany({
+      orderBy: { id: 'asc' },
+      select: {
+        id: true,
+        code: true,
+        name_eng: true,
+        name_th: true,
+        signature: {
+          select: {
+            sign_person_pname: true,
+            sign_person_name: true,
+            sign_person_lname: true,
+            sign_person_position: true,
+            url: true,
+          },
+        },
+        seal: {
+          select: { url: true },
+        },
+      },
+    });
+
+    return {
+      data: orgs.slice(offset, offset + limit),
+      pageData: {
+        totalItems: orgs.length,
+        totalPages: Math.ceil(orgs.length / limit),
+        current: pages,
+        limit: limit,
+      },
+    };
+  }
+
   async createOrganization(
     dto: OrgCreateDto,
     seal: number,
@@ -120,6 +157,7 @@ export class OrganizationService {
       return await this.prismaService.organizations.create({
         data: {
           ...dto,
+          level: 'UNIT',
           parentId: parentId,
           sealId: seal,
           signatureId: signature,
@@ -135,16 +173,68 @@ export class OrganizationService {
     }
   }
 
-  async getOrganizationChildren(parentId: number) {
+  async getOrganizationChildren(parentId: number, pages: number = 1) {
     try {
-      const children = this.prismaService.organizations.findMany({
-        where: { parentId: parentId },
-        select: { id: true, name_th: true, level: true },
+      const orgs = await this.prismaService.organizations.findMany({
+        where: { OR: [{ parentId: parentId }, { id: parentId }] },
+        select: {
+          id: true,
+          code: true,
+          name_eng: true,
+          name_th: true,
+          signature: {
+            select: {
+              sign_person_pname: true,
+              sign_person_name: true,
+              sign_person_lname: true,
+              sign_person_position: true,
+              url: true,
+            },
+          },
+          seal: {
+            select: { url: true },
+          },
+        },
       });
 
-      return children;
+      const limit = 10;
+      const offset = (pages - 1) * limit;
+
+      return {
+        data: orgs.slice(offset, offset + limit),
+        pageData: {
+          totalItems: orgs.length,
+          totalPages: Math.ceil(orgs.length / limit),
+          current: pages,
+          limit: limit,
+        },
+      };
     } catch (err) {
       this.logger.error(err);
+      throw new InternalServerErrorException('something went wrong');
+    }
+  }
+
+  async updateOrganization(orgId: number, dto: OrgUpdateDto) {
+    try {
+      const org = await this.prismaService.organizations.findUnique({
+        where: { id: orgId },
+      });
+
+      if (!org) {
+        throw new BadRequestException('organizaton not found');
+      }
+
+      return await this.prismaService.organizations.update({
+        where: { id: orgId },
+        data: { ...dto },
+      });
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof BadRequestException) {
+        throw err;
+      }
+
       throw new InternalServerErrorException('something went wrong');
     }
   }

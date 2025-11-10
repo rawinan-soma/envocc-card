@@ -1,16 +1,18 @@
-import { Type } from 'class-transformer';
-import { IsString } from 'class-validator';
+// import { Type } from 'class-transformer';
+import { IsOptional, IsString } from 'class-validator';
 
 export class DocumentCreateDto {
-  @Type(() => Number)
-  doc_type: number;
+  @IsString()
+  doc_type: string;
 
   @IsString()
   doc_name: string;
 
+  @IsOptional()
   @IsString()
-  doc_file: string;
+  filename?: string;
 
+  @IsOptional()
   @IsString()
-  url: string;
+  url?: string;
 }

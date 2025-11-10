@@ -17,6 +17,8 @@ export class AdminsController {
 
   @Get('admins')
   async getAdminHandler(
+    @Req() request: RequestwithAdminData,
+    @Query('pages') pages: number,
     @Query('id') id?: number,
     @Query('username') username?: string,
     @Query('email') email?: string,
@@ -38,8 +40,8 @@ export class AdminsController {
     if (email) {
       return this.adminsService.getAdminByEmail(email);
     }
-
-    return this.adminsService.getAllAdmins();
+    console.log(pages);
+    return this.adminsService.getAllAdmins(request.user.id, Number(pages));
   }
 
   @Get('me')

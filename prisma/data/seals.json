@@ -1,44 +1,7 @@
 [
   {
     "id": 1,
-    "filename": "seal1.jpg",
-    "adminId": 1,
-    "seal_name": "test1"
-  },
-  {
-    "id": 2,
-    "filename": "seal2.jpg",
-    "adminId": 1,
-    "seal_name": "test1"
-  },
-  {
-    "id": 3,
-    "filename": "seal3.jpg",
-    "adminId": 1,
-    "seal_name": "test1"
-  },
-  {
-    "id": 4,
-    "filename": "seal4.jpg",
-    "adminId": 1,
-    "seal_name": "test1"
-  },
-  {
-    "id": 5,
-    "filename": "seal5.jpg",
-    "adminId": 1,
-    "seal_name": "test1"
-  },
-  {
-    "id": 6,
-    "filename": "seal6.jpg",
-    "adminId": 1,
-    "seal_name": "test1"
-  },
-  {
-    "id": 99999,
-    "filename": "nothing",
-    "adminId": 1,
-    "seal_name": "nothing"
+    "filename": "seal_default.png",
+    "adminId": 1
   }
 ]

@@ -14,16 +14,64 @@ export class AdminsService {
   private readonly logger = new Logger(AdminsService.name);
   constructor(private readonly prisma: PrismaService) {}
 
-  async getAllAdmins() {
+  private async getChildIds(orgId: number): Promise<number[]> {
+    const parent = await this.prisma.organizations.findUnique({
+      where: { id: orgId },
+      include: { children: true },
+    });
+
+    if (!parent) return [];
+
+    let ids: number[] = [parent.id];
+    for (const child of parent.children) {
+      const childIds = await this.getChildIds(child.id);
+      ids = ids.concat(childIds);
+    }
+
+    return ids;
+  }
+
+  async getAllAdmins(adminId: number, pageNumber: number) {
     try {
-      return await this.prisma.admins.findMany({
+      const limit = 10;
+      const offset = (pageNumber - 1) * limit;
+
+      const orgId = (
+        await this.prisma.admins.findUnique({
+          where: { id: adminId },
+        })
+      )?.organizationId;
+
+      if (!orgId) {
+        throw new InternalServerErrorException();
+      }
+
+      const ids = await this.getChildIds(orgId);
+
+      const admins = await this.prisma.admins.findMany({
+        where: { organizationId: { in: ids } },
         omit: { password: true },
         include: {
           organization: true,
+          position: true,
+          position_lv: true,
         },
-
-        // include: { institutions: { include: { departments: true } } },
+        orderBy: { id: 'asc' },
       });
+
+      console.log(admins.slice(offset, offset + limit));
+
+      const totalItems = admins.length;
+      const totalPages = Math.ceil(totalItems / limit);
+      return {
+        data: admins.slice(offset, offset + limit),
+        pageData: {
+          totalItems: totalItems,
+          totalPages: totalPages,
+          currentPage: pageNumber,
+          limit: limit,
+        },
+      };
     } catch (err) {
       this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');

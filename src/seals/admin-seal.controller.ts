@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -31,7 +33,7 @@ export class AdminSealController {
   async createSealHandler(
     @UploadedFile() seal: Express.Multer.File,
     @Req() request: RequestwithAdminData,
-    @Body() seal_name: string,
+    // @Body() seal_name: string,
   ) {
     const sealDto = this.filesService.createFileDtoMapper(
       seal.filename,
@@ -45,7 +47,13 @@ export class AdminSealController {
     return await this.sealsService.createAndUpdateSealTx(
       sealDto,
       admin.organizationId,
-      seal_name,
+      // seal_name,
     );
+  }
+
+  // TODO: GET PATCH
+  @Get('seals')
+  async getSealByIdHandler(@Query() sealId: number) {
+    return await this.sealsService.getSealsById(sealId);
   }
 }
