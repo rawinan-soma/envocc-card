@@ -27,6 +27,8 @@ import { SealsModule } from './seals/seals.module';
 import { SignaturesModule } from './signatures/signatures.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { BullModule } from '@nestjs/bullmq';
+import { QueueModule } from './queue/queue.module';
 
 @Module({
   imports: [
@@ -59,6 +61,10 @@ import { join } from 'path';
       rootPath: join(__dirname, '..', '..', 'assets'),
       serveRoot: '/app/assets',
     }),
+    BullModule.forRoot({
+      connection: { host: 'localhost', port: 6379 },
+    }),
+    QueueModule,
   ],
   controllers: [AppController],
   providers: [AppService],

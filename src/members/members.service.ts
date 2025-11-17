@@ -12,6 +12,8 @@ import { MemeberCreateDto } from './dto/create-member.dto';
 import { FilesService } from 'src/files/files.service';
 import { OrgLevel, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 // import { RequestService } from 'src/request/request.service';
 
 interface OrganizationWithParent {
@@ -27,6 +29,7 @@ export class MembersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly filesService: FilesService,
+    @InjectQueue('cleanup') private queue: Queue,
     // private readonly requestService: RequestService,
   ) {}
 
@@ -277,7 +280,22 @@ export class MembersService {
       }
 
       if (await bcrypt.compare(inputPassword, member.qrcode_pass as string)) {
-        return await this.getMember(member.userId);
+        const initToken = Math.floor(
+          10000000 + Math.random() * 90000000,
+        ).toString();
+
+        await this.prisma.members.update({
+          where: { member_id: member.member_id },
+          data: { qrcode_token: initToken },
+        });
+
+        await this.queue.add(
+          'delete-qr-token',
+          { id: member.member_id },
+          { delay: 5 * 60 * 1000 },
+        );
+
+        return { token: initToken, user_id: member.userId };
       }
 
       throw new UnauthorizedException('qrcode or password incorrect');
@@ -290,6 +308,26 @@ export class MembersService {
         throw err;
       }
       throw new InternalServerErrorException('something went wrong');
+    }
+  }
+
+  async verifyToken(token: string) {
+    try {
+      const member = await this.prisma.members.findFirst({
+        where: { qrcode_token: token },
+      });
+
+      if (!member) {
+        throw new BadRequestException('qr code token not found');
+      }
+
+      return { token: member.qrcode_token, user_id: member.userId };
+    } catch (err) {
+      if (err instanceof BadRequestException) {
+        throw err;
+      }
+
+      throw new InternalServerErrorException();
     }
   }
 
