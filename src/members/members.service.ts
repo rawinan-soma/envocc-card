@@ -64,7 +64,11 @@ export class MembersService {
         Prisma.validator<Prisma.membersFindFirstArgs>()({
           where: { userId: user_id, is_active: true },
           orderBy: { end_date: 'desc' },
-          include: {
+          select: {
+            qrcode: true,
+            member_no: true,
+            start_date: true,
+            end_date: true,
             user: {
               select: {
                 cid: true,
@@ -125,6 +129,7 @@ export class MembersService {
       });
 
       const data = {
+        qrcode: member.qrcode,
         cid: member.user.cid,
         pname_th: member.user.pname_th,
         pname_other_th: member.user.pname_other_th,
@@ -237,17 +242,29 @@ export class MembersService {
     }
   }
 
-  // async getMemberByQrcode(qrcode_no: string) {
-  //   try {
-  //     return this.prisma.members.findFirst({
-  //       where: { qrcode: qrcode_no },
-  //       select: { user: true },
-  //     });
-  //   } catch (error) {
-  //     console.log(error);
-  //     throw new InternalServerErrorException('something went wrong');
-  //   }
-  // }
+  async getMemberByQrcode(qrcode_no: string) {
+    try {
+      const member = await this.prisma.members.findFirst({
+        where: {
+          qrcode: qrcode_no,
+        },
+        orderBy: { member_no: 'desc' },
+      });
+
+      const status = await this.prisma.requests.findFirst({
+        where: { userId: member?.userId },
+        orderBy: { request_status: 'desc' },
+      });
+      if (status?.request_status !== 15) {
+        throw new BadRequestException('cannot generate qr code');
+      }
+
+      return member;
+    } catch (error) {
+      console.log(error);
+      throw new InternalServerErrorException('something went wrong');
+    }
+  }
 
   async validateQrCode(qrcode: string, inputPassword: string) {
     try {

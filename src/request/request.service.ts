@@ -115,7 +115,7 @@ export class RequestService {
   async deleteRequestByID(id: number) {
     try {
       const request = await this.getCurrentStatus(id);
-      const isInitiate = request?.request_status !== 0;
+      const isInitiate = request?.request_status === 0;
       if (!request || isInitiate) {
         throw new BadRequestException('request not found');
       }

@@ -26,7 +26,7 @@ export class AdminRequestController {
     return await this.requestService.updateStatus(updated, approver);
   }
 
-  @Delete('users/request/:id')
+  @Delete('users/requests/:id')
   async deleteRequestHandler(@Param('id') id: number) {
     return await this.requestService.deleteRequestByID(id);
   }
