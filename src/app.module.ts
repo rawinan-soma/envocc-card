@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AdminsModule } from './admins/admins.module';
 import { AdminAuthModule } from './admin-auth/admin-auth.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserAuthModule } from './user-auth/user-auth.module';
 import { UsersModule } from './users/users.module';
 // import { RequestModule } from './request/request.module';
@@ -42,6 +42,8 @@ import { QueueModule } from './queue/queue.module';
         ACCESS_TOKEN_EXP: Joi.number().required(),
         REFRESH_TOKEN_SECRET: Joi.string().required(),
         REFRESH_TOKEN_EXP: Joi.number().required(),
+        REDIS_HOST: Joi.string().required(),
+        REDIS_PORT: Joi.number().required(),
       }),
     }),
     PrismaModule,
@@ -62,7 +64,7 @@ import { QueueModule } from './queue/queue.module';
       serveRoot: '/app/assets',
     }),
     BullModule.forRoot({
-      connection: { host: 'localhost', port: 6379 },
+      connection: { host: 'redis', port: 6379 },
     }),
     QueueModule,
   ],

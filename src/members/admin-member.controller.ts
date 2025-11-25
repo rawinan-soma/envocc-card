@@ -15,7 +15,7 @@ import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interfac
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 import { AdminsService } from 'src/admins/admins.service';
 
-@UseGuards(JwtAccessGuardAdmin)
+// @UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
 export class AdminMemberController {
   constructor(

@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { MembersService } from './members.service';
 
 @Controller('common')
@@ -17,8 +25,13 @@ export class CommonMembersController {
     return await this.memberService.validateQrCode(qrcode, password);
   }
 
-  @Post('qrcode/verify')
+  @Get('qrcode/verify')
   async verifyTokenHandler(@Query('token') token: string) {
     return await this.memberService.verifyToken(token);
+  }
+
+  @Get('members/:userId')
+  async getMemberByIdHandler(@Param('userId', ParseIntPipe) userId: number) {
+    return this.memberService.getMember(userId);
   }
 }
