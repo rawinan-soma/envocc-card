@@ -101,6 +101,22 @@ async function main() {
       data: admins,
     });
 
+    await tx.$queryRaw`SELECT setval(pg_get_serial_sequence('"organizations"', 'id'), COALESCE(MAX(id), 1), false) FROM "organizations";`;
+    console.log('org reset');
+    await tx.$queryRaw`SELECT MAX(id) FROM organizations`;
+
+    await tx.$queryRaw`SELECT setval(pg_get_serial_sequence('"signatures"', 'id'), COALESCE(MAX(id), 1), false) FROM "signatures";`;
+    console.log('signatures reset');
+    await tx.$queryRaw`SELECT MAX(id) FROM signatures`;
+
+    await tx.$queryRaw`SELECT setval(pg_get_serial_sequence('"seals"', 'id'), COALESCE(MAX(id), 1), false) FROM "seals";`;
+    console.log('seals reset');
+    await tx.$queryRaw`SELECT MAX(id) FROM seals`;
+
+    await tx.$queryRaw`SELECT setval(pg_get_serial_sequence('"admins"', 'id'), COALESCE(MAX(id), 1), false) FROM "admins";`;
+    console.log('admins reset');
+    await tx.$queryRaw`SELECT MAX(id) FROM admins`;
+
     // // TODO:seed user -> Remove on production
     // const users = JSON.parse(
     //   fs.readFileSync('./prisma/data/users.json', 'utf-8'),
@@ -147,8 +163,8 @@ async function main() {
 
 main()
   .then(async () => {
-    console.log('Seeding complete');
     await prisma.$disconnect();
+    console.log('Seeding complete');
   })
   .catch(async (e) => {
     console.log(e);
