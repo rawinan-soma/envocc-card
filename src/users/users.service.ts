@@ -48,7 +48,7 @@ export class UsersService {
 
   private pickLevelForRequestForm(
     org: OrganizationWithParent | undefined | null,
-    levels: string[] = ['UNIT', 'PROVINCE', 'DEPARTMENT', 'MINISTRY'],
+    levels: string[] = ['UNIT', 'PROVINCE', 'DEPARTMENT', 'MINISTRY', 'REGION'],
   ): Record<string, string> | null {
     if (!org) {
       return null;
@@ -213,7 +213,11 @@ export class UsersService {
           request_status: user.requests[0].request_status,
           position: user.position?.position_name,
           position_lv: user.position_lv?.position_lv_name,
-          unit: flatOrg?.UNIT ?? null,
+          unit:
+            flatOrg?.UNIT ??
+            flatOrg?.PROVINCE ??
+            flatOrg?.REGION ??
+            flatOrg?.DEPARTMENT,
           department: flatOrg?.DEPARTMENT ?? null,
           ministry: flatOrg?.MINISTRY ?? null,
         };
