@@ -10,7 +10,7 @@ services:
     volumes:
       - postgres_data-docker:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -34,6 +34,7 @@ services:
       - database-docker
     networks:
       - envocc-card
+      - my_network
     env_file:
       - docker.env
     volumes:
@@ -45,7 +46,7 @@ services:
         bun run start:prod
       "
     healthcheck:
-      test: ['CMD', 'curl', 'http://localhost:3000/envocc-card/api/v2/']
+      test: ["CMD", "curl", "http://localhost:3000/envocc-card/api/v2/"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -56,3 +57,5 @@ volumes:
 networks:
   envocc-card:
     driver: bridge
+  my_network:
+    external: true
