@@ -41,6 +41,8 @@ services:
       - ./assets:/app/assets
     command: |
       sh -c "
+        bun prisma generate
+        bun run build
         bun prisma migrate deploy
         bun prisma db seed
         bun run start:prod
