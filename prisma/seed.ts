@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { OrgLevel, PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
@@ -56,10 +59,8 @@ async function main() {
       fs.readFileSync('./prisma/data/organizations.json', 'utf-8'),
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const orgReady = org.map((o: any) => ({
       ...o,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       level: OrgLevel[o.level as keyof typeof OrgLevel],
     }));
 
@@ -158,19 +159,18 @@ async function main() {
     // await tx.requests.createMany({
     //   data: requests,
     // });
+    // Reset sequences หลังจาการ Seed เสร็จ
+    const tables = ['organizations', 'signatures', 'seals', 'admins'];
+
+    for (const table of tables) {
+      await tx.$executeRawUnsafe(
+        `SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE((SELECT MAX(id) FROM "${table}"), 1), true)`,
+      );
+      console.log(`${table} sequence reset`);
+    }
+
+    return true;
   });
-
-  // Reset sequences หลังจาการ Seed เสร็จ
-  const tables = ['organizations', 'signatures', 'seals', 'admins'];
-
-  for (const table of tables) {
-    await tx.$executeRawUnsafe(
-      `SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE((SELECT MAX(id) FROM "${table}"), 1), true)`,
-    );
-    console.log(`${table} sequence reset`);
-  }
-
-  return true;
 }
 
 main()
