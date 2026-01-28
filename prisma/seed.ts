@@ -11,7 +11,7 @@ async function main() {
     console.log('Already seeded, skipping...');
     return;
   }
-  return prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx) => {
     const province = JSON.parse(
       fs.readFileSync('./prisma/data/province.json', 'utf-8'),
     );
@@ -101,21 +101,21 @@ async function main() {
       data: admins,
     });
 
-    await tx.$queryRaw`SELECT setval(pg_get_serial_sequence('"organizations"', 'id'), COALESCE(MAX(id), 1), false) FROM "organizations";`;
-    console.log('org reset');
-    await tx.$queryRaw`SELECT MAX(id) FROM organizations`;
+    // await tx.$queryRaw`SELECT setval(pg_get_serial_sequence('"organizations"', 'id'), COALESCE(MAX(id), 1), false) FROM "organizations";`;
+    // console.log('org reset');
+    // await tx.$queryRaw`SELECT MAX(id) FROM organizations`;
 
-    await tx.$queryRaw`SELECT setval(pg_get_serial_sequence('"signatures"', 'id'), COALESCE(MAX(id), 1), false) FROM "signatures";`;
-    console.log('signatures reset');
-    await tx.$queryRaw`SELECT MAX(id) FROM signatures`;
+    // await tx.$queryRaw`SELECT setval(pg_get_serial_sequence('"signatures"', 'id'), COALESCE(MAX(id), 1), false) FROM "signatures";`;
+    // console.log('signatures reset');
+    // await tx.$queryRaw`SELECT MAX(id) FROM signatures`;
 
-    await tx.$queryRaw`SELECT setval(pg_get_serial_sequence('"seals"', 'id'), COALESCE(MAX(id), 1), false) FROM "seals";`;
-    console.log('seals reset');
-    await tx.$queryRaw`SELECT MAX(id) FROM seals`;
+    // await tx.$queryRaw`SELECT setval(pg_get_serial_sequence('"seals"', 'id'), COALESCE(MAX(id), 1), false) FROM "seals";`;
+    // console.log('seals reset');
+    // await tx.$queryRaw`SELECT MAX(id) FROM seals`;
 
-    await tx.$queryRaw`SELECT setval(pg_get_serial_sequence('"admins"', 'id'), COALESCE(MAX(id), 1), false) FROM "admins";`;
-    console.log('admins reset');
-    await tx.$queryRaw`SELECT MAX(id) FROM admins`;
+    // await tx.$queryRaw`SELECT setval(pg_get_serial_sequence('"admins"', 'id'), COALESCE(MAX(id), 1), false) FROM "admins";`;
+    // console.log('admins reset');
+    // await tx.$queryRaw`SELECT MAX(id) FROM admins`;
 
     // // TODO:seed user -> Remove on production
     // const users = JSON.parse(
@@ -159,6 +159,18 @@ async function main() {
     //   data: requests,
     // });
   });
+
+  // Reset sequences หลังจาการ Seed เสร็จ
+  const tables = ['organizations', 'signatures', 'seals', 'admins'];
+
+  for (const table of tables) {
+    await tx.$executeRawUnsafe(
+      `SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE((SELECT MAX(id) FROM "${table}"), 1), true)`,
+    );
+    console.log(`${table} sequence reset`);
+  }
+
+  return true;
 }
 
 main()
