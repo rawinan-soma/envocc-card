@@ -105,4 +105,17 @@ export class UserAuthController {
       return { msg: 'user created' };
     }
   }
+
+  @Post('request-password-reset')
+  async requestPasswordResetHandler(@Body('email') email: string) {
+    return this.userAuthService.requestPasswordReset(email);
+  }
+
+  @Post('reset-password')
+  async resetPasswordHandler(
+    @Body('token') token: string,
+    @Body('newPass') newPass: string,
+  ) {
+    return this.userAuthService.resetPassword(token, newPass);
+  }
 }

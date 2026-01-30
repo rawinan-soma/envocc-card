@@ -8,9 +8,10 @@ import { JwtAccessStrategy } from './jwt-access.strategy';
 import { JwtRefreshStrategy } from './jwt-refresh.strategy';
 import { PrismaService } from 'prisma/prisma.service';
 import { CommonAuthService } from 'src/shared/common-auth.service';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
-  imports: [PassportModule, JwtModule],
+  imports: [PassportModule, JwtModule, MailModule],
   controllers: [UserAuthController],
   providers: [
     UserAuthService,

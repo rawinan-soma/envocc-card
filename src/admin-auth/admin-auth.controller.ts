@@ -123,4 +123,17 @@ export class AdminAuthController {
 
     return { msg: 'logout succesful' };
   }
+
+  @Post('request-password-reset')
+  async requestPasswordResetHandler(@Body('email') email: string) {
+    return this.adminAuthService.requestPasswordReset(email);
+  }
+
+  @Post('reset-password')
+  async resetPasswordHandler(
+    @Body('token') token: string,
+    @Body('newPass') newPass: string,
+  ) {
+    return this.adminAuthService.resetPassword(token, newPass);
+  }
 }

@@ -9,9 +9,10 @@ import { JwtAccessStrategy } from './jwt-access.strategy';
 import { CommonAuthService } from 'src/shared/common-auth.service';
 import { PrismaModule } from 'prisma/prisma.module';
 import { AdminsService } from 'src/admins/admins.service';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
-  imports: [PassportModule, JwtModule, PrismaModule],
+  imports: [PassportModule, JwtModule, PrismaModule, MailModule],
   controllers: [AdminAuthController],
   providers: [
     AdminAuthService,

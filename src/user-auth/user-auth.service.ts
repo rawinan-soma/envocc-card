@@ -11,11 +11,16 @@ import * as bcrypt from 'bcrypt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { UserExpCreateDto } from './dto/user-exp-create.dto';
 import { Prisma } from '@prisma/client';
+import { MailService } from 'src/mail/mail.service';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class UserAuthService {
   private readonly logger = new Logger(UserAuthService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   private calculateExpYears(lastDate: Date, startDate: Date): number {
     let yearDiff = lastDate.getFullYear() - startDate.getFullYear();
@@ -215,5 +220,59 @@ export class UserAuthService {
       where: { id: id },
       data: { hashedRefreshToken: null },
     });
+  }
+
+  async requestPasswordReset(email: string) {
+    const user = await this.prisma.users.findUnique({ where: { email } });
+    if (!user) throw new BadRequestException('User not found');
+
+    const token = randomBytes(32).toString('hex');
+    const expiration = new Date();
+    expiration.setHours(expiration.getHours() + 1); // 1 hour
+
+    await this.prisma.reset_tokens.create({
+      data: {
+        token,
+        expiration_time: expiration,
+        email,
+        userId: user.id,
+      },
+    });
+
+    await this.mailService.sendResetPasswordEmail(email, token);
+    return { msg: 'Password reset email sent' };
+  }
+
+  async resetPassword(token: string, newPass: string) {
+    const resetToken = await this.prisma.reset_tokens.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+
+    if (
+      !resetToken ||
+      resetToken.is_used ||
+      resetToken.expiration_time < new Date()
+    ) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+
+    if (!resetToken.userId) {
+      throw new BadRequestException('Invalid token for user');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPass, 10);
+
+    await this.prisma.users.update({
+      where: { id: resetToken.userId },
+      data: { password: hashedPassword },
+    });
+
+    await this.prisma.reset_tokens.update({
+      where: { id: resetToken.id },
+      data: { is_used: true },
+    });
+
+    return { msg: 'Password reset successful' };
   }
 }

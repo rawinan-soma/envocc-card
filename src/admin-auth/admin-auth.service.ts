@@ -10,11 +10,16 @@ import { AdminCreateDto } from './dto/admin-create.dto/admin-create.dto';
 import * as bcrypt from 'bcrypt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { $Enums } from '@prisma/client';
+import { MailService } from 'src/mail/mail.service';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class AdminAuthService {
   private readonly logger = new Logger(AdminAuthService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   async createAdmin(dto: AdminCreateDto) {
     try {
@@ -135,5 +140,59 @@ export class AdminAuthService {
       where: { id: id },
       data: { hashedRefreshToken: '' },
     });
+  }
+
+  async requestPasswordReset(email: string) {
+    const admin = await this.prisma.admins.findUnique({ where: { email } });
+    if (!admin) throw new BadRequestException('Admin not found');
+
+    const token = randomBytes(32).toString('hex');
+    const expiration = new Date();
+    expiration.setHours(expiration.getHours() + 1); // 1 hour
+
+    await this.prisma.reset_tokens.create({
+      data: {
+        token,
+        expiration_time: expiration,
+        email,
+        adminId: admin.id,
+      },
+    });
+
+    await this.mailService.sendResetPasswordEmail(email, token);
+    return { msg: 'Password reset email sent' };
+  }
+
+  async resetPassword(token: string, newPass: string) {
+    const resetToken = await this.prisma.reset_tokens.findUnique({
+      where: { token },
+      include: { admin: true },
+    });
+
+    if (
+      !resetToken ||
+      resetToken.is_used ||
+      resetToken.expiration_time < new Date()
+    ) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+
+    if (!resetToken.adminId) {
+      throw new BadRequestException('Invalid token for admin');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPass, 10);
+
+    await this.prisma.admins.update({
+      where: { id: resetToken.adminId },
+      data: { password: hashedPassword },
+    });
+
+    await this.prisma.reset_tokens.update({
+      where: { id: resetToken.id },
+      data: { is_used: true },
+    });
+
+    return { msg: 'Password reset successful' };
   }
 }
