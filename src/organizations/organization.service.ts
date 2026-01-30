@@ -154,6 +154,11 @@ export class OrganizationService {
         throw new BadRequestException('organization already exists');
       }
 
+      const lastPosition = await this.prismaService.positions.findFirst({
+        orderBy: { position_id: 'desc' },
+      });
+      const nextPositionId = (lastPosition?.position_id ?? 0) + 1;
+
       return await this.prismaService.organizations.create({
         data: {
           ...dto,
@@ -161,6 +166,13 @@ export class OrganizationService {
           parentId: parentId,
           sealId: seal,
           signatureId: signature,
+          executive: {
+            create: {
+              position_id: nextPositionId,
+              position_name: `ผู้อำนวยการ${dto.name_th}`,
+              position_name_eng: `Director`,
+            },
+          },
         },
       });
     } catch (err) {
