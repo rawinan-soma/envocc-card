@@ -85,6 +85,7 @@ export class MembersService {
                 lname_en: true,
                 blood: true,
                 position: true,
+                positionId: true,
                 position_lv: true,
                 photos: {
                   select: {
@@ -94,8 +95,12 @@ export class MembersService {
                 organizationId: true,
                 organization: {
                   include: {
+                    seal: true,
+                    signature: true,
                     parent: {
                       include: {
+                        seal: true,
+                        signature: true,
                         parent: {
                           include: {
                             parent: {
@@ -119,48 +124,50 @@ export class MembersService {
         throw new NotFoundException('not found member');
       }
 
-      const flatOrg = this.pickLevelForRequestForm(member?.user.organization);
-      const organization = await this.prisma.organizations.findFirst({
-        where: {
-          id: member.user.organizationId,
-        },
-        include: { signature: true, seal: true },
-      });
+      // const flatOrg = this.pickLevelForRequestForm(member?.user.organization);
+      // const organization = await this.prisma.organizations.findFirst({
+      //   where: {
+      //     id: member.user.organizationId,
+      //   },
+      //   include: { signature: true, seal: true },
+      // });
 
-      const department = await this.prisma.organizations.findFirst({
-        where: { name_th: flatOrg?.DEPARTMENT },
-      });
+      // const department = await this.prisma.organizations.findFirst({
+      //   where: { name_th: flatOrg?.DEPARTMENT },
+      // });
 
-      const data = {
-        qrcode: member.qrcode,
-        cid: member.user.cid,
-        pname_th: member.user.pname_th,
-        pname_other_th: member.user.pname_other_th,
-        fname_th: member.user.fname_th,
-        lname_th: member.user.lname_th,
-        pname_en: member.user.pname_en,
-        pname_other_en: member.user.pname_other_en,
-        fname_en: member.user.fname_en,
-        lname_en: member.user.lname_en,
-        blood: member.user.blood,
-        position: member.user.position?.position_name,
-        position_lv: member.user.position_lv?.position_lv_name,
-        photo: member.user.photos[0].url,
-        seal: organization?.seal.url,
-        department: flatOrg?.DEPARTMENT,
-        department_en: department?.name_eng,
-        province_org: flatOrg?.PROVINCE,
-        member_no: member.member_no,
-        start_date: member.start_date,
-        end_date: member.end_date,
-        signature_name: organization?.signature.sign_person_name,
-        signature_lname: organization?.signature.sign_person_lname,
-        signature_pname: organization?.signature.sign_person_pname,
-        signature_file: organization?.signature.url,
-        signature_position: organization?.signature.sign_person_position,
-      };
+      // const data = {
+      //   qrcode: member.qrcode,
+      //   cid: member.user.cid,
+      //   pname_th: member.user.pname_th,
+      //   pname_other_th: member.user.pname_other_th,
+      //   fname_th: member.user.fname_th,
+      //   lname_th: member.user.lname_th,
+      //   pname_en: member.user.pname_en,
+      //   pname_other_en: member.user.pname_other_en,
+      //   fname_en: member.user.fname_en,
+      //   lname_en: member.user.lname_en,
+      //   blood: member.user.blood,
+      //   position_id: member.user.position?.position_id,
+      //   position: member.user.position?.position_name,
+      //   position_lv: member.user.position_lv?.position_lv_name,
+      //   photo: member.user.photos[0].url,
+      //   seal: organization?.seal.url,
+      //   department: flatOrg?.DEPARTMENT,
+      //   department_en: department?.name_eng,
+      //   province_org: flatOrg?.PROVINCE,
+      //   member_no: member.member_no,
+      //   start_date: member.start_date,
+      //   end_date: member.end_date,
+      //   organization_id: member.user.organizationId,
+      //   signature_name: organization?.signature.sign_person_name,
+      //   signature_lname: organization?.signature.sign_person_lname,
+      //   signature_pname: organization?.signature.sign_person_pname,
+      //   signature_file: organization?.signature.url,
+      //   signature_position: organization?.signature.sign_person_position,
+      // };
 
-      return data;
+      return member;
     } catch (error: any) {
       this.logger.error(error);
       if (error instanceof NotFoundException) {

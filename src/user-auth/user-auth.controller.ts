@@ -44,13 +44,13 @@ export class UserAuthController {
     );
 
     request.res?.cookie(
-      'Authentication',
+      'Authentication_User',
       accessTokenCookie,
       this.commonAuthService.getCookieOption('access'),
     );
 
     request.res?.cookie(
-      'Refresh',
+      'Refresh_User',
       refreshTokenCookie,
       this.commonAuthService.getCookieOption('refresh'),
     );
@@ -70,7 +70,7 @@ export class UserAuthController {
     );
 
     request.res?.cookie(
-      'Authentication',
+      'Authentication_User',
       accessTokenCookie,
       this.commonAuthService.getCookieOption('access'),
     );
@@ -85,8 +85,8 @@ export class UserAuthController {
   @Post('logout')
   async logoutHandler(@Req() request: RequestwithUserData) {
     await this.userAuthService.removeRefreshToken(Number(request.user.id));
-    request.res?.clearCookie('Authentication');
-    request.res?.clearCookie('Refresh');
+    request.res?.clearCookie('Authentication_User');
+    request.res?.clearCookie('Refresh_User');
 
     this.logger.log(
       `user: ${request.user.id}, role: ${request.user.role} logged out`,
@@ -109,13 +109,5 @@ export class UserAuthController {
   @Post('request-password-reset')
   async requestPasswordResetHandler(@Body('email') email: string) {
     return this.userAuthService.requestPasswordReset(email);
-  }
-
-  @Post('reset-password')
-  async resetPasswordHandler(
-    @Body('token') token: string,
-    @Body('newPass') newPass: string,
-  ) {
-    return this.userAuthService.resetPassword(token, newPass);
   }
 }

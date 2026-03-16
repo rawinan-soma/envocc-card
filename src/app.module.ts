@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AdminsModule } from './admins/admins.module';
 import { AdminAuthModule } from './admin-auth/admin-auth.module';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { UserAuthModule } from './user-auth/user-auth.module';
 import { UsersModule } from './users/users.module';
 // import { RequestModule } from './request/request.module';
@@ -29,6 +29,8 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { BullModule } from '@nestjs/bullmq';
 import { QueueModule } from './queue/queue.module';
+import { AuthModule } from './auth/auth.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -67,6 +69,10 @@ import { QueueModule } from './queue/queue.module';
       connection: { host: 'redis', port: 6379 },
     }),
     QueueModule,
+    AuthModule,
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60000, limit: 10 }],
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],

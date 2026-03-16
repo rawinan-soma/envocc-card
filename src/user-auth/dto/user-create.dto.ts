@@ -6,6 +6,7 @@ import {
   Matches,
   IsEnum,
   IsOptional,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EngNamePrefix, ThaiNamePrefix, BloodGroup } from './users.enum';
@@ -21,9 +22,8 @@ export class UserCreateDto {
   username: string;
 
   @IsString()
-  @Matches(
-    /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&])[A-Za-z\d!@#$%^&]{12,20}$/,
-  )
+  @IsNotEmpty()
+  @Matches(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$&])[A-Za-z\d@#$&]{12,20}$/)
   password: string;
 
   @IsString()

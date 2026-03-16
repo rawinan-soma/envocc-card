@@ -1,23 +1,26 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import FormData from 'form-data';
-import Mailgun from 'mailgun.js';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class MailService {
-  private mg;
+  private transporter: nodemailer.Transporter;
   private readonly logger = new Logger(MailService.name);
 
   constructor(
     private readonly configService: ConfigService,
     @InjectQueue('email') private emailQueue: Queue,
   ) {
-    const mailgun = new Mailgun(FormData);
-    this.mg = mailgun.client({
-      username: 'api',
-      key: this.configService.get<string>('MAILGUN_API_KEY') || 'dummy_key',
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // true for 465, false for other ports
+      auth: {
+        user: this.configService.get<string>('SMTP_USER'),
+        pass: this.configService.get<string>('SMTP_PASS'),
+      },
     });
   }
 
@@ -30,26 +33,37 @@ export class MailService {
   }
 
   async sendResetPasswordEmailActual(email: string, token: string) {
-    const domain = this.configService.get<string>('MAILGUN_DOMAIN');
     const from =
-      this.configService.get<string>('MAILGUN_FROM_EMAIL') ||
+      this.configService.get<string>('MAIL_FROM') ||
+      this.configService.get<string>('SMTP_USER') ||
       'noreply@example.com';
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
-
-    if (!domain) {
-      this.logger.warn('MAILGUN_DOMAIN is not set. Email will not be sent.');
-      return;
-    }
+    const resetLink = `${frontendUrl}/resetpassword?token=${token}`;
 
     try {
-      await this.mg.messages.create(domain, {
-        from: `Support <${from}>`,
-        to: [email],
-        subject: 'Reset Password Request',
-        text: `You requested a password reset. Click the link to reset your password: ${resetLink}`,
-        html: `<p>You requested a password reset.</p><p>Click the link to reset your password: <a href="${resetLink}">${resetLink}</a></p>`,
+      await this.transporter.sendMail({
+        from: `EnvOcc_Card <${from}>`,
+        to: email,
+        subject: 'รีเซ็ตรหัสผ่าน เว็บไซต์ EnvOcc_Card',
+        text: `คลิกลิงก์เพื่อรีเซ็ตรหัสผ่าน: ${resetLink}`,
+        html: ` <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+               <h2 style="color: #8753d5; font-size: 24px;">รีเซ็ตรหัสผ่านของคุณ</h2>
+               <p>สวัสดีค่ะ</p>
+               <p>คุณสามารถรีเซ็ตรหัสผ่านของคุณได้โดยคลิกที่ปุ่มด้านล่าง</p>
+               <div style="text-align: center; margin: 20px 0;">
+               <a href="${resetLink}" style="background-color: #8753d5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                   รีเซ็ตรหัสผ่าน
+               </a>
+               </div>
+               <p style="font-size: 14px; color: #666;">หากคุณไม่ได้เป็นผู้ร้องขอ โปรดเพิกเฉยต่ออีเมลฉบับนี้</p>
+               <p style="font-size: 12px; color: #999;">ลิงก์นี้จะหมดอายุใน 5 นาที</p>
+               <hr style="margin-top: 30px; border: none; border-top: 1px solid #ccc;" />
+               <p style="font-size: 12px; color: #999; text-align: center;">
+               อีเมลฉบับนี้ถูกส่งโดยระบบอัตโนมัติจากเว็บไซต์ EnvOcc_card กรุณาอย่าตอบกลับ<br/>
+               หากคุณมีคำถาม กรุณาติดต่อ 02-590-3867
+               </p>
+           </div>`,
       });
       this.logger.log(`Reset password email sent to ${email}`);
     } catch (error) {

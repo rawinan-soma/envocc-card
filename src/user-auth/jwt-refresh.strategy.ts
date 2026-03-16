@@ -19,7 +19,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request) => {
-          return request?.cookies?.Refresh as string;
+          return request?.cookies?.Refresh_User as string;
         },
       ]),
       secretOrKey: config.get('REFRESH_TOKEN_SECRET'),
@@ -28,7 +28,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
   }
 
   async validate(request: Request, payload: TokenPayload) {
-    const refreshToken = request?.cookies?.Refresh as string;
+    const refreshToken = request?.cookies?.Refresh_User as string;
     return this.service.getUserFromRefreshToken(refreshToken, payload.id);
   }
 }

@@ -57,13 +57,13 @@ export class AdminAuthController {
     );
 
     request.res?.cookie(
-      'Authentication',
+      'Authentication_Admin',
       accessTokenCookie,
       this.commonAuthService.getCookieOption('access'),
     );
 
     request.res?.cookie(
-      'Refresh',
+      'Refresh_Admin',
       refreshTokenCookie,
       this.commonAuthService.getCookieOption('refresh'),
     );
@@ -88,7 +88,7 @@ export class AdminAuthController {
     );
 
     request.res?.cookie(
-      'Authentication',
+      'Authentication_Admin',
       accessTokenCookie,
       this.commonAuthService.getCookieOption('access'),
     );
@@ -113,9 +113,9 @@ export class AdminAuthController {
   async logoutHandler(@Req() request: RequestwithAdminData) {
     await this.adminAuthService.removeRefreshToken(Number(request.user.id));
 
-    request.res?.clearCookie('Authentication');
+    request.res?.clearCookie('Authentication_Admin');
 
-    request.res?.clearCookie('Refresh');
+    request.res?.clearCookie('Refresh_Admin');
 
     this.logger.log(
       `user: ${request.user.id},  role: ${request.user.role} logged out`,
@@ -127,13 +127,5 @@ export class AdminAuthController {
   @Post('request-password-reset')
   async requestPasswordResetHandler(@Body('email') email: string) {
     return this.adminAuthService.requestPasswordReset(email);
-  }
-
-  @Post('reset-password')
-  async resetPasswordHandler(
-    @Body('token') token: string,
-    @Body('newPass') newPass: string,
-  ) {
-    return this.adminAuthService.resetPassword(token, newPass);
   }
 }

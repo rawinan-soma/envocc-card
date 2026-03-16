@@ -318,6 +318,7 @@ export class UsersService {
                 },
               },
             },
+            experiences: true,
           },
           omit: {
             password: true,
@@ -644,6 +645,73 @@ export class UsersService {
     } catch (err) {
       this.logger.error(err);
       throw err;
+    }
+  }
+
+  async checkUserExisting(userId: number) {
+    const user = await this.prisma.users.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('user not found');
+    }
+  }
+
+  async updateUserwithExp(userId: number, data: UserUpdateDto) {
+    if (data.user) {
+      if (data.experiences) {
+        const updatedUser = await this.prisma.users.update({
+          where: { id: userId },
+          data: {
+            ...data.user,
+            experiences: { createMany: { data: { ...data.experiences } } },
+          },
+        });
+
+        return updatedUser;
+      }
+
+      if (!data.experiences) {
+        const updateUser = await this.prisma.users.update({
+          where: { id: userId },
+          data: data.user,
+        });
+
+        return updateUser;
+      }
+    }
+  }
+
+  async createRequest(userId: number, requestType: number) {
+    return await this.prisma.requests.create({
+      data: {
+        userId: userId,
+        request_status: 1,
+        request_type: requestType,
+        approver: userId,
+      },
+    });
+  }
+
+  async createNewCardRequest(
+    userId: number,
+    data: UserUpdateDto,
+    requestType: number,
+  ) {
+    // 1. update user data
+    // 2. create new experience
+    // 3. create new request
+    try {
+      await this.checkUserExisting(userId);
+      const updateUser = await this.updateUserwithExp(userId, data);
+      if (!updateUser) {
+        throw new BadRequestException('invalid user input');
+      }
+      await this.createRequest(userId, requestType);
+    } catch (err) {
+      this.logger.error(err);
+      if (err instanceof BadRequestException) {
+        throw err;
+      }
+      throw new InternalServerErrorException('failed to create request');
     }
   }
 }

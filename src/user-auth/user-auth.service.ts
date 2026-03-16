@@ -226,6 +226,11 @@ export class UserAuthService {
     const user = await this.prisma.users.findUnique({ where: { email } });
     if (!user) throw new BadRequestException('User not found');
 
+    await this.prisma.reset_tokens.updateMany({
+      where: { userId: user.id, is_used: false },
+      data: { is_used: true },
+    });
+
     const token = randomBytes(32).toString('hex');
     const expiration = new Date();
     expiration.setHours(expiration.getHours() + 1); // 1 hour
@@ -241,38 +246,5 @@ export class UserAuthService {
 
     await this.mailService.sendResetPasswordEmail(email, token);
     return { msg: 'Password reset email sent' };
-  }
-
-  async resetPassword(token: string, newPass: string) {
-    const resetToken = await this.prisma.reset_tokens.findUnique({
-      where: { token },
-      include: { user: true },
-    });
-
-    if (
-      !resetToken ||
-      resetToken.is_used ||
-      resetToken.expiration_time < new Date()
-    ) {
-      throw new BadRequestException('Invalid or expired token');
-    }
-
-    if (!resetToken.userId) {
-      throw new BadRequestException('Invalid token for user');
-    }
-
-    const hashedPassword = await bcrypt.hash(newPass, 10);
-
-    await this.prisma.users.update({
-      where: { id: resetToken.userId },
-      data: { password: hashedPassword },
-    });
-
-    await this.prisma.reset_tokens.update({
-      where: { id: resetToken.id },
-      data: { is_used: true },
-    });
-
-    return { msg: 'Password reset successful' };
   }
 }

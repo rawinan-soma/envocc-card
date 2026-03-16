@@ -9,6 +9,7 @@ import {
   Post,
   UseInterceptors,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAccessGuardUser } from 'src/user-auth/jwt-access.guard';
@@ -47,6 +48,20 @@ export class UsersController {
   @Get('me/requests/exp')
   async createExpFormHandler(@Req() request: RequestwithUserData) {
     return this.usersService.getUserPrintExpForm(request.user.id);
+  }
+
+  @UseGuards(JwtAccessGuardUser)
+  @Post('me/card')
+  async createNewCardRequestHandler(
+    @Req() request: RequestwithUserData,
+    @Body() user: UserUpdateDto,
+    @Query('requestType', ParseIntPipe) requestType: number,
+  ) {
+    return this.usersService.createNewCardRequest(
+      request.user.id,
+      user,
+      requestType,
+    );
   }
 
   // @Post('me/govcard')
