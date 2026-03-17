@@ -40,7 +40,7 @@ export class AdminsController {
     if (email) {
       return this.adminsService.getAdminByEmail(email);
     }
-    console.log(pages);
+
     return this.adminsService.getAllAdmins(request.user.id, Number(pages));
   }
 

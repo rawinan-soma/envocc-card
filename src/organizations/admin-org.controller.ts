@@ -48,16 +48,14 @@ export class AdminOrgController {
   @Get('organizations')
   async getOrgChildrenHandler(
     @Req() request: RequestwithAdminData,
-    @Query('page') page: number,
     @Query('ministry', ParseBoolPipe) ministry?: boolean,
   ) {
     if (ministry) {
-      return await this.organizationService.getAllOrganization(page);
+      return await this.organizationService.getAllOrganization();
     } else {
       const admin = await this.adminsService.getAdminById(request.user.id);
       return await this.organizationService.getOrganizationChildren(
         admin.organization.id,
-        page,
       );
     }
   }

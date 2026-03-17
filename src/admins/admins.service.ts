@@ -59,8 +59,6 @@ export class AdminsService {
         orderBy: { id: 'asc' },
       });
 
-      console.log(admins.slice(offset, offset + limit));
-
       const totalItems = admins.length;
       const totalPages = Math.ceil(totalItems / limit);
       return {

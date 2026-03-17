@@ -185,7 +185,7 @@ export class OrganizationService {
     }
   }
 
-  async getOrganizationChildren(parentId: number, pages: number = 1) {
+  async getOrganizationChildren(parentId: number) {
     try {
       const orgs = await this.prismaService.organizations.findMany({
         where: { OR: [{ parentId: parentId }, { id: parentId }] },
@@ -209,17 +209,8 @@ export class OrganizationService {
         },
       });
 
-      const limit = 10;
-      const offset = (pages - 1) * limit;
-
       return {
-        data: orgs.slice(offset, offset + limit),
-        pageData: {
-          totalItems: orgs.length,
-          totalPages: Math.ceil(orgs.length / limit),
-          current: pages,
-          limit: limit,
-        },
+        data: orgs,
       };
     } catch (err) {
       this.logger.error(err);

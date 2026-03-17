@@ -1,6 +1,8 @@
 FROM oven/bun:1.1.29
 
-RUN apt-get update -y && apt-get install -y openssl ca-certificates && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && \
+  apt-get install -y openssl ca-certificates curl python3 make g++ && \
+  rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
