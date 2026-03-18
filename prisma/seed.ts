@@ -64,8 +64,15 @@ async function main() {
       level: OrgLevel[o.level as keyof typeof OrgLevel],
     }));
 
-    await tx.organizations.createMany({ data: orgReady });
+    // รอบแรก: insert records ที่ไม่มี parentId (root nodes)
+    await tx.organizations.createMany({
+      data: orgReady.filter((o: any) => !o.parentId),
+    });
 
+    // รอบสอง: insert records ที่มี parentId
+    await tx.organizations.createMany({
+      data: orgReady.filter((o: any) => !!o.parentId),
+    });
     const positions = JSON.parse(
       fs.readFileSync('./prisma/data/position.json', 'utf-8'),
     );
