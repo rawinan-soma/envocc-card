@@ -14,7 +14,7 @@ export enum ThaiNamePrefix {
 
 export enum EngNamePrefix {
   Mr = 'Mr.',
-  Miss = 'Ms.',
   Mrs = 'Mrs.',
+  Miss = 'Ms.',
   Other = 'Other',
 }
