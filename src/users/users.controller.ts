@@ -9,21 +9,30 @@ import {
   Post,
   UseInterceptors,
   ParseIntPipe,
+  ParseArrayPipe,
   Query,
+  Param,
+  Delete,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAccessGuardUser } from 'src/user-auth/jwt-access.guard';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
-import { UserUpdateDto } from './dto/user-update.dto';
+import { UserUpdateDto, UserUpdateInternalDto } from './dto/user-update.dto';
 import { FileCreateDto } from 'src/files/dto/file-create.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { getMulterOptions } from 'src/shared/file-multer-options';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
+import { UpdateExpDto } from 'src/experiences/update-exp.dto';
+import { ExperiencesService } from 'src/experiences/experiences.service';
+import { SepExpCreateDto } from 'src/experiences/create-exp.dto';
 
 // @UseGuards(JwtAccessGuardUser)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly expService: ExperiencesService,
+  ) {}
 
   @UseGuards(JwtAccessGuardUser)
   @Get('me')
@@ -34,7 +43,7 @@ export class UsersController {
   @Patch('me')
   async updateUserHandler(
     @Req() request: RequestwithUserData,
-    @Body() user: UserUpdateDto,
+    @Body() user: UserUpdateInternalDto,
   ) {
     return this.usersService.updateUser(request.user.id, user);
   }
@@ -187,5 +196,36 @@ export class UsersController {
         user,
       );
     }
+  }
+
+  @UseGuards(JwtAccessGuardUser)
+  @Patch('me/experiences/:expId')
+  async editExperienceHandler(
+    @Body() dto: UpdateExpDto,
+    @Param('expId', ParseIntPipe) expId: number,
+  ) {
+    return this.expService.editExperience(expId, dto);
+  }
+
+  @UseGuards(JwtAccessGuardUser)
+  @Get('me/experiences')
+  async getExperienceHandler(@Req() request: RequestwithUserData) {
+    const user = request.user.id;
+    return this.expService.getAllExperience(user);
+  }
+
+  @UseGuards(JwtAccessGuardUser)
+  @Post('me/experiences')
+  async addExperienceHandler(
+    @Body(new ParseArrayPipe({ items: SepExpCreateDto }))
+    dto: SepExpCreateDto[],
+  ) {
+    return this.expService.addExperinces(dto);
+  }
+
+  @UseGuards(JwtAccessGuardUser)
+  @Delete('me/experiences/:expId')
+  async deleteExperienceHandler(@Param('expId', ParseIntPipe) expId: number) {
+    return this.expService.deleteExperience(expId);
   }
 }

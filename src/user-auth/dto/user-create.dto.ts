@@ -18,12 +18,14 @@ export class UserCreateDto {
   cid: string;
 
   @IsString()
-  @Matches(/^[A-Za-z0-9]{5,20}$/)
+  @Matches(/^[A-Za-z0-9._]{5,20}$/)
   username: string;
 
   @IsString()
   @IsNotEmpty()
-  @Matches(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$&])[A-Za-z\d@#$&]{12,20}$/)
+  @Matches(
+    /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$&*])[A-Za-z\d@#$&*]{12,20}$/,
+  )
   password: string;
 
   @IsString()

@@ -20,6 +20,7 @@ export class UserRequestController {
     @Body() updated: StatusCreateDto,
   ) {
     const approver = request.user.id;
+    console.log(approver);
     return this.requestService.updateStatus(updated, approver);
   }
 }

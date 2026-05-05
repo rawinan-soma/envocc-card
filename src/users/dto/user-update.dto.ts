@@ -4,7 +4,7 @@ import { IsOptional, ValidateNested } from 'class-validator';
 import { UserCreateDto } from 'src/user-auth/dto/user-create.dto';
 import { UserExpCreateDto } from 'src/user-auth/dto/user-exp-create.dto';
 
-class UserUpdateInternalDto extends PartialType(
+export class UserUpdateInternalDto extends PartialType(
   OmitType(UserCreateDto, ['username'] as const),
 ) {}
 

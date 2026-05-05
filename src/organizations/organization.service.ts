@@ -139,6 +139,32 @@ export class OrganizationService {
     };
   }
 
+  async getAllOrganizationNoPages() {
+    const orgs = await this.prismaService.organizations.findMany({
+      orderBy: { id: 'asc' },
+      select: {
+        id: true,
+        code: true,
+        name_eng: true,
+        name_th: true,
+        signature: {
+          select: {
+            sign_person_pname: true,
+            sign_person_name: true,
+            sign_person_lname: true,
+            sign_person_position: true,
+            url: true,
+          },
+        },
+        seal: {
+          select: { url: true },
+        },
+      },
+    });
+
+    return { data: orgs };
+  }
+
   async createOrganization(
     dto: OrgCreateDto,
     seal: number,

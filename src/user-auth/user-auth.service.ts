@@ -28,7 +28,7 @@ export class UserAuthService {
     if (
       lastDate.getMonth() < startDate.getMonth() ||
       (lastDate.getMonth() === startDate.getMonth() &&
-        lastDate.getDay() < startDate.getDay())
+        lastDate.getDate() < startDate.getDate())
     ) {
       yearDiff--;
     }
@@ -155,8 +155,12 @@ export class UserAuthService {
         }),
       );
 
-      if (!user || user.is_validate === false) {
-        throw new UnauthorizedException('invalid credential');
+      if (!user) {
+        throw new UnauthorizedException('user not found');
+      }
+
+      if (!user.is_validate) {
+        throw new UnauthorizedException('user not validated');
       }
 
       await this.verifyPassword(password, user?.password || '');

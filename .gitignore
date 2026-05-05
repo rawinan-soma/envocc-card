@@ -67,3 +67,5 @@ docker-compose.yaml
 assets/
 assets/*
 !assets/.gitkeep
+
+makefile

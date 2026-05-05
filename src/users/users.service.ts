@@ -9,7 +9,7 @@ import {
 import { OrgLevel, Prisma } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
-import { UserUpdateDto } from './dto/user-update.dto';
+import { UserUpdateDto, UserUpdateInternalDto } from './dto/user-update.dto';
 import { StatusCreateDto } from 'src/request/dto/status-create.dto';
 import { FilesService } from 'src/files/files.service';
 import { FileCreateDto } from 'src/files/dto/file-create.dto';
@@ -437,7 +437,7 @@ export class UsersService {
     }
   }
 
-  async updateUser(id: number, data: UserUpdateDto) {
+  async updateUser(id: number, data: UserUpdateInternalDto) {
     try {
       const user = await this.prisma.users.findUnique({ where: { id: id } });
 

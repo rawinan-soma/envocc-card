@@ -372,18 +372,18 @@ model requests {
 }
 
 model reset_tokens {
-  id              Int       @id @default(autoincrement())
-  token           String    @unique @db.VarChar(255)
-  expiration_time DateTime  @db.Timestamptz()
-  is_used         Boolean   @default(false)
-  createdAt       DateTime  @default(now()) @db.Timestamptz()
-  email           String    @db.VarChar(255)
+  id              Int      @id @default(autoincrement())
+  token           String   @unique @db.VarChar(255)
+  expiration_time DateTime @db.Timestamptz()
+  is_used         Boolean  @default(false)
+  createdAt       DateTime @default(now()) @db.Timestamptz()
+  email           String   @db.VarChar(255)
 
-  userId          Int?
-  user            users?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int?
+  user   users? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  adminId         Int?
-  admin           admins?   @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId Int?
+  admin   admins? @relation(fields: [adminId], references: [id], onDelete: Cascade)
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -450,8 +450,8 @@ model users {
   members members[]
   photos  photos[]
 
-  requests                              requests[]
-  reset_tokens                          reset_tokens[]
+  requests     requests[]
+  reset_tokens reset_tokens[]
 
   position       positions?       @relation(fields: [positionId], references: [position_id])
   positionId     Int?

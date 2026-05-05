@@ -51,7 +51,7 @@ export class AdminOrgController {
     @Query('ministry', ParseBoolPipe) ministry?: boolean,
   ) {
     if (ministry) {
-      return await this.organizationService.getAllOrganization();
+      return this.organizationService.getAllOrganizationNoPages();
     } else {
       const admin = await this.adminsService.getAdminById(request.user.id);
       return await this.organizationService.getOrganizationChildren(
