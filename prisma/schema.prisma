@@ -27,29 +27,29 @@ datasource db {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model admins {
-  id                 Int           @id @unique() @default(autoincrement())
-  role               String        @default("admin")
-  username           String        @unique @db.VarChar(255)
-  password           String        @db.VarChar(255)
+  id                 Int        @id @unique() @default(autoincrement())
+  role               String     @default("admin")
+  username           String     @unique @db.VarChar(255)
+  password           String     @db.VarChar(255)
   // level              Int
-  pname              String        @db.VarChar(255)
-  fname              String        @db.VarChar(255)
-  lname              String        @db.VarChar(255)
-  private_number     String        @db.VarChar(255)
+  pname              String     @db.VarChar(255)
+  fname              String     @db.VarChar(255)
+  lname              String     @db.VarChar(255)
+  private_number     String     @db.VarChar(255)
   work_number        String
-  email              String        @unique @db.VarChar(255)
-  positionId         Int
+  email              String     @unique @db.VarChar(255)
+  positionId         String
   positionLvId       Int
-  is_validate        Boolean       @default(true)
-  create_date        DateTime      @default(now()) @db.Timestamptz()
+  is_validate        Boolean    @default(true)
+  create_date        DateTime   @default(now()) @db.Timestamptz()
   hashedRefreshToken String?
   // access_levels      access_levels       @relation(fields: [level], references: [level_id], onDelete: Cascade, onUpdate: NoAction, map: "admins_ibfk_1")
   // experiences_files  experiences_files[]
   requests           requests[]
-  position           positions     @relation(fields: [positionId], references: [position_id])
-  position_lv        position_lvs  @relation(fields: [positionLvId], references: [position_lv_id])
-  organizationId     Int
-  organization       organizations @relation(fields: [organizationId], references: [id])
+
+  position_lv    position_lvs  @relation(fields: [positionLvId], references: [position_lv_id])
+  organizationId Int
+  organization   organizations @relation(fields: [organizationId], references: [id])
 
   // @@index([level], map: "level")
   exp_files      exp_files[]
@@ -488,7 +488,6 @@ model positions {
   position_name     String?        @db.VarChar(100)
   position_name_eng String?        @db.VarChar(100)
   users             users[]
-  admins            admins[]
   organization      organizations? @relation(fields: [orgId], references: [id])
   orgId             Int?
 }

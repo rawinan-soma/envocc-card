@@ -142,7 +142,7 @@ export class UserAuthService {
     try {
       const user = await this.prisma.users.findFirst(
         Prisma.validator<Prisma.usersFindFirstArgs>()({
-          where: { username: username, is_validate: true },
+          where: { username: username },
           select: {
             username: true,
             password: true,

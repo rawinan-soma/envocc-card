@@ -53,7 +53,6 @@ export class AdminsService {
         omit: { password: true },
         include: {
           organization: true,
-          position: true,
           position_lv: true,
         },
         orderBy: { id: 'asc' },
@@ -150,7 +149,7 @@ export class AdminsService {
             create_date: Date;
             hashedRefreshToken: string | null;
             id: number;
-            positionId: number;
+            positionId: string;
             positionLvId: number;
             organizationId: number;
           })

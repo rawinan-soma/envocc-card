@@ -28,8 +28,8 @@ export class AdminCreateDto {
   @IsEmail()
   email: string;
 
-  @IsNumber()
-  positionId: number;
+  @IsString()
+  positionId: string;
 
   @IsNumber()
   positionLvId: number;

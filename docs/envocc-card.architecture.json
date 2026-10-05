@@ -1,0 +1,333 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "EnvOcc Card API",
+    "output": "envocc-card.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/rawinan-soma/envocc-card",
+      "provider": "github",
+      "link_mode": "local-only",
+      "revision": "b5a3abd7c79e9d27c56d03c1cce94ea65920cdff"
+    },
+    "views": [
+      {
+        "id": "request-path",
+        "label": "Authenticated request",
+        "focus": [
+          "spa",
+          "guard",
+          "api",
+          "db"
+        ],
+        "note": "Applicants and admins call the API with JWT cookies; the strategy re-reads the row from Postgres on every request."
+      },
+      {
+        "id": "qr-verify",
+        "label": "Public QR verification",
+        "focus": [
+          "verifier",
+          "api",
+          "redis",
+          "worker",
+          "db"
+        ],
+        "note": "Unguarded common/qrcode routes mint a short-lived token; a delayed cleanup job nulls it after 5 minutes."
+      },
+      {
+        "id": "password-reset",
+        "label": "Password reset email",
+        "focus": [
+          "spa",
+          "api",
+          "redis",
+          "worker",
+          "gmail"
+        ],
+        "note": "Reset requests enqueue an email job; the processor sends a Thai HTML email via Gmail SMTP."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "spa",
+      "type": "frontend",
+      "label": "Web frontend",
+      "sublabel": "applicant + admin",
+      "pos": [
+        40,
+        230
+      ],
+      "size": [
+        130,
+        60
+      ]
+    },
+    {
+      "id": "verifier",
+      "type": "external",
+      "label": "QR verifier",
+      "sublabel": "card scan, no login",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        130,
+        60
+      ]
+    },
+    {
+      "id": "guard",
+      "type": "security",
+      "label": "Passport JWT",
+      "sublabel": "httpOnly cookies",
+      "pos": [
+        250,
+        230
+      ],
+      "size": [
+        130,
+        60
+      ],
+      "tag": "admin + user stacks",
+      "sources": [
+        {
+          "path": "src/shared/common-auth.service.ts"
+        },
+        {
+          "path": "src/admin-auth/jwt-access.strategy.ts"
+        },
+        {
+          "path": "src/user-auth/jwt-access.strategy.ts"
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "NestJS 11 API",
+      "sublabel": "api/v2 :3000",
+      "pos": [
+        460,
+        230
+      ],
+      "size": [
+        130,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/main.ts"
+        },
+        {
+          "path": "src/app.module.ts"
+        }
+      ]
+    },
+    {
+      "id": "assets",
+      "type": "database",
+      "label": "Upload disk",
+      "sublabel": "./assets volume",
+      "pos": [
+        700,
+        60
+      ],
+      "size": [
+        130,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/shared/file-multer-options.ts"
+        }
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "PostgreSQL 17",
+      "sublabel": "Prisma 6",
+      "pos": [
+        700,
+        230
+      ],
+      "size": [
+        130,
+        60
+      ],
+      "sources": [
+        {
+          "path": "prisma/schema.prisma"
+        }
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "messagebus",
+      "label": "BullMQ / Redis",
+      "sublabel": "email + cleanup",
+      "pos": [
+        460,
+        400
+      ],
+      "size": [
+        130,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/queue/queue.module.ts"
+        }
+      ]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Queue processors",
+      "sublabel": "in-process",
+      "pos": [
+        700,
+        400
+      ],
+      "size": [
+        130,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/queue/email.processor.ts"
+        },
+        {
+          "path": "src/queue/cleanup.processor.ts"
+        }
+      ]
+    },
+    {
+      "id": "gmail",
+      "type": "external",
+      "label": "Gmail SMTP",
+      "sublabel": "Nodemailer",
+      "pos": [
+        920,
+        400
+      ],
+      "size": [
+        130,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/mail/mail.service.ts"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Docker Compose: envocc-card network",
+      "wraps": [
+        "guard",
+        "api",
+        "assets",
+        "db",
+        "redis",
+        "worker"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "spa-to-guard",
+      "from": "spa",
+      "to": "guard",
+      "label": "JWT cookie",
+      "variant": "emphasis"
+    },
+    {
+      "id": "guard-to-api",
+      "from": "guard",
+      "to": "api",
+      "variant": "emphasis"
+    },
+    {
+      "id": "api-to-db",
+      "from": "api",
+      "to": "db",
+      "label": "Prisma",
+      "variant": "emphasis"
+    },
+    {
+      "id": "verifier-to-api",
+      "from": "verifier",
+      "to": "api",
+      "label": "common/qrcode",
+      "variant": "dashed"
+    },
+    {
+      "id": "api-to-assets",
+      "from": "api",
+      "to": "assets",
+      "label": "Multer",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "api-to-redis",
+      "from": "api",
+      "to": "redis",
+      "label": "enqueue",
+      "variant": "dashed",
+      "labelDy": 24
+    },
+    {
+      "id": "redis-to-worker",
+      "from": "redis",
+      "to": "worker"
+    },
+    {
+      "id": "worker-to-gmail",
+      "from": "worker",
+      "to": "gmail",
+      "label": "reset email"
+    },
+    {
+      "id": "worker-to-db",
+      "from": "worker",
+      "to": "db",
+      "label": "expire QR token"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Domain modules",
+      "items": [
+        "Request: append-only status log, 17 states (15 issued, 16 cancelled)",
+        "Members: issued card, 5-year validity, QR",
+        "Organizations: MINISTRY → UNIT tree scopes admin data"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Auth model",
+      "items": [
+        "Parallel admin and user Passport stacks",
+        "Refresh tokens bcrypt-hashed on the row",
+        "Roles guard disabled; access = which JWT guard applies"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Watch out",
+      "items": [
+        "Schema edit has no migration yet",
+        "Throttler unapplied; admin file routes unguarded",
+        "Redis host hard-coded; in-memory pagination"
+      ]
+    }
+  ]
+}
