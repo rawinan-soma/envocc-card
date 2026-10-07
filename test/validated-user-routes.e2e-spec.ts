@@ -5,6 +5,7 @@ import { mkdirSync, mkdtempSync, readdirSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import request from 'supertest';
+import type { App } from 'supertest/types';
 import { PrismaService } from 'prisma/prisma.service';
 import { ExperiencesService } from 'src/experiences/experiences.service';
 import { FilesService } from 'src/files/files.service';
@@ -72,7 +73,7 @@ const allowedRoutes: Route[] = [
 ];
 
 describe('@ValidatedUser() routes', () => {
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let isValidate: boolean;
   let workDir: string;
   let cookie: string;
@@ -200,7 +201,9 @@ describe('@ValidatedUser() routes', () => {
         const res = await call(route);
 
         expect(res.status).toBe(403);
-        expect(res.body.message).toBe('user not validated');
+        expect((res.body as { message: string }).message).toBe(
+          'user not validated',
+        );
       },
     );
 

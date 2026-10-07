@@ -5,6 +5,7 @@ import { Test } from '@nestjs/testing';
 import { users } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import request from 'supertest';
+import type { App } from 'supertest/types';
 import { PrismaService } from 'prisma/prisma.service';
 import { MailService } from 'src/mail/mail.service';
 import { CommonAuthService } from 'src/shared/common-auth.service';
@@ -22,7 +23,7 @@ import {
 
 describe('/users/auth for an unvalidated user', () => {
   const password = 'correct-password';
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let storedUser: Pick<
     users,
     | 'id'

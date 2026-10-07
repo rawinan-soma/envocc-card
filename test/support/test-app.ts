@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { TestingModule } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
 import { Response } from 'supertest';
+import type { App } from 'supertest/types';
 
 export const testConfig = (values: Record<string, string>) => ({
   provide: ConfigService,
@@ -12,8 +13,8 @@ export const testConfig = (values: Record<string, string>) => ({
 // Mirrors the cookie handling main.ts sets up for the real app.
 export const startApp = async (
   moduleRef: TestingModule,
-): Promise<INestApplication> => {
-  const app = moduleRef.createNestApplication();
+): Promise<INestApplication<App>> => {
+  const app = moduleRef.createNestApplication<INestApplication<App>>();
   app.use(cookieParser());
   await app.init();
   return app;
