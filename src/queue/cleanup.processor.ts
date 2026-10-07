@@ -8,7 +8,7 @@ export class CleanupProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job) {
+  async process(job: Job<{ id: number }>) {
     if (job.name === 'delete-qr-token') {
       const { id } = job.data;
       await this.prisma.members.update({

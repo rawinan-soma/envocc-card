@@ -5,8 +5,6 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
 import { promises as fs } from 'fs';
 import {
   envocc_card_files,
@@ -22,11 +20,6 @@ import {
 import { PrismaService } from 'prisma/prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { FileCreateDto } from './dto/file-create.dto';
-
-interface MulterOptionsParams {
-  extension: string[];
-  size: number;
-}
 
 type FileModels =
   | 'envcard'
@@ -64,35 +57,6 @@ export class FilesService {
 
       // member: this.prisma.members
     } satisfies Record<FileModels, any>;
-  }
-
-  getMulterOpitions({ extension, size }: MulterOptionsParams) {
-    return {
-      fileFilter: (req, file: Express.Multer.File, cb) => {
-        const fileExt = extname(file.originalname).toLowerCase();
-
-        if (!extension.includes(fileExt)) {
-          return cb(new BadRequestException('unsupported file type'), false);
-        }
-        cb(null, true);
-      },
-      limits: {
-        fileSize: size,
-      },
-      storage: diskStorage({
-        destination(req, file, callback) {
-          const uploadPath = join(process.cwd(), 'assets');
-          fs.mkdir(uploadPath, { recursive: true })
-            .then(() => callback(null, uploadPath))
-            .catch((err) => callback(err as Error, uploadPath));
-        },
-        filename: (req, file, cb) => {
-          const suffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          cb(null, `${file.fieldname}-${suffix}${ext}`);
-        },
-      }),
-    };
   }
 
   async deleteFile(path: string) {

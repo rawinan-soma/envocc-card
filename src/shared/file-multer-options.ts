@@ -1,10 +1,14 @@
 import { BadRequestException } from '@nestjs/common';
+import { MulterModuleOptions } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 
-export function getMulterOptions(extension: string[], size: number) {
+export function getMulterOptions(
+  extension: string[],
+  size: number,
+): MulterModuleOptions {
   return {
-    fileFilter: (req, file: Express.Multer.File, cb) => {
+    fileFilter: (req, file, cb) => {
       const fileExt = extname(file.originalname).toLowerCase();
 
       if (!extension.includes(fileExt)) {
