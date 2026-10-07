@@ -14,7 +14,7 @@ export const testConfig = (values: Record<string, string>) => ({
 export const startApp = async (
   moduleRef: TestingModule,
 ): Promise<INestApplication<App>> => {
-  const app = moduleRef.createNestApplication<INestApplication<App>>();
+  const app = moduleRef.createNestApplication();
   app.use(cookieParser());
   await app.init();
   return app;

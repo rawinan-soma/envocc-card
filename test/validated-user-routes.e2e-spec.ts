@@ -201,9 +201,7 @@ describe('@ValidatedUser() routes', () => {
         const res = await call(route);
 
         expect(res.status).toBe(403);
-        expect((res.body as { message: string }).message).toBe(
-          'user not validated',
-        );
+        expect(res.body).toMatchObject({ message: 'user not validated' });
       },
     );
 
