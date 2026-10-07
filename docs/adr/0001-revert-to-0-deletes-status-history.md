@@ -1,0 +1,3 @@
+# A Revert to 0 deletes the user's Status History
+
+The Status History is otherwise only ever added to, and every other Revert appends a new entry. A Revert to 0 is the exception: it deletes all of the user's Status History entries and uploaded request files, sets them back to unapproved, and leaves a single status-0 entry, as if they had just registered. We chose this over appending a status-0 entry and keeping the old ones because a Revert to 0 is meant as a clean restart, with nothing from the earlier attempt left in admin screens or attached to the user. The cost is that there's no record afterwards that the user was reverted, by whom, or how far they had got. Don't "fix" this by switching to an append without revisiting the decision.
