@@ -102,6 +102,25 @@ export class FilesService {
     }
   }
 
+  async listEnvcardFiles(userId?: number) {
+    try {
+      return await this.prisma.envocc_card_files.findMany({
+        where: { userId },
+        orderBy: { create_date: 'desc' },
+        select: {
+          id: true,
+          userId: true,
+          filename: true,
+          url: true,
+          create_date: true,
+        },
+      });
+    } catch (err) {
+      this.logger.error(err);
+      throw new InternalServerErrorException('something went wrong');
+    }
+  }
+
   async deleteFileByUserId<T extends keyof FileModelMap>(
     model: T,
     userId: number,
