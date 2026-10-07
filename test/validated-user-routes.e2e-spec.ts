@@ -1,4 +1,4 @@
-import { Controller, Get, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
@@ -15,21 +15,10 @@ import { MembersService } from 'src/members/members.service';
 import { UserMemberController } from 'src/members/user-member.controller';
 import { RequestService } from 'src/request/request.service';
 import { UserRequestController } from 'src/request/user-request.controller';
-import { Public } from 'src/shared/public.decorator';
+import { UserCardRequestController } from 'src/users/user-card-request.controller';
 import { UsersController } from 'src/users/users.controller';
 import { UsersService } from 'src/users/users.service';
-import { ApprovedUser } from './approved-user.decorator';
-import { JwtAccessStrategy } from './jwt-access.strategy';
-
-@ApprovedUser()
-@Controller('test')
-class PublicUnderApprovedController {
-  @Public()
-  @Get('open')
-  open() {
-    return { ok: true };
-  }
-}
+import { JwtAccessStrategy } from 'src/user-auth/jwt-access.strategy';
 
 const ACCESS_SECRET = 'test-access-secret';
 const USER_ID = 7;
@@ -44,30 +33,34 @@ type Route = {
 const photoUpload = { field: 'photo', filename: 'me.jpg' };
 const envcardUpload = { field: 'envcard', filename: 'card.pdf' };
 
-// Blocked for unapproved users. approvedStatus is what an approved user gets
+// Blocked for unvalidated users. validatedStatus is what a validated user gets
 // from the same call with these stubs.
-const blockedRoutes: (Route & { approvedStatus: number })[] = [
-  { method: 'post', path: '/users/me/card?requestType=1', approvedStatus: 201 },
-  { method: 'post', path: '/users/me/requests', approvedStatus: 201 },
-  { method: 'get', path: '/users/me/requests/latest', approvedStatus: 200 },
-  { method: 'get', path: '/users/me/requests/form', approvedStatus: 200 },
-  { method: 'get', path: '/users/me/requests/exp', approvedStatus: 200 },
+const blockedRoutes: (Route & { validatedStatus: number })[] = [
+  {
+    method: 'post',
+    path: '/users/me/card?requestType=1',
+    validatedStatus: 201,
+  },
+  { method: 'post', path: '/users/me/requests', validatedStatus: 201 },
+  { method: 'get', path: '/users/me/requests/latest', validatedStatus: 200 },
+  { method: 'get', path: '/users/me/requests/form', validatedStatus: 200 },
+  { method: 'get', path: '/users/me/requests/exp', validatedStatus: 200 },
   {
     method: 'post',
     path: '/users/me/photo',
     upload: photoUpload,
-    approvedStatus: 201,
+    validatedStatus: 201,
   },
   {
     method: 'post',
     path: '/users/me/envcard',
     upload: envcardUpload,
-    approvedStatus: 201,
+    validatedStatus: 201,
   },
   // 404: reaches FilesService, which finds no stored photo for this user.
-  { method: 'get', path: '/users/me/files/photo', approvedStatus: 404 },
-  { method: 'patch', path: '/users/me/members/qrcode', approvedStatus: 200 },
-  { method: 'get', path: '/users/me/envcard/qrcode', approvedStatus: 200 },
+  { method: 'get', path: '/users/me/files/photo', validatedStatus: 404 },
+  { method: 'patch', path: '/users/me/members/qrcode', validatedStatus: 200 },
+  { method: 'get', path: '/users/me/envcard/qrcode', validatedStatus: 200 },
 ];
 
 const allowedRoutes: Route[] = [
@@ -79,7 +72,7 @@ const allowedRoutes: Route[] = [
   { method: 'delete', path: '/users/me/experiences/1' },
 ];
 
-describe('ApprovedUserGuard', () => {
+describe('@ValidatedUser() routes', () => {
   let app: INestApplication;
   let isValidate: boolean;
   let workDir: string;
@@ -93,7 +86,7 @@ describe('ApprovedUserGuard', () => {
   const stubReturningOk = () => jest.fn().mockResolvedValue({ ok: true });
 
   beforeEach(async () => {
-    workDir = mkdtempSync(join(tmpdir(), 'approved-guard-'));
+    workDir = mkdtempSync(join(tmpdir(), 'validated-routes-'));
     mkdirSync(join(workDir, 'assets'));
     jest.spyOn(process, 'cwd').mockReturnValue(workDir);
 
@@ -118,10 +111,10 @@ describe('ApprovedUserGuard', () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [
         UsersController,
+        UserCardRequestController,
         UserFileController,
         UserMemberController,
         UserRequestController,
-        PublicUnderApprovedController,
       ],
       providers: [
         JwtAccessStrategy,
@@ -202,7 +195,7 @@ describe('ApprovedUserGuard', () => {
 
   const filesOnDisk = () => readdirSync(join(workDir, 'assets'));
 
-  describe('unapproved user', () => {
+  describe('unvalidated user', () => {
     beforeEach(() => {
       isValidate = false;
     });
@@ -241,7 +234,7 @@ describe('ApprovedUserGuard', () => {
     });
   });
 
-  describe('approved user', () => {
+  describe('validated user', () => {
     beforeEach(() => {
       isValidate = true;
     });
@@ -256,27 +249,19 @@ describe('ApprovedUserGuard', () => {
 
     it.each(blockedRoutes)(
       'is not blocked on $method $path',
-      async ({ approvedStatus, ...route }) => {
+      async ({ validatedStatus, ...route }) => {
         const res = await call(route);
 
-        expect(res.status).toBe(approvedStatus);
+        expect(res.status).toBe(validatedStatus);
       },
     );
   });
 
-  it('lets the same session through once an admin approves it', async () => {
+  it('lets the same session through once an admin validates it', async () => {
     isValidate = false;
     expect((await uploadPhoto()).status).toBe(403);
 
     isValidate = true;
     expect((await uploadPhoto()).status).toBe(201);
-  });
-
-  it('skips @Public() routes', async () => {
-    isValidate = false;
-
-    const res = await request(app.getHttpServer()).get('/test/open');
-
-    expect(res.status).toBe(200);
   });
 });

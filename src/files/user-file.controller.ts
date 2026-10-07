@@ -13,9 +13,9 @@ import { FileCreateDto } from './dto/file-create.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { getMulterOptions } from 'src/shared/file-multer-options';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
-import { ApprovedUser } from 'src/user-auth/approved-user.decorator';
+import { ValidatedUser } from 'src/user-auth/validated-user.decorator';
 
-@ApprovedUser()
+@ValidatedUser()
 @Controller('users')
 export class UserFileController {
   constructor(private readonly filesService: FilesService) {}

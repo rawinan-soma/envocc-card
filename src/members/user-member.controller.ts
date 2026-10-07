@@ -1,9 +1,9 @@
 import { Body, Controller, Get, Patch, Req } from '@nestjs/common';
 import { MembersService } from './members.service';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
-import { ApprovedUser } from 'src/user-auth/approved-user.decorator';
+import { ValidatedUser } from 'src/user-auth/validated-user.decorator';
 
-@ApprovedUser()
+@ValidatedUser()
 @Controller('users')
 export class UserMemberController {
   constructor(private readonly membersService: MembersService) {}

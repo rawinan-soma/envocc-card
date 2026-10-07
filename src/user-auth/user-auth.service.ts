@@ -150,7 +150,6 @@ export class UserAuthService {
             role: true,
             position: true,
             organization: true,
-            is_validate: true,
           },
         }),
       );
