@@ -211,16 +211,18 @@ describe('@ValidatedUser() routes', () => {
       expect(res.status).toBeLessThan(300);
     });
 
-    it('a blocked photo upload leaves no file on disk and no photos row', async () => {
-      await uploadPhoto();
+    it('gets 403 on a photo upload and leaves no file or photos row', async () => {
+      const res = await uploadPhoto();
 
+      expect(res.status).toBe(403);
       expect(filesOnDisk()).toEqual([]);
       expect(prisma.photos.create).not.toHaveBeenCalled();
     });
 
-    it('a blocked envcard upload leaves no file on disk and no envocc_card_files row', async () => {
-      await uploadEnvcard();
+    it('gets 403 on an envcard upload and leaves no file or envocc_card_files row', async () => {
+      const res = await uploadEnvcard();
 
+      expect(res.status).toBe(403);
       expect(filesOnDisk()).toEqual([]);
       expect(prisma.envocc_card_files.create).not.toHaveBeenCalled();
     });
@@ -231,11 +233,18 @@ describe('@ValidatedUser() routes', () => {
       isValidate = true;
     });
 
-    it('a photo upload is stored on disk and in photos', async () => {
+    it('stores an uploaded photo on disk and in photos', async () => {
       await uploadPhoto();
 
       expect(filesOnDisk()).toHaveLength(1);
       expect(prisma.photos.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('stores an uploaded envcard on disk and in envocc_card_files', async () => {
+      await uploadEnvcard();
+
+      expect(filesOnDisk()).toHaveLength(1);
+      expect(prisma.envocc_card_files.create).toHaveBeenCalledTimes(1);
     });
 
     it.each(blockedRoutes)(
