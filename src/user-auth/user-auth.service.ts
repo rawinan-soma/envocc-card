@@ -150,17 +150,12 @@ export class UserAuthService {
             role: true,
             position: true,
             organization: true,
-            is_validate: true,
           },
         }),
       );
 
       if (!user) {
         throw new UnauthorizedException('user not found');
-      }
-
-      if (!user.is_validate) {
-        throw new UnauthorizedException('user not validated');
       }
 
       await this.verifyPassword(password, user?.password || '');

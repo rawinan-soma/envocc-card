@@ -10,14 +10,13 @@ import {
   UseInterceptors,
   ParseIntPipe,
   ParseArrayPipe,
-  Query,
   Param,
   Delete,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAccessGuardUser } from 'src/user-auth/jwt-access.guard';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
-import { UserUpdateDto, UserUpdateInternalDto } from './dto/user-update.dto';
+import { UserUpdateInternalDto } from './dto/user-update.dto';
 import { FileCreateDto } from 'src/files/dto/file-create.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { getMulterOptions } from 'src/shared/file-multer-options';
@@ -47,32 +46,6 @@ export class UsersController {
   ) {
     return this.usersService.updateUser(request.user.id, user);
   }
-  @UseGuards(JwtAccessGuardUser)
-  @Get('me/requests/form')
-  async createRequestFormHandler(@Req() request: RequestwithUserData) {
-    const id = request.user.id;
-    return this.usersService.getUserRequestForm(id);
-  }
-  @UseGuards(JwtAccessGuardUser)
-  @Get('me/requests/exp')
-  async createExpFormHandler(@Req() request: RequestwithUserData) {
-    return this.usersService.getUserPrintExpForm(request.user.id);
-  }
-
-  @UseGuards(JwtAccessGuardUser)
-  @Post('me/card')
-  async createNewCardRequestHandler(
-    @Req() request: RequestwithUserData,
-    @Body() user: UserUpdateDto,
-    @Query('requestType', ParseIntPipe) requestType: number,
-  ) {
-    return this.usersService.createNewCardRequest(
-      request.user.id,
-      user,
-      requestType,
-    );
-  }
-
   // @Post('me/govcard')
   // @UseInterceptors(
   //   FileInterceptor('govcard', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),
