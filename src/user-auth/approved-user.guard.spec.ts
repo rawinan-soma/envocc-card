@@ -18,7 +18,7 @@ import { UserRequestController } from 'src/request/user-request.controller';
 import { Public } from 'src/shared/public.decorator';
 import { UsersController } from 'src/users/users.controller';
 import { UsersService } from 'src/users/users.service';
-import { ApprovedUser } from './approved-user.guard';
+import { ApprovedUser } from './approved-user.decorator';
 import { JwtAccessStrategy } from './jwt-access.strategy';
 
 @ApprovedUser()
@@ -34,28 +34,49 @@ class PublicUnderApprovedController {
 const ACCESS_SECRET = 'test-access-secret';
 const USER_ID = 7;
 
-type Method = 'get' | 'post' | 'patch' | 'delete';
+type Route = {
+  method: 'get' | 'post' | 'patch' | 'delete';
+  path: string;
+  body?: object;
+  upload?: { field: string; filename: string };
+};
 
-const blockedRoutes: [Method, string][] = [
-  ['post', '/users/me/card?requestType=1'],
-  ['post', '/users/me/requests'],
-  ['get', '/users/me/requests/latest'],
-  ['get', '/users/me/requests/form'],
-  ['get', '/users/me/requests/exp'],
-  ['post', '/users/me/photo'],
-  ['post', '/users/me/envcard'],
-  ['get', '/users/me/files/photo'],
-  ['patch', '/users/me/members/qrcode'],
-  ['get', '/users/me/envcard/qrcode'],
+const photoUpload = { field: 'photo', filename: 'me.jpg' };
+const envcardUpload = { field: 'envcard', filename: 'card.pdf' };
+
+// Blocked for unapproved users. approvedStatus is what an approved user gets
+// from the same call with these stubs.
+const blockedRoutes: (Route & { approvedStatus: number })[] = [
+  { method: 'post', path: '/users/me/card?requestType=1', approvedStatus: 201 },
+  { method: 'post', path: '/users/me/requests', approvedStatus: 201 },
+  { method: 'get', path: '/users/me/requests/latest', approvedStatus: 200 },
+  { method: 'get', path: '/users/me/requests/form', approvedStatus: 200 },
+  { method: 'get', path: '/users/me/requests/exp', approvedStatus: 200 },
+  {
+    method: 'post',
+    path: '/users/me/photo',
+    upload: photoUpload,
+    approvedStatus: 201,
+  },
+  {
+    method: 'post',
+    path: '/users/me/envcard',
+    upload: envcardUpload,
+    approvedStatus: 201,
+  },
+  // 404: reaches FilesService, which finds no stored photo for this user.
+  { method: 'get', path: '/users/me/files/photo', approvedStatus: 404 },
+  { method: 'patch', path: '/users/me/members/qrcode', approvedStatus: 200 },
+  { method: 'get', path: '/users/me/envcard/qrcode', approvedStatus: 200 },
 ];
 
-const allowedRoutes: [Method, string][] = [
-  ['get', '/users/me'],
-  ['patch', '/users/me'],
-  ['get', '/users/me/experiences'],
-  ['post', '/users/me/experiences'],
-  ['patch', '/users/me/experiences/1'],
-  ['delete', '/users/me/experiences/1'],
+const allowedRoutes: Route[] = [
+  { method: 'get', path: '/users/me' },
+  { method: 'patch', path: '/users/me' },
+  { method: 'get', path: '/users/me/experiences' },
+  { method: 'post', path: '/users/me/experiences', body: [] },
+  { method: 'patch', path: '/users/me/experiences/1' },
+  { method: 'delete', path: '/users/me/experiences/1' },
 ];
 
 describe('ApprovedUserGuard', () => {
@@ -69,7 +90,7 @@ describe('ApprovedUserGuard', () => {
     envocc_card_files: { findFirst: jest.Mock; create: jest.Mock };
   };
 
-  const resolved = () => jest.fn().mockResolvedValue({ ok: true });
+  const stubReturningOk = () => jest.fn().mockResolvedValue({ ok: true });
 
   beforeEach(async () => {
     workDir = mkdtempSync(join(tmpdir(), 'approved-guard-'));
@@ -87,8 +108,11 @@ describe('ApprovedUserGuard', () => {
           }),
         ),
       },
-      photos: { findFirst: jest.fn(), create: jest.fn(resolved()) },
-      envocc_card_files: { findFirst: jest.fn(), create: jest.fn(resolved()) },
+      photos: { findFirst: jest.fn(), create: jest.fn(stubReturningOk()) },
+      envocc_card_files: {
+        findFirst: jest.fn(),
+        create: jest.fn(stubReturningOk()),
+      },
     };
 
     const moduleRef = await Test.createTestingModule({
@@ -110,29 +134,35 @@ describe('ApprovedUserGuard', () => {
         {
           provide: UsersService,
           useValue: {
-            getUserById: resolved(),
-            updateUser: resolved(),
-            getUserRequestForm: resolved(),
-            getUserPrintExpForm: resolved(),
-            createNewCardRequest: resolved(),
+            getUserById: stubReturningOk(),
+            updateUser: stubReturningOk(),
+            getUserRequestForm: stubReturningOk(),
+            getUserPrintExpForm: stubReturningOk(),
+            createNewCardRequest: stubReturningOk(),
           },
         },
         {
           provide: ExperiencesService,
           useValue: {
-            getAllExperience: resolved(),
-            addExperinces: resolved(),
-            editExperience: resolved(),
-            deleteExperience: resolved(),
+            getAllExperience: stubReturningOk(),
+            addExperinces: stubReturningOk(),
+            editExperience: stubReturningOk(),
+            deleteExperience: stubReturningOk(),
           },
         },
         {
           provide: MembersService,
-          useValue: { setQrPassword: resolved(), getMember: resolved() },
+          useValue: {
+            setQrPassword: stubReturningOk(),
+            getMember: stubReturningOk(),
+          },
         },
         {
           provide: RequestService,
-          useValue: { getCurrentStatus: resolved(), updateStatus: resolved() },
+          useValue: {
+            getCurrentStatus: stubReturningOk(),
+            updateStatus: stubReturningOk(),
+          },
         },
       ],
     }).compile();
@@ -154,26 +184,21 @@ describe('ApprovedUserGuard', () => {
     rmSync(workDir, { recursive: true, force: true });
   });
 
-  const call = (method: Method, path: string) => {
+  const call = ({ method, path, body, upload }: Route) => {
     const req = request(app.getHttpServer())
       [method](path)
       .set('Cookie', cookie);
-    return method === 'post' && path === '/users/me/experiences'
-      ? req.send([])
-      : req;
+    if (upload) {
+      return req.attach(upload.field, Buffer.from('fake'), upload.filename);
+    }
+    return body ? req.send(body) : req;
   };
 
   const uploadPhoto = () =>
-    request(app.getHttpServer())
-      .post('/users/me/photo')
-      .set('Cookie', cookie)
-      .attach('photo', Buffer.from('fake-image'), 'me.jpg');
+    call({ method: 'post', path: '/users/me/photo', upload: photoUpload });
 
   const uploadEnvcard = () =>
-    request(app.getHttpServer())
-      .post('/users/me/envcard')
-      .set('Cookie', cookie)
-      .attach('envcard', Buffer.from('%PDF-fake'), 'card.pdf');
+    call({ method: 'post', path: '/users/me/envcard', upload: envcardUpload });
 
   const filesOnDisk = () => readdirSync(join(workDir, 'assets'));
 
@@ -183,17 +208,17 @@ describe('ApprovedUserGuard', () => {
     });
 
     it.each(blockedRoutes)(
-      'gets 403 user not validated on %s %s',
-      async (method, path) => {
-        const res = await call(method, path);
+      'gets 403 user not validated on $method $path',
+      async (route) => {
+        const res = await call(route);
 
         expect(res.status).toBe(403);
         expect(res.body.message).toBe('user not validated');
       },
     );
 
-    it.each(allowedRoutes)('gets 2xx on %s %s', async (method, path) => {
-      const res = await call(method, path);
+    it.each(allowedRoutes)('gets 2xx on $method $path', async (route) => {
+      const res = await call(route);
 
       expect(res.status).toBeGreaterThanOrEqual(200);
       expect(res.status).toBeLessThan(300);
@@ -229,15 +254,14 @@ describe('ApprovedUserGuard', () => {
       expect(prisma.photos.create).toHaveBeenCalledTimes(1);
     });
 
-    it.each(
-      blockedRoutes.filter(
-        ([, path]) => !path.includes('envcard') && !path.includes('photo'),
-      ),
-    )('is not blocked on %s %s', async (method, path) => {
-      const res = await call(method, path);
+    it.each(blockedRoutes)(
+      'is not blocked on $method $path',
+      async ({ approvedStatus, ...route }) => {
+        const res = await call(route);
 
-      expect(res.status).not.toBe(403);
-    });
+        expect(res.status).toBe(approvedStatus);
+      },
+    );
   });
 
   it('lets the same session through once an admin approves it', async () => {

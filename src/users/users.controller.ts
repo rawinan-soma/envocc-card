@@ -16,7 +16,7 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAccessGuardUser } from 'src/user-auth/jwt-access.guard';
-import { ApprovedUser } from 'src/user-auth/approved-user.guard';
+import { ApprovedUser } from 'src/user-auth/approved-user.decorator';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
 import { UserUpdateDto, UserUpdateInternalDto } from './dto/user-update.dto';
 import { FileCreateDto } from 'src/files/dto/file-create.dto';

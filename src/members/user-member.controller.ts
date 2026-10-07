@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Patch, Req } from '@nestjs/common';
 import { MembersService } from './members.service';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
-import { ApprovedUser } from 'src/user-auth/approved-user.guard';
+import { ApprovedUser } from 'src/user-auth/approved-user.decorator';
 
 @ApprovedUser()
 @Controller('users')

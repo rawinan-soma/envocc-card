@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, Req } from '@nestjs/common';
 import { RequestService } from './request.service';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
 import { StatusCreateDto } from './dto/status-create.dto';
-import { ApprovedUser } from 'src/user-auth/approved-user.guard';
+import { ApprovedUser } from 'src/user-auth/approved-user.decorator';
 
 @ApprovedUser()
 @Controller('users')
