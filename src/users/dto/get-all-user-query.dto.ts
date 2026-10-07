@@ -7,7 +7,7 @@ enum Statuses {
   suspended = 'suspended',
 }
 
-export class GetAllUserQueryDto {
+export class GetUsersPageQueryDto {
   @IsNumber()
   @IsOptional()
   @Transform(({ value }) => parseInt(value as string, 10))
@@ -17,7 +17,9 @@ export class GetAllUserQueryDto {
   @IsString()
   @IsOptional()
   search_term?: string;
+}
 
+export class GetAllUserQueryDto extends GetUsersPageQueryDto {
   @IsEnum(Statuses)
   status: Statuses;
 }

@@ -105,32 +105,57 @@ export class UsersService {
     orgId: number;
     search_term?: string;
   }) {
+    let statuses: number[];
+    if (queryData.status === 'ongoing') {
+      statuses = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+    } else if (queryData.status === 'activated') {
+      statuses = [15];
+    } else if (queryData.status === 'suspended') {
+      statuses = [16];
+    } else {
+      throw new BadRequestException('Invalid Status query');
+    }
+
+    return await this.getUsersPage({
+      page: queryData.page,
+      search_term: queryData.search_term,
+      statuses,
+      orgId: queryData.orgId,
+    });
+  }
+
+  // Every user at every request status, across every organization.
+  async getAllUsersUnfiltered(queryData: {
+    page: number;
+    search_term?: string;
+  }) {
+    return await this.getUsersPage(queryData);
+  }
+
+  // statuses filters on each user's latest request; orgId limits the result
+  // to that organization and its descendants. Omit either to skip it.
+  private async getUsersPage(queryData: {
+    page: number;
+    search_term?: string;
+    statuses?: number[];
+    orgId?: number;
+  }) {
     try {
-      let filtered: number[];
-      if (queryData.status === 'ongoing') {
-        filtered = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
-      } else if (queryData.status === 'activated') {
-        filtered = [15];
-      } else if (queryData.status === 'suspended') {
-        filtered = [16];
-      } else {
-        throw new BadRequestException('Invalid Status query');
-      }
+      const { statuses, orgId } = queryData;
 
-      const ids = await this.getChildIds(queryData.orgId);
-
-      const adminLevelFilter = {
-        requests: {
-          some: { request_status: { in: filtered } },
-          // none: { request_status: { notIn: filtered } },
-        },
-        organizationId: { in: ids },
+      const where: Prisma.usersWhereInput = {
         OR: [
           { fname_th: { contains: queryData.search_term } },
           { lname_th: { contains: queryData.search_term } },
           { organization: { name_th: { contains: queryData.search_term } } },
         ],
       };
+      if (statuses) {
+        where.requests = { some: { request_status: { in: statuses } } };
+      }
+      if (orgId !== undefined) {
+        where.organizationId = { in: await this.getChildIds(orgId) };
+      }
 
       const limit = 10;
       const offset = (queryData.page - 1) * limit;
@@ -187,13 +212,13 @@ export class UsersService {
                 request_status: true,
               },
               orderBy: { date_update: 'desc' },
-              // where: { request_status: { in: filtered } },
+              // where: { request_status: { in: statuses } },
               take: 1,
             },
             position: { select: { position_name: true } },
             position_lv: { select: { position_lv_name: true } },
           },
-          where: adminLevelFilter,
+          where: where,
           orderBy: { id: 'asc' },
         }),
       );
@@ -209,7 +234,7 @@ export class UsersService {
           organization: undefined,
           start_date: user.members[0]?.start_date,
           end_date: user.members[0]?.end_date,
-          request_status: user.requests[0].request_status,
+          request_status: user.requests[0]?.request_status ?? null,
           position: user.position?.position_name,
           position_lv: user.position_lv?.position_lv_name,
           unit:
@@ -222,9 +247,12 @@ export class UsersService {
         };
       });
 
-      const filteredData = data.filter((d) =>
-        filtered.includes(d.request_status),
-      );
+      const filteredData = statuses
+        ? data.filter(
+            (d) =>
+              d.request_status !== null && statuses.includes(d.request_status),
+          )
+        : data;
 
       const totalItems = filteredData.length;
       const totalPages = Math.ceil(totalItems / limit);

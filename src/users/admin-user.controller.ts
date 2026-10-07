@@ -13,7 +13,10 @@ import {
 import { UsersService } from './users.service';
 import { AdminsService } from 'src/admins/admins.service';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
-import { GetAllUserQueryDto } from './dto/get-all-user-query.dto';
+import {
+  GetAllUserQueryDto,
+  GetUsersPageQueryDto,
+} from './dto/get-all-user-query.dto';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 
 @UseGuards(JwtAccessGuardAdmin)
@@ -23,6 +26,19 @@ export class AdminUserController {
     private readonly usersService: UsersService,
     private readonly adminsService: AdminsService,
   ) {}
+
+  // Declared before any users/:id GET so it is never shadowed by one.
+  @Get('users/all')
+  async getAllUsersUnfilteredHandler(
+    @Query() queryParams: GetUsersPageQueryDto,
+  ) {
+    const { page, search_term } = queryParams;
+
+    return await this.usersService.getAllUsersUnfiltered({
+      page: page as number,
+      search_term: search_term,
+    });
+  }
 
   @Get('users')
   async getAllUserHandler(
