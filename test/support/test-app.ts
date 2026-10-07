@@ -1,4 +1,5 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { APP_PIPE } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { TestingModule } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
@@ -8,6 +9,12 @@ import type { App } from 'supertest/types';
 export const testConfig = (values: Record<string, string>) => ({
   provide: ConfigService,
   useValue: new ConfigService(values),
+});
+
+// Mirrors the global ValidationPipe main.ts sets up for the real app.
+export const validationPipe = () => ({
+  provide: APP_PIPE,
+  useValue: new ValidationPipe({ transform: true, whitelist: true }),
 });
 
 // Mirrors the cookie handling main.ts sets up for the real app.

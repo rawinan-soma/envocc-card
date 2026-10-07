@@ -1,5 +1,4 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { APP_PIPE } from '@nestjs/core';
+import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -10,7 +9,7 @@ import { AdminsService } from 'src/admins/admins.service';
 import { FilesService } from 'src/files/files.service';
 import { AdminUserController } from 'src/users/admin-user.controller';
 import { UsersService } from 'src/users/users.service';
-import { startApp, testConfig } from './support/test-app';
+import { startApp, testConfig, validationPipe } from './support/test-app';
 
 const ACCESS_SECRET = 'test-access-secret';
 const ADMIN_ID = 3;
@@ -86,11 +85,7 @@ describe('admin user listing routes', () => {
           },
         },
         testConfig({ ACCESS_TOKEN_SECRET: ACCESS_SECRET }),
-        // Mirrors the global pipe main.ts sets up for the real app.
-        {
-          provide: APP_PIPE,
-          useValue: new ValidationPipe({ transform: true, whitelist: true }),
-        },
+        validationPipe(),
       ],
     }).compile();
 

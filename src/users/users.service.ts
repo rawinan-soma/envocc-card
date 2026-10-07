@@ -13,6 +13,11 @@ import { StatusCreateDto } from 'src/request/dto/status-create.dto';
 import { FilesService } from 'src/files/files.service';
 import { FileCreateDto } from 'src/files/dto/file-create.dto';
 
+interface UsersPageQuery {
+  page: number;
+  search_term?: string;
+}
+
 interface OrganizationWithParent {
   id: number;
   name_th: string;
@@ -98,13 +103,13 @@ export class UsersService {
     }
   }
 
-  async getAllUsers(queryData: {
-    page: number;
-    status: string;
-    adminId: number;
-    orgId: number;
-    search_term?: string;
-  }) {
+  async getAllUsers(
+    queryData: UsersPageQuery & {
+      status: string;
+      adminId: number;
+      orgId: number;
+    },
+  ) {
     let statuses: number[];
     if (queryData.status === 'ongoing') {
       statuses = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
@@ -125,21 +130,15 @@ export class UsersService {
   }
 
   // Every user at every request status, across every organization.
-  async getAllUsersUnfiltered(queryData: {
-    page: number;
-    search_term?: string;
-  }) {
+  async getAllUsersUnfiltered(queryData: UsersPageQuery) {
     return await this.getUsersPage(queryData);
   }
 
   // statuses filters on each user's latest request; orgId limits the result
   // to that organization and its descendants. Omit either to skip it.
-  private async getUsersPage(queryData: {
-    page: number;
-    search_term?: string;
-    statuses?: number[];
-    orgId?: number;
-  }) {
+  private async getUsersPage(
+    queryData: UsersPageQuery & { statuses?: number[]; orgId?: number },
+  ) {
     try {
       const { statuses, orgId } = queryData;
 
@@ -212,13 +211,12 @@ export class UsersService {
                 request_status: true,
               },
               orderBy: { date_update: 'desc' },
-              // where: { request_status: { in: statuses } },
               take: 1,
             },
             position: { select: { position_name: true } },
             position_lv: { select: { position_lv_name: true } },
           },
-          where: where,
+          where,
           orderBy: { id: 'asc' },
         }),
       );
