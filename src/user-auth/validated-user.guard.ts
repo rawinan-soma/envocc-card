@@ -17,7 +17,7 @@ export class ValidatedUserGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestwithUserData>();
     const user = await this.prisma.users.findUnique({
-      where: { id: Number(request.user.id) },
+      where: { id: request.user.id },
       select: { is_validate: true },
     });
 

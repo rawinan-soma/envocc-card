@@ -18,13 +18,12 @@ export class UserCardRequestController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('me/requests/form')
-  async createRequestFormHandler(@Req() request: RequestwithUserData) {
-    const id = request.user.id;
-    return this.usersService.getUserRequestForm(id);
+  async getRequestFormHandler(@Req() request: RequestwithUserData) {
+    return this.usersService.getUserRequestForm(request.user.id);
   }
 
   @Get('me/requests/exp')
-  async createExpFormHandler(@Req() request: RequestwithUserData) {
+  async getExpFormHandler(@Req() request: RequestwithUserData) {
     return this.usersService.getUserPrintExpForm(request.user.id);
   }
 

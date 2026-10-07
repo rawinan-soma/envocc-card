@@ -1,11 +1,10 @@
 import { INestApplication } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { Test } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
-import cookieParser from 'cookie-parser';
 import request from 'supertest';
+import { users } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
 import { MailService } from 'src/mail/mail.service';
 import { CommonAuthService } from 'src/shared/common-auth.service';
@@ -14,19 +13,27 @@ import { JwtRefreshStrategy } from 'src/user-auth/jwt-refresh.strategy';
 import { UserAuthController } from 'src/user-auth/user-auth.controller';
 import { UserAuthService } from 'src/user-auth/user-auth.service';
 import { UserLocalStrategy } from 'src/user-auth/user-local.strategy';
+import {
+  cookiePairs,
+  setCookies,
+  startApp,
+  testConfig,
+} from './support/test-app';
 
 describe('/users/auth for an unvalidated user', () => {
   const password = 'correct-password';
   let app: INestApplication;
-  let storedUser: {
-    id: number;
-    username: string;
-    password: string;
-    role: string;
-    position: { position_id: number; orgId: null };
+  let storedUser: Pick<
+    users,
+    | 'id'
+    | 'username'
+    | 'password'
+    | 'role'
+    | 'is_validate'
+    | 'hashedRefreshToken'
+  > & {
+    position: { position_id: number; orgId: number | null };
     organization: { id: number; level: string };
-    is_validate: boolean;
-    hashedRefreshToken: string | null;
   };
 
   beforeAll(async () => {
@@ -70,21 +77,16 @@ describe('/users/auth for an unvalidated user', () => {
         JwtService,
         { provide: PrismaService, useValue: prisma },
         { provide: MailService, useValue: {} },
-        {
-          provide: ConfigService,
-          useValue: new ConfigService({
-            ACCESS_TOKEN_SECRET: 'access',
-            REFRESH_TOKEN_SECRET: 'refresh',
-            ACCESS_TOKEN_EXP: '900',
-            REFRESH_TOKEN_EXP: '3600',
-          }),
-        },
+        testConfig({
+          ACCESS_TOKEN_SECRET: 'access',
+          REFRESH_TOKEN_SECRET: 'refresh',
+          ACCESS_TOKEN_EXP: '900',
+          REFRESH_TOKEN_EXP: '3600',
+        }),
       ],
     }).compile();
 
-    app = moduleRef.createNestApplication();
-    app.use(cookieParser());
-    await app.init();
+    app = await startApp(moduleRef);
   });
 
   afterAll(async () => {
@@ -95,12 +97,6 @@ describe('/users/auth for an unvalidated user', () => {
     request(app.getHttpServer())
       .post('/users/auth/login')
       .send({ username, password: pass });
-
-  const setCookies = (res: request.Response) =>
-    ([] as string[]).concat(res.headers['set-cookie'] ?? []);
-
-  const authCookies = (res: request.Response) =>
-    setCookies(res).map((c) => c.split(';')[0]);
 
   it('logs in with valid credentials and sets auth cookies', async () => {
     const res = await login('somchai', password);
@@ -127,7 +123,7 @@ describe('/users/auth for an unvalidated user', () => {
   });
 
   it('can refresh the access token', async () => {
-    const cookies = authCookies(await login('somchai', password));
+    const cookies = cookiePairs(await login('somchai', password));
 
     const res = await request(app.getHttpServer())
       .post('/users/auth/refresh')
@@ -140,7 +136,7 @@ describe('/users/auth for an unvalidated user', () => {
   });
 
   it('can log out', async () => {
-    const cookies = authCookies(await login('somchai', password));
+    const cookies = cookiePairs(await login('somchai', password));
 
     const res = await request(app.getHttpServer())
       .post('/users/auth/logout')
