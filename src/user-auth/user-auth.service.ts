@@ -159,10 +159,6 @@ export class UserAuthService {
         throw new UnauthorizedException('user not found');
       }
 
-      if (!user.is_validate) {
-        throw new UnauthorizedException('user not validated');
-      }
-
       await this.verifyPassword(password, user?.password || '');
       user.password = '';
 

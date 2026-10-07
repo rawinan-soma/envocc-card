@@ -15,8 +15,9 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { getMulterOptions } from 'src/shared/file-multer-options';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
 import { JwtAccessGuardUser } from 'src/user-auth/jwt-access.guard';
+import { ApprovedUserGuard } from 'src/user-auth/approved-user.guard';
 
-@UseGuards(JwtAccessGuardUser)
+@UseGuards(JwtAccessGuardUser, ApprovedUserGuard)
 @Controller('users')
 export class UserFileController {
   constructor(private readonly filesService: FilesService) {}

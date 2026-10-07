@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAccessGuardUser } from 'src/user-auth/jwt-access.guard';
+import { ApprovedUserGuard } from 'src/user-auth/approved-user.guard';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
 import { UserUpdateDto, UserUpdateInternalDto } from './dto/user-update.dto';
 import { FileCreateDto } from 'src/files/dto/file-create.dto';
@@ -47,19 +48,19 @@ export class UsersController {
   ) {
     return this.usersService.updateUser(request.user.id, user);
   }
-  @UseGuards(JwtAccessGuardUser)
+  @UseGuards(JwtAccessGuardUser, ApprovedUserGuard)
   @Get('me/requests/form')
   async createRequestFormHandler(@Req() request: RequestwithUserData) {
     const id = request.user.id;
     return this.usersService.getUserRequestForm(id);
   }
-  @UseGuards(JwtAccessGuardUser)
+  @UseGuards(JwtAccessGuardUser, ApprovedUserGuard)
   @Get('me/requests/exp')
   async createExpFormHandler(@Req() request: RequestwithUserData) {
     return this.usersService.getUserPrintExpForm(request.user.id);
   }
 
-  @UseGuards(JwtAccessGuardUser)
+  @UseGuards(JwtAccessGuardUser, ApprovedUserGuard)
   @Post('me/card')
   async createNewCardRequestHandler(
     @Req() request: RequestwithUserData,
