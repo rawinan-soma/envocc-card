@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
   Injectable,
@@ -6,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { OrgLevel, Prisma } from '@prisma/client';
+import { OrgLevel, organizations, Prisma } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
 import { UserUpdateDto, UserUpdateInternalDto } from './dto/user-update.dto';
@@ -344,10 +343,10 @@ export class UsersService {
         }),
       );
 
-      let department: any;
-      let province: any;
-      let region: any;
-      let ministry: any;
+      let department: organizations | null | undefined;
+      let province: organizations | null | undefined;
+      let region: organizations | null | undefined;
+      let ministry: organizations | null | undefined;
 
       if (flatOrg?.DEPARTMENT) {
         department = await this.prisma.organizations.findFirst({
