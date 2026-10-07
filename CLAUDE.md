@@ -4,11 +4,11 @@
 
 ### Issue tracker
 
-Issues live as markdown files under `.scratch/<feature>/` in this repo. See `docs/agents/issue-tracker.md`.
+Issues live in GitHub Issues for `rawinan-soma/envocc-card` (via the `gh` CLI). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-The five canonical triage roles, used verbatim as `Status:` values. See `docs/agents/triage-labels.md`.
+The five canonical triage roles, used verbatim as GitHub label names. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
