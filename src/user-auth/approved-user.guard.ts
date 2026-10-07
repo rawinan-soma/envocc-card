@@ -1,29 +1,38 @@
 import {
+  applyDecorators,
   CanActivate,
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  UseGuards,
 } from '@nestjs/common';
-import { PrismaService } from 'prisma/prisma.service';
+import { Reflector } from '@nestjs/core';
+import { IS_PUBLIC_KEY } from 'src/shared/public.decorator';
+import { JwtAccessGuardUser } from './jwt-access.guard';
 import type { RequestwithUserData } from './request-user-interface';
 
-// Must run after JwtAccessGuardUser. Reads is_validate from the database on
-// every request (not from the JWT) so admin approval takes effect immediately.
+// Relies on JwtAccessStrategy, which re-reads the user (including
+// is_validate) from the database on every request, so admin approval takes
+// effect without a new login. Use via @ApprovedUser() to keep guard order.
 @Injectable()
 export class ApprovedUserGuard implements CanActivate {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private reflector: Reflector) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(context: ExecutionContext): boolean {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getClass(),
+      context.getHandler(),
+    ]);
+    if (isPublic) return true;
+
     const request = context.switchToHttp().getRequest<RequestwithUserData>();
-    const user = await this.prisma.users.findUnique({
-      where: { id: Number(request.user.id) },
-      select: { is_validate: true },
-    });
-
-    if (!user?.is_validate) {
+    if (!request.user?.is_validate) {
       throw new ForbiddenException('user not validated');
     }
 
     return true;
   }
 }
+
+export const ApprovedUser = () =>
+  applyDecorators(UseGuards(JwtAccessGuardUser, ApprovedUserGuard));

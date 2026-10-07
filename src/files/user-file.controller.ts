@@ -6,7 +6,6 @@ import {
   Req,
   // UnauthorizedException,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileModelMap, FilesService } from './files.service';
@@ -14,10 +13,9 @@ import { FileCreateDto } from './dto/file-create.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { getMulterOptions } from 'src/shared/file-multer-options';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
-import { JwtAccessGuardUser } from 'src/user-auth/jwt-access.guard';
-import { ApprovedUserGuard } from 'src/user-auth/approved-user.guard';
+import { ApprovedUser } from 'src/user-auth/approved-user.guard';
 
-@UseGuards(JwtAccessGuardUser, ApprovedUserGuard)
+@ApprovedUser()
 @Controller('users')
 export class UserFileController {
   constructor(private readonly filesService: FilesService) {}
