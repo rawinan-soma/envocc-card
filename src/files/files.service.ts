@@ -210,20 +210,25 @@ export class FilesService {
 
   // Deletes the rows only; returns the paths so the caller can remove them
   // from disk with deleteFilesFromDisk once the transaction has committed.
-  async txDeleteFilesForUser<T extends keyof FileModelMap>(
-    model: T,
+  async txDeleteFilesForUser(
+    models: readonly (keyof FileModelMap)[],
     userId: number,
     tx: Prisma.TransactionClient,
   ): Promise<string[]> {
-    const delegate = this.txModelMap(tx)[model] as {
-      findMany: (args: any) => Promise<FileModelMap[T][]>;
-      deleteMany: (args: any) => Promise<unknown>;
-    };
+    const paths: string[] = [];
+    for (const model of models) {
+      const delegate = this.txModelMap(tx)[model] as {
+        findMany: (args: any) => Promise<FileModelMap[typeof model][]>;
+        deleteMany: (args: any) => Promise<unknown>;
+      };
 
-    const files = await delegate.findMany({ where: { userId: userId } });
-    await delegate.deleteMany({ where: { userId: userId } });
+      const files = await delegate.findMany({ where: { userId: userId } });
+      await delegate.deleteMany({ where: { userId: userId } });
 
-    return files.flatMap((file) => (file.url ? [file.url] : []));
+      paths.push(...files.flatMap((file) => (file.url ? [file.url] : [])));
+    }
+
+    return paths;
   }
 
   async txCountFilesForUser<T extends keyof FileModelMap>(

@@ -6,7 +6,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { OrgLevel, Prisma } from '@prisma/client';
 
 import { PrismaService } from 'prisma/prisma.service';
 import { StatusCreateDto } from './dto/status-create.dto';
@@ -151,11 +151,11 @@ export class RequestService {
     }
   }
 
-  async revertStatus(userId: number, revert: RevertStatusDto, admin: number) {
+  async revertStatus(userId: number, revert: RevertStatusDto, adminId: number) {
     try {
       const { entry, filesToDelete } = await this.prisma.$transaction(
         async (tx) => {
-          await this.checkCanRevert(tx, admin, userId);
+          await this.checkCanRevert(tx, adminId, userId);
 
           const current = await tx.requests.findFirst({
             where: { userId: userId },
@@ -183,27 +183,23 @@ export class RequestService {
               data: { is_validate: false },
             });
             await tx.requests.deleteMany({ where: { userId: userId } });
-            for (const model of REVERT_TO_0_FILES) {
-              filesToDelete.push(
-                ...(await this.filesService.txDeleteFilesForUser(
-                  model,
-                  userId,
-                  tx,
-                )),
-              );
-            }
+            filesToDelete.push(
+              ...(await this.filesService.txDeleteFilesForUser(
+                REVERT_TO_0_FILES,
+                userId,
+                tx,
+              )),
+            );
           }
 
           if (target === 1 || target === 6) {
-            for (const model of revert.delete_files ?? []) {
-              filesToDelete.push(
-                ...(await this.filesService.txDeleteFilesForUser(
-                  model,
-                  userId,
-                  tx,
-                )),
-              );
-            }
+            filesToDelete.push(
+              ...(await this.filesService.txDeleteFilesForUser(
+                revert.delete_files ?? [],
+                userId,
+                tx,
+              )),
+            );
           }
 
           // The card record (Member Number, QR code) is kept; its dates are
@@ -227,7 +223,7 @@ export class RequestService {
               userId: userId,
               request_status: revert.target_status,
               request_type: current.request_type,
-              approver: admin,
+              approver: adminId,
               description: revert.description,
             },
           });
@@ -267,7 +263,10 @@ export class RequestService {
     });
 
     const level = admin?.organization.level;
-    if (!admin || (level !== 'DEPARTMENT' && level !== 'MINISTRY')) {
+    if (
+      !admin ||
+      (level !== OrgLevel.DEPARTMENT && level !== OrgLevel.MINISTRY)
+    ) {
       throw new ForbiddenException(
         'only DEPARTMENT or MINISTRY admins can revert',
       );

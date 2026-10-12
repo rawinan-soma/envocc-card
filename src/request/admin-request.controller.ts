@@ -33,7 +33,7 @@ export class AdminRequestController {
     @Param('userId', ParseIntPipe) userId: number,
     @Body() revert: RevertStatusDto,
   ) {
-    const admin = request.user.id;
-    return await this.requestService.revertStatus(userId, revert, admin);
+    const adminId = request.user.id;
+    return await this.requestService.revertStatus(userId, revert, adminId);
   }
 }

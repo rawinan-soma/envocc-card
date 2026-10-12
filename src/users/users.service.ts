@@ -616,7 +616,7 @@ export class UsersService {
           if (upload) {
             replaced.push(
               ...(await this.filesService.txDeleteFilesForUser(
-                model,
+                [model],
                 user,
                 tx,
               )),
