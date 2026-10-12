@@ -9,7 +9,7 @@ import { AdminsService } from 'src/admins/admins.service';
 import { FilesService } from 'src/files/files.service';
 import { AdminUserController } from 'src/users/admin-user.controller';
 import { UsersService } from 'src/users/users.service';
-import { startApp, testConfig, validationPipe } from './support/test-app';
+import { startApp, testConfig } from './support/test-app';
 
 const ACCESS_SECRET = 'test-access-secret';
 const ADMIN_ID = 3;
@@ -89,11 +89,10 @@ describe('admin user listing routes', () => {
           },
         },
         testConfig({ ACCESS_TOKEN_SECRET: ACCESS_SECRET }),
-        validationPipe(),
       ],
     }).compile();
 
-    app = await startApp(moduleRef);
+    app = await startApp(moduleRef, { validation: true });
 
     const token = new JwtService().sign(
       { id: ADMIN_ID },

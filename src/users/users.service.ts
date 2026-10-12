@@ -13,6 +13,10 @@ import { StatusCreateDto } from 'src/request/dto/status-create.dto';
 import { FilesService } from 'src/files/files.service';
 import { FileCreateDto } from 'src/files/dto/file-create.dto';
 
+type StepThreeFile = 'govcard' | 'reqFile' | 'expfile';
+const STEP_THREE_FILES: StepThreeFile[] = ['govcard', 'reqFile', 'expfile'];
+const REQUIRED_STEP_THREE_FILES: StepThreeFile[] = ['govcard', 'reqFile'];
+
 interface UsersPageQuery {
   page: number;
   search_term?: string;
@@ -620,55 +624,49 @@ export class UsersService {
     }
   }
 
+  // Step 3. Each document replaces the user's existing one(s) of that type.
+  // A type the user already has may be left out; the government card and
+  // request file are required otherwise.
   async txUploadFileandUpdateRequest(
-    govcardDto: FileCreateDto,
-    reqFileDto: FileCreateDto,
     user: number,
-    expFilesDto?: FileCreateDto,
-    // requestUpdate: RequestCreateDto
+    uploads: Partial<Record<StepThreeFile, FileCreateDto>>,
   ) {
+    const uploaded = Object.values(uploads).flatMap((dto) =>
+      dto ? [dto.url] : [],
+    );
     try {
-      if (expFilesDto) {
-        await this.prisma.$transaction(async (tx) => {
-          await this.filesService.txUploadFileForUser(
-            'expfile',
-            expFilesDto,
-            tx,
-          );
-          await this.filesService.txUploadFileForUser(
-            'govcard',
-            govcardDto,
-            tx,
-          );
-          await this.filesService.txUploadFileForUser(
-            'reqFile',
-            reqFileDto,
-            tx,
-          );
-          await tx.requests.create({
-            data: { userId: user, request_type: 1, request_status: 4 },
-          });
-        });
-      } else {
-        await this.prisma.$transaction(async (tx) => {
-          await this.filesService.txUploadFileForUser(
-            'govcard',
-            govcardDto,
-            tx,
-          );
-          await this.filesService.txUploadFileForUser(
-            'reqFile',
-            reqFileDto,
-            tx,
-          );
+      const replaced = await this.prisma.$transaction(async (tx) => {
+        const replaced: string[] = [];
+        for (const model of STEP_THREE_FILES) {
+          const upload = uploads[model];
+          if (upload) {
+            replaced.push(
+              ...(await this.filesService.txDeleteFilesForUser(
+                [model],
+                user,
+                tx,
+              )),
+            );
+            await this.filesService.txUploadFileForUser(model, upload, tx);
+          } else if (
+            REQUIRED_STEP_THREE_FILES.includes(model) &&
+            (await this.filesService.txCountFilesForUser(model, user, tx)) === 0
+          ) {
+            throw new BadRequestException(`${model} is required`);
+          }
+        }
 
-          await tx.requests.create({
-            data: { userId: user, request_type: 1, request_status: 4 },
-          });
+        await tx.requests.create({
+          data: { userId: user, request_type: 1, request_status: 4 },
         });
-      }
+
+        return replaced;
+      });
+
+      await this.filesService.deleteFilesFromDisk(replaced);
     } catch (err) {
       this.logger.error(err);
+      await this.filesService.deleteFilesFromDisk(uploaded);
       throw err;
     }
   }
