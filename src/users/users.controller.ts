@@ -128,21 +128,26 @@ export class UsersController {
     @UploadedFiles()
     files: {
       requestFile?: Express.Multer.File[];
-      govCard: Express.Multer.File[];
+      govCard?: Express.Multer.File[];
       experienceForm?: Express.Multer.File[];
     },
     @Req() request: RequestwithUserData,
     @Body('user', ParseIntPipe) user: number,
   ) {
-    const toDto = (file: Express.Multer.File) =>
-      this.createFileDtoMapper(file.filename, file.path, user, request.user.id);
+    const toDto = (file?: Express.Multer.File[]) =>
+      file?.[0] &&
+      this.createFileDtoMapper(
+        file[0].filename,
+        file[0].path,
+        user,
+        request.user.id,
+      );
 
-    return await this.usersService.txUploadFileandUpdateRequest(
-      toDto(files.govCard[0]),
-      user,
-      files.requestFile && toDto(files.requestFile[0]),
-      files.experienceForm && toDto(files.experienceForm[0]),
-    );
+    return await this.usersService.txUploadFileandUpdateRequest(user, {
+      govcard: toDto(files?.govCard),
+      reqFile: toDto(files?.requestFile),
+      expfile: toDto(files?.experienceForm),
+    });
   }
 
   @UseGuards(JwtAccessGuardUser)
