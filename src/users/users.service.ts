@@ -596,51 +596,31 @@ export class UsersService {
 
   async txUploadFileandUpdateRequest(
     govcardDto: FileCreateDto,
-    reqFileDto: FileCreateDto,
     user: number,
+    reqFileDto?: FileCreateDto,
     expFilesDto?: FileCreateDto,
-    // requestUpdate: RequestCreateDto
   ) {
     try {
-      if (expFilesDto) {
-        await this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(async (tx) => {
+        if (expFilesDto) {
           await this.filesService.txUploadFileForUser(
             'expfile',
             expFilesDto,
             tx,
           );
-          await this.filesService.txUploadFileForUser(
-            'govcard',
-            govcardDto,
-            tx,
-          );
+        }
+        await this.filesService.txUploadFileForUser('govcard', govcardDto, tx);
+        if (reqFileDto) {
           await this.filesService.txUploadFileForUser(
             'reqFile',
             reqFileDto,
             tx,
           );
-          await tx.requests.create({
-            data: { userId: user, request_type: 1, request_status: 4 },
-          });
+        }
+        await tx.requests.create({
+          data: { userId: user, request_type: 1, request_status: 4 },
         });
-      } else {
-        await this.prisma.$transaction(async (tx) => {
-          await this.filesService.txUploadFileForUser(
-            'govcard',
-            govcardDto,
-            tx,
-          );
-          await this.filesService.txUploadFileForUser(
-            'reqFile',
-            reqFileDto,
-            tx,
-          );
-
-          await tx.requests.create({
-            data: { userId: user, request_type: 1, request_status: 4 },
-          });
-        });
-      }
+      });
     } catch (err) {
       this.logger.error(err);
       throw err;
