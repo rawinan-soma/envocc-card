@@ -4,6 +4,15 @@ Applying for, approving, printing and verifying the occupational/environmental-h
 
 ## Language
 
+### Admins
+
+**Ministry admin**:
+An admin whose own organization is at MINISTRY level. May see every user system-wide.
+
+**MOPH admin**:
+A Ministry admin whose organization is the Ministry of Public Health (กระทรวงสาธารณสุข, organization code 15000). Admins of MOPH's departments and units are not MOPH admins.
+_Avoid_: central admin, super admin
+
 ### Card request
 
 **Request Status**:
