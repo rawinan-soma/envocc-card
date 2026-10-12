@@ -263,7 +263,7 @@ export class MembersService {
 
       const status = await this.prisma.requests.findFirst({
         where: { userId: member?.userId },
-        orderBy: { request_status: 'desc' },
+        orderBy: { date_update: 'desc' },
       });
       if (status?.request_status !== 15) {
         throw new BadRequestException('cannot generate qr code');
@@ -430,6 +430,16 @@ export class MembersService {
             userId: data.userId,
           },
         });
+
+        // A Revert keeps the card record, so passing step 7 again reuses it
+        // (same Member Number and QR code) rather than adding a second one.
+        if (existedMember) {
+          return await tx.members.update({
+            where: { member_id: existedMember.member_id },
+            data: rest,
+            select: { member_id: true },
+          });
+        }
 
         return await tx.members.create({
           data: {

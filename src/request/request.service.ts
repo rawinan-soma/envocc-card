@@ -2,20 +2,47 @@ import {
   Injectable,
   Logger,
   BadRequestException,
+  ForbiddenException,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from 'prisma/prisma.service';
 import { StatusCreateDto } from './dto/status-create.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { RequestCreateDto } from './dto/request-create.dto';
-// import { Prisma } from '@prisma/client';
+import { RevertStatusDto } from './dto/revert-status.dto';
+import { FilesService } from 'src/files/files.service';
+
+// The only moves that are Reverts: each target and the statuses it can be
+// reached from (see Revert in CONTEXT.md).
+const REVERT_RULES: { target: number; from: [number, number] }[] = [
+  { target: 0, from: [1, 6] },
+  { target: 1, from: [2, 14] },
+  { target: 6, from: [7, 14] },
+  { target: 7, from: [8, 14] },
+  { target: 15, from: [16, 16] },
+];
+
+const REVERT_TARGETS = new Set(REVERT_RULES.map((rule) => rule.target));
+
+const REVERT_TO_0_FILES = ['photo', 'govcard', 'expfile', 'reqFile'] as const;
+
+const isRevert = (from: number, target: number) =>
+  REVERT_RULES.some(
+    (rule) =>
+      rule.target === target && from >= rule.from[0] && from <= rule.from[1],
+  );
 
 @Injectable()
 export class RequestService {
   private readonly logger = new Logger(RequestService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly filesService: FilesService,
+  ) {}
 
   async getCurrentStatus(id: number) {
     try {
@@ -48,6 +75,18 @@ export class RequestService {
 
       if (sameStatus) {
         throw new BadRequestException(`user's already in this status`);
+      }
+
+      // Going back to a Revert target must go through the Revert, so its
+      // rules and clean-up can't be bypassed.
+      const backwardToRevertTarget =
+        REVERT_TARGETS.has(updated.next_status) &&
+        updated.next_status < current.request_status;
+
+      if (backwardToRevertTarget) {
+        throw new BadRequestException(
+          `moving back to ${updated.next_status} is a revert: use POST admins/users/:userId/requests/revert`,
+        );
       }
 
       return await this.prisma.requests.create({
@@ -112,27 +151,149 @@ export class RequestService {
     }
   }
 
-  async deleteRequestByID(id: number) {
+  async revertStatus(userId: number, revert: RevertStatusDto, admin: number) {
     try {
-      const request = await this.getCurrentStatus(id);
-      const isInitiate = request?.request_status === 0;
-      if (!request || isInitiate) {
-        throw new BadRequestException('request not found');
-      }
+      const { entry, filesToDelete } = await this.prisma.$transaction(
+        async (tx) => {
+          await this.checkCanRevert(tx, admin, userId);
 
-      await this.prisma.requests.delete({
-        where: { id: request.id },
-      });
+          const current = await tx.requests.findFirst({
+            where: { userId: userId },
+            orderBy: { date_update: 'desc' },
+          });
+
+          if (current?.request_status !== revert.current_status) {
+            throw new BadRequestException(`user's status mismatched`);
+          }
+
+          if (!isRevert(current.request_status, revert.target_status)) {
+            throw new BadRequestException(
+              `cannot revert from ${current.request_status} to ${revert.target_status}`,
+            );
+          }
+
+          const filesToDelete: string[] = [];
+
+          const target = revert.target_status;
+
+          // A clean restart: see docs/adr/0001-revert-to-0-deletes-status-history.md
+          if (target === 0) {
+            await tx.users.update({
+              where: { id: userId },
+              data: { is_validate: false },
+            });
+            await tx.requests.deleteMany({ where: { userId: userId } });
+            for (const model of REVERT_TO_0_FILES) {
+              filesToDelete.push(
+                ...(await this.filesService.txDeleteFilesForUser(
+                  model,
+                  userId,
+                  tx,
+                )),
+              );
+            }
+          }
+
+          if (target === 1 || target === 6) {
+            for (const model of revert.delete_files ?? []) {
+              filesToDelete.push(
+                ...(await this.filesService.txDeleteFilesForUser(
+                  model,
+                  userId,
+                  tx,
+                )),
+              );
+            }
+          }
+
+          // The card record (Member Number, QR code) is kept; its dates are
+          // set again when the card is re-issued.
+          if (target === 1 || target === 6 || target === 7) {
+            await tx.members.updateMany({
+              where: { userId: userId },
+              data: { start_date: null, end_date: null },
+            });
+          }
+
+          if (target === 15) {
+            await tx.members.updateMany({
+              where: { userId: userId },
+              data: { is_active: true },
+            });
+          }
+
+          const entry = await tx.requests.create({
+            data: {
+              userId: userId,
+              request_status: revert.target_status,
+              request_type: current.request_type,
+              approver: admin,
+              description: revert.description,
+            },
+          });
+
+          return { entry, filesToDelete };
+        },
+      );
+
+      await this.filesService.deleteFilesFromDisk(filesToDelete);
+      return entry;
     } catch (err: any) {
       this.logger.error(err);
-
-      if (err instanceof BadRequestException) {
+      if (
+        err instanceof BadRequestException ||
+        err instanceof ForbiddenException ||
+        err instanceof NotFoundException
+      ) {
         throw err;
       } else if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
       }
+    }
+  }
+
+  // Only DEPARTMENT and MINISTRY admins may Revert, and only users in their
+  // own organization or one below it.
+  private async checkCanRevert(
+    tx: Prisma.TransactionClient,
+    adminId: number,
+    userId: number,
+  ) {
+    const admin = await tx.admins.findUnique({
+      where: { id: adminId },
+      select: { organization: { select: { id: true, level: true } } },
+    });
+
+    const level = admin?.organization.level;
+    if (!admin || (level !== 'DEPARTMENT' && level !== 'MINISTRY')) {
+      throw new ForbiddenException(
+        'only DEPARTMENT or MINISTRY admins can revert',
+      );
+    }
+
+    const user = await tx.users.findUnique({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('user not found');
+    }
+
+    let orgId: number | null = user.organizationId;
+    while (orgId !== null && orgId !== admin.organization.id) {
+      const org: { parentId: number | null } | null =
+        await tx.organizations.findUnique({
+          where: { id: orgId },
+          select: { parentId: true },
+        });
+      orgId = org?.parentId ?? null;
+    }
+
+    if (orgId === null) {
+      throw new ForbiddenException('user is outside your organization');
     }
   }
 

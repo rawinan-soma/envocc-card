@@ -1,8 +1,8 @@
 import {
   Body,
   Controller,
-  Delete,
   Param,
+  ParseIntPipe,
   Post,
   Req,
   UseGuards,
@@ -10,6 +10,7 @@ import {
 import { RequestService } from './request.service';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
 import { StatusCreateDto } from './dto/status-create.dto';
+import { RevertStatusDto } from './dto/revert-status.dto';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 
 @UseGuards(JwtAccessGuardAdmin)
@@ -26,8 +27,13 @@ export class AdminRequestController {
     return await this.requestService.updateStatus(updated, approver);
   }
 
-  @Delete('users/requests/:id')
-  async deleteRequestHandler(@Param('id') id: number) {
-    return await this.requestService.deleteRequestByID(id);
+  @Post('users/:userId/requests/revert')
+  async revertStatusHandler(
+    @Req() request: RequestwithAdminData,
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body() revert: RevertStatusDto,
+  ) {
+    const admin = request.user.id;
+    return await this.requestService.revertStatus(userId, revert, admin);
   }
 }

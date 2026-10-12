@@ -173,22 +173,24 @@ export class FilesService {
     }
   }
 
+  private txModelMap(tx: Prisma.TransactionClient) {
+    return {
+      envcard: tx.envocc_card_files,
+      expfile: tx.exp_files,
+      govcard: tx.gov_card_files,
+      // seal: tx.seals,
+      photo: tx.photos,
+      reqFile: tx.request_files,
+    } satisfies Record<FileModels, any>;
+  }
+
   async txUploadFileForUser<T extends keyof FileModelMap>(
     model: T,
     data: FileCreateDto,
     tx: Prisma.TransactionClient,
   ) {
     try {
-      const transactionModelMap = {
-        envcard: tx.envocc_card_files,
-        expfile: tx.exp_files,
-        govcard: tx.gov_card_files,
-        // seal: tx.seals,
-        photo: tx.photos,
-        reqFile: tx.request_files,
-      } satisfies Record<FileModels, any>;
-
-      const delegate = transactionModelMap[model] as {
+      const delegate = this.txModelMap(tx)[model] as {
         create: (args: any) => Promise<FileModelMap[T] | null>;
       };
 
@@ -203,6 +205,48 @@ export class FilesService {
     } catch (err) {
       this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
+    }
+  }
+
+  // Deletes the rows only; returns the paths so the caller can remove them
+  // from disk with deleteFilesFromDisk once the transaction has committed.
+  async txDeleteFilesForUser<T extends keyof FileModelMap>(
+    model: T,
+    userId: number,
+    tx: Prisma.TransactionClient,
+  ): Promise<string[]> {
+    const delegate = this.txModelMap(tx)[model] as {
+      findMany: (args: any) => Promise<FileModelMap[T][]>;
+      deleteMany: (args: any) => Promise<unknown>;
+    };
+
+    const files = await delegate.findMany({ where: { userId: userId } });
+    await delegate.deleteMany({ where: { userId: userId } });
+
+    return files.flatMap((file) => (file.url ? [file.url] : []));
+  }
+
+  async txCountFilesForUser<T extends keyof FileModelMap>(
+    model: T,
+    userId: number,
+    tx: Prisma.TransactionClient,
+  ): Promise<number> {
+    const delegate = this.txModelMap(tx)[model] as {
+      count: (args: any) => Promise<number>;
+    };
+
+    return delegate.count({ where: { userId: userId } });
+  }
+
+  // Best effort: a file that is already gone or can't be removed is logged,
+  // not thrown, since the rows pointing at it are already gone.
+  async deleteFilesFromDisk(paths: string[]) {
+    for (const path of paths) {
+      try {
+        await fs.unlink(path);
+      } catch (err) {
+        this.logger.warn(`cannot delete file ${path}: ${String(err)}`);
+      }
     }
   }
 
