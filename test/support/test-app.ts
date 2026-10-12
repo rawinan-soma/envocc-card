@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TestingModule } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
@@ -10,12 +10,19 @@ export const testConfig = (values: Record<string, string>) => ({
   useValue: new ConfigService(values),
 });
 
-// Mirrors the cookie handling main.ts sets up for the real app.
+// Mirrors the cookie handling main.ts sets up for the real app, and with
+// { validation: true } its global ValidationPipe too.
 export const startApp = async (
   moduleRef: TestingModule,
+  { validation = false } = {},
 ): Promise<INestApplication<App>> => {
   const app = moduleRef.createNestApplication();
   app.use(cookieParser());
+  if (validation) {
+    app.useGlobalPipes(
+      new ValidationPipe({ transform: true, whitelist: true }),
+    );
+  }
   await app.init();
   return app;
 };

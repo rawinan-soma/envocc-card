@@ -4,6 +4,8 @@
   "modulePaths": ["<rootDir>/.."],
   "testEnvironment": "node",
   "testRegex": "\\.(e2e-)?spec\\.ts$",
+  "globalSetup": "<rootDir>/support/db-global-setup.ts",
+  "globalTeardown": "<rootDir>/support/db-global-teardown.ts",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   }

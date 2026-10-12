@@ -127,48 +127,27 @@ export class UsersController {
   async uploadFilesHandler(
     @UploadedFiles()
     files: {
-      requestFile: Express.Multer.File[];
-      govCard: Express.Multer.File[];
+      requestFile?: Express.Multer.File[];
+      govCard?: Express.Multer.File[];
       experienceForm?: Express.Multer.File[];
     },
     @Req() request: RequestwithUserData,
     @Body('user', ParseIntPipe) user: number,
   ) {
-    const requestFileDto = this.createFileDtoMapper(
-      files.requestFile[0].filename,
-      files.requestFile[0].path,
-      user,
-      request.user.id,
-    );
-    const govcardDto = this.createFileDtoMapper(
-      files.govCard[0].filename,
-      files.govCard[0].path,
-      user,
-      request.user.id,
-    );
-
-    let experienceFormDto: FileCreateDto;
-    if (files?.experienceForm) {
-      experienceFormDto = this.createFileDtoMapper(
-        files.experienceForm[0].filename,
-        files.experienceForm[0].path,
+    const toDto = (file?: Express.Multer.File[]) =>
+      file?.[0] &&
+      this.createFileDtoMapper(
+        file[0].filename,
+        file[0].path,
         user,
         request.user.id,
       );
 
-      return await this.usersService.txUploadFileandUpdateRequest(
-        govcardDto,
-        requestFileDto,
-        user,
-        experienceFormDto,
-      );
-    } else {
-      return await this.usersService.txUploadFileandUpdateRequest(
-        govcardDto,
-        requestFileDto,
-        user,
-      );
-    }
+    return await this.usersService.txUploadFileandUpdateRequest(user, {
+      govcard: toDto(files?.govCard),
+      reqFile: toDto(files?.requestFile),
+      expfile: toDto(files?.experienceForm),
+    });
   }
 
   @UseGuards(JwtAccessGuardUser)
