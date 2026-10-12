@@ -5,20 +5,21 @@ import {
   Param,
   ParseIntPipe,
   Query,
-  // UseGuards,
+  UseGuards,
 } from '@nestjs/common';
 import { FileModelMap, FilesService } from './files.service';
-// import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
-import { MophAdmin } from 'src/admin-auth/moph-admin.decorator';
+import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
+import { MophAdminGuard } from 'src/admin-auth/ministry-admin.guard';
 // import { FileCreateDto } from './dto/file-create.dto'
 
-// @UseGuards(JwtAccessGuardAdmin)
+@UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
 export class AdminFileController {
   constructor(private readonly filesService: FilesService) {}
 
-  @MophAdmin()
+  // Lists envcard files across every user, so only MOPH admins may call it.
   @Get('files/envcard')
+  @UseGuards(MophAdminGuard)
   async listEnvcardFilesHandler(
     @Query('userId', new ParseIntPipe({ optional: true })) userId?: number,
   ) {

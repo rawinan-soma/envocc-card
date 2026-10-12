@@ -6,7 +6,7 @@ import request from 'supertest';
 import type { App } from 'supertest/types';
 import { PrismaService } from 'prisma/prisma.service';
 import { JwtAccessStrategy as AdminJwtAccessStrategy } from 'src/admin-auth/jwt-access.strategy';
-import { MOPH_ORG_CODE } from 'src/admin-auth/moph-admin.guard';
+import { MOPH_ORG_CODE } from 'src/admin-auth/ministry-admin.guard';
 import { AdminFileController } from 'src/files/admin-file.controller';
 import { FilesService } from 'src/files/files.service';
 import { startApp, testConfig } from './support/test-app';
