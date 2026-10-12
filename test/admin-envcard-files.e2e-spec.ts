@@ -107,7 +107,7 @@ describe('GET /admins/files/envcard', () => {
     expect(res.body).toEqual(files);
     expect(prisma.envocc_card_files.findMany).toHaveBeenCalledWith({
       where: { userId: undefined },
-      orderBy: { create_date: 'desc' },
+      orderBy: [{ create_date: 'desc' }, { id: 'desc' }],
       select: {
         id: true,
         userId: true,

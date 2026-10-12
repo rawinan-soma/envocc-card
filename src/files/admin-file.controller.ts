@@ -10,7 +10,6 @@ import {
 import { FileModelMap, FilesService } from './files.service';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 import { MophAdminGuard } from 'src/admin-auth/ministry-admin.guard';
-// import { FileCreateDto } from './dto/file-create.dto'
 
 @UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')

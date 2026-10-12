@@ -7,12 +7,12 @@ import {
   MophAdminGuard,
 } from 'src/admin-auth/ministry-admin.guard';
 
-describe('MinistryAdminGuard', () => {
-  const contextFor = (adminId: number) =>
-    ({
-      switchToHttp: () => ({ getRequest: () => ({ user: { id: adminId } }) }),
-    }) as unknown as ExecutionContext;
+const contextFor = (adminId: number) =>
+  ({
+    switchToHttp: () => ({ getRequest: () => ({ user: { id: adminId } }) }),
+  }) as unknown as ExecutionContext;
 
+describe('MinistryAdminGuard', () => {
   const guardWith = (
     rows: Record<number, { organization: { level: string } } | undefined>,
   ) =>
@@ -53,11 +53,6 @@ describe('MinistryAdminGuard', () => {
 type AdminRow = { organization: { level: OrgLevel; code: string } };
 
 describe('MophAdminGuard', () => {
-  const contextFor = (adminId: number) =>
-    ({
-      switchToHttp: () => ({ getRequest: () => ({ user: { id: adminId } }) }),
-    }) as unknown as ExecutionContext;
-
   const guardWith = (rows: Record<number, AdminRow | undefined>) =>
     new MophAdminGuard({
       admins: {

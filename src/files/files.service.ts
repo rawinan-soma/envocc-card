@@ -106,7 +106,7 @@ export class FilesService {
     try {
       return await this.prisma.envocc_card_files.findMany({
         where: { userId },
-        orderBy: { create_date: 'desc' },
+        orderBy: [{ create_date: 'desc' }, { id: 'desc' }],
         select: {
           id: true,
           userId: true,
