@@ -2,7 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { getQueueToken } from '@nestjs/bullmq';
 import { Test } from '@nestjs/testing';
-import { OrgLevel, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -23,6 +23,7 @@ import { UsersController } from 'src/users/users.controller';
 import { UsersService } from 'src/users/users.service';
 import { startApp, testConfig } from './test-app';
 import { createTestDb, TestDb } from './test-db';
+import { OrgFixture, seedOrganizations } from './org-fixtures';
 
 const ACCESS_SECRET = 'test-access-secret';
 
@@ -48,7 +49,7 @@ const fileTable = {
   reqFile: 'request_files',
 } as const;
 
-const seedOrganizations = async (prisma: PrismaClient) => {
+const seedWorld = async (prisma: PrismaClient) => {
   await prisma.request_statuses.createMany({
     data: Array.from({ length: 17 }, (_, i) => ({
       status_id: i,
@@ -56,38 +57,16 @@ const seedOrganizations = async (prisma: PrismaClient) => {
     })),
   });
   await prisma.position_lvs.create({ data: { position_lv_id: 1 } });
-  await prisma.seals.create({ data: { adminId: 1 } });
-  await prisma.signatures.create({
-    data: {
-      sign_person_position: 'director',
-      sign_person_pname: 'Mr',
-      sign_person_name: 'Signer',
-      sign_person_lname: 'Person',
-      filename: 'signature.png',
-      admin: 1,
-    },
-  });
 
-  const orgs: [number, OrgLevel, number | null][] = [
+  const orgs: OrgFixture[] = [
     [ORG.MINISTRY, 'MINISTRY', null],
     [ORG.DEPARTMENT, 'DEPARTMENT', ORG.MINISTRY],
     [ORG.PROVINCE, 'PROVINCE', ORG.DEPARTMENT],
     [ORG.UNIT, 'UNIT', ORG.PROVINCE],
     [ORG.OTHER_DEPARTMENT, 'DEPARTMENT', ORG.MINISTRY],
   ];
-  for (const [id, level, parentId] of orgs) {
-    await prisma.organizations.create({
-      data: {
-        id,
-        level,
-        parentId,
-        code: `org-${id}`,
-        name_th: `org ${id}`,
-        name_eng: `org ${id}`,
-        sealId: 1,
-        signatureId: 1,
-      },
-    });
+  await seedOrganizations(prisma, orgs);
+  for (const [id] of orgs) {
     await prisma.admins.create({
       data: {
         id,
@@ -121,7 +100,7 @@ export const createCardRequestWorld = async () => {
     jest.spyOn(process, 'cwd').mockReturnValue(workDir);
 
     await db.reset();
-    await seedOrganizations(db.prisma);
+    await seedWorld(db.prisma);
     userCount = 0;
 
     const moduleRef = await Test.createTestingModule({
