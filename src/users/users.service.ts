@@ -15,7 +15,7 @@ import { FileCreateDto } from 'src/files/dto/file-create.dto';
 
 type StepThreeFile = 'govcard' | 'reqFile' | 'expfile';
 const STEP_THREE_FILES: StepThreeFile[] = ['govcard', 'reqFile', 'expfile'];
-const REQUIRED_STEP_THREE_FILES: StepThreeFile[] = ['govcard', 'reqFile'];
+const REQUIRED_STEP_THREE_FILES: StepThreeFile[] = ['govcard'];
 
 interface UsersPageQuery {
   page: number;
@@ -625,8 +625,8 @@ export class UsersService {
   }
 
   // Step 3. Each document replaces the user's existing one(s) of that type.
-  // A type the user already has may be left out; the government card and
-  // request file are required otherwise.
+  // A type the user already has may be left out; the government card is
+  // required otherwise. The request file is always optional.
   async txUploadFileandUpdateRequest(
     user: number,
     uploads: Partial<Record<StepThreeFile, FileCreateDto>>,

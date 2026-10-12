@@ -31,7 +31,7 @@ describe('Step 3: uploading documents (POST users/me/files)', () => {
 
   const assets = () => readdirSync(join(world.workDir(), 'assets'));
 
-  it('requires a government card and request file from a user who has none', async () => {
+  it('requires a government card from a user who has none', async () => {
     const user = await world.createUser({ history: [0, 1, 3] });
 
     const res = await upload(user, ['requestFile']);
@@ -40,6 +40,32 @@ describe('Step 3: uploading documents (POST users/me/files)', () => {
     expect(await world.historyOf(user)).toEqual([0, 1, 3]);
     expect(await world.filesOf(user, 'reqFile')).toEqual([]);
     expect(assets()).toEqual([]);
+  });
+
+  it('accepts a government card without a request file and moves them to 4', async () => {
+    const user = await world.createUser({ history: [0, 1, 3] });
+
+    const res = await upload(user, ['govCard']);
+
+    expect(res.status).toBe(201);
+    expect(await world.historyOf(user)).toEqual([0, 1, 3, 4]);
+    expect(
+      await world.prisma.requests.findFirst({
+        where: { userId: user, request_status: 4 },
+      }),
+    ).toMatchObject({ request_type: 1 });
+    expect(await world.filesOf(user, 'govcard')).toHaveLength(1);
+    expect(await world.filesOf(user, 'reqFile')).toEqual([]);
+  });
+
+  it('stores the experience form when no request file is sent', async () => {
+    const user = await world.createUser({ history: [0, 1, 3] });
+
+    const res = await upload(user, ['govCard', 'experienceForm']);
+
+    expect(res.status).toBe(201);
+    expect(await world.filesOf(user, 'expfile')).toHaveLength(1);
+    expect(await world.filesOf(user, 'reqFile')).toEqual([]);
   });
 
   it('accepts all documents from a first-time user and moves them to 4', async () => {
