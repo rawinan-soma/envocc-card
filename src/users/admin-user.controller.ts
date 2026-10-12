@@ -18,6 +18,7 @@ import {
   GetUsersPageQueryDto,
 } from './dto/get-all-user-query.dto';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
+import { MinistryAdminGuard } from 'src/admin-auth/ministry-admin.guard';
 
 @UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
@@ -28,7 +29,9 @@ export class AdminUserController {
   ) {}
 
   // Declared before any users/:id GET so it is never shadowed by one.
+  // Lists every user system-wide, so only ministry-level admins may call it.
   @Get('users/all')
+  @UseGuards(MinistryAdminGuard)
   async getAllUsersUnfilteredHandler(
     @Query() queryParams: GetUsersPageQueryDto,
   ) {

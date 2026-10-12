@@ -44,6 +44,7 @@ const userRow = (id: number, statuses: number[], orgId = ADMIN_ORG_ID) => ({
 describe('admin user listing routes', () => {
   let app: INestApplication<App>;
   let cookie: string;
+  let adminLevel: string;
   let prisma: {
     admins: { findUnique: jest.Mock };
     organizations: { findUnique: jest.Mock };
@@ -51,14 +52,17 @@ describe('admin user listing routes', () => {
   };
 
   beforeEach(async () => {
+    adminLevel = 'MINISTRY';
     prisma = {
       admins: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: ADMIN_ID,
-          username: 'admin',
-          role: 'admin',
-          organization: { level: 'UNIT' },
-        }),
+        findUnique: jest.fn(() =>
+          Promise.resolve({
+            id: ADMIN_ID,
+            username: 'admin',
+            role: 'admin',
+            organization: { level: adminLevel },
+          }),
+        ),
       },
       organizations: {
         findUnique: jest
@@ -118,6 +122,21 @@ describe('admin user listing routes', () => {
 
       expect(res.status).toBe(401);
     });
+
+    it.each(['DEPARTMENT', 'REGION', 'PROVINCE', 'UNIT'])(
+      'rejects a %s-level admin with 403 before querying users',
+      async (level) => {
+        adminLevel = level;
+
+        const res = await get('/admins/users/all');
+
+        expect(res.status).toBe(403);
+        expect(res.body).toMatchObject({
+          message: 'admin not at ministry level',
+        });
+        expect(prisma.users.findMany).not.toHaveBeenCalled();
+      },
+    );
 
     it('returns users at every status across every organization', async () => {
       prisma.users.findMany.mockResolvedValue([
@@ -190,6 +209,14 @@ describe('admin user listing routes', () => {
   });
 
   describe('GET /admins/users', () => {
+    it('is still open to admins below ministry level', async () => {
+      adminLevel = 'UNIT';
+
+      const res = await get('/admins/users?status=activated');
+
+      expect(res.status).toBe(200);
+    });
+
     it('still requires status', async () => {
       const res = await get('/admins/users');
 
