@@ -20,15 +20,12 @@ export class PositionsService {
         });
       }
 
-      const executiveResponse = await this.prisma.positions.findFirst({
+      // An organization can have more than one executive (e.g. อธิบดี and รองอธิบดี).
+      return await this.prisma.positions.findMany({
         where: { orgId: orgId },
         select: { position_name: true, position_id: true },
+        orderBy: { position_id: 'asc' },
       });
-
-      return {
-        executive_id: executiveResponse?.position_id,
-        executive_position_name: executiveResponse?.position_name,
-      };
     } catch (err) {
       this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
