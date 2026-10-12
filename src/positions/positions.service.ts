@@ -13,22 +13,13 @@ export class PositionsService {
   async getAllPositions(orgId?: number) {
     try {
       // const nonExecutiveId = [201, 202, 203, 204, 205, 206, 207];
-      if (!orgId) {
-        return await this.prisma.positions.findMany({
-          where: { orgId: null },
-          select: { position_name: true, position_id: true },
-        });
-      }
-
-      const executiveResponse = await this.prisma.positions.findFirst({
-        where: { orgId: orgId },
+      // Without orgId: the non-executive positions. With it: every executive
+      // of that organization, which can be more than one (อธิบดี and รองอธิบดี).
+      return await this.prisma.positions.findMany({
+        where: { orgId: orgId || null },
         select: { position_name: true, position_id: true },
+        orderBy: { position_id: 'asc' },
       });
-
-      return {
-        executive_id: executiveResponse?.position_id,
-        executive_position_name: executiveResponse?.position_name,
-      };
     } catch (err) {
       this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
