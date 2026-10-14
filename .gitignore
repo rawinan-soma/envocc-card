@@ -68,4 +68,4 @@ assets/
 assets/*
 !assets/.gitkeep
 
-makefile
+/makefile

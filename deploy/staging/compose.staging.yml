@@ -1,0 +1,42 @@
+# Staging, on top of docker-compose.yaml. On the server in ~/envocc-staging,
+# beside docker.env; deploy/staging/Makefile copies both compose files there
+# and runs
+#   docker compose --project-name envocc-staging \
+#     --env-file ~/envocc-staging/docker.env --env-file ~/envocc-staging/release.env \
+#     -f ~/envocc-staging/docker-compose.yaml -f ~/envocc-staging/compose.staging.yml <command>
+#
+# Differences from the base file, and nothing else:
+# - the api runs the image `make build` pushed, at the commit release.env names;
+# - nothing is published beyond the host's loopback: cloudflared reaches the api
+#   by service name on the Compose network, so the tunnel is the only way in;
+# - everything restarts with the host.
+# `docker compose down` stops the tunnel with the rest.
+services:
+  api:
+    image: rawinan/envocc-card-api:${API_TAG:?}
+    ports: !override
+      # `make check` curls it here, from the server itself.
+      - '127.0.0.1:3333:3000'
+    restart: unless-stopped
+
+  database-docker:
+    ports: !reset []
+    restart: unless-stopped
+
+  redis:
+    ports: !reset []
+    restart: unless-stopped
+
+  # A remotely-managed tunnel: its public hostname is set in the Cloudflare
+  # dashboard to `http://api:3000`, and the one secret is TUNNEL_TOKEN in
+  # docker.env.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?}
+    networks:
+      - envocc-card
+    depends_on:
+      - api
+    restart: unless-stopped
