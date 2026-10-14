@@ -38,7 +38,6 @@ async function main() {
   const validOrgIds = new Set(data.orgs.map((o: any) => o.id));
   const validSealIds = new Set(data.seals.map((s: any) => s.id));
   const validSignerIds = new Set(data.signatures.map((s: any) => s.id));
-  const validPositionIds = new Set(data.positions.map((p: any) => p.position_id));
   const validPosLvIds = new Set(data.positionLvls.map((l: any) => l.position_lv_id));
 
   console.log('Starting Transactional Upsert...');
@@ -91,7 +90,7 @@ async function main() {
 
     console.log('Upserting admins...');
     for (const item of data.admins) {
-      if (!validOrgIds.has(item.organizationId) || !validPositionIds.has(item.positionId) || !validPosLvIds.has(item.positionLvId)) {
+      if (!validOrgIds.has(item.organizationId) || !validPosLvIds.has(item.positionLvId)) {
           console.warn(`Skipping admin ${item.username}: invalid FK references`);
           continue;
       }
