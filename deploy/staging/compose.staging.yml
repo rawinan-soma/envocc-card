@@ -9,7 +9,8 @@
 # - the api runs the image `make build` pushed, at the commit release.env names;
 # - nothing is published beyond the host's loopback: cloudflared reaches the api
 #   by service name on the Compose network, so the tunnel is the only way in;
-# - everything restarts with the host.
+# - everything restarts with the host;
+# - pgAdmin, at <the api's hostname>/pgadmin through the same tunnel.
 # `docker compose down` stops the tunnel with the rest.
 services:
   api:
@@ -40,3 +41,25 @@ services:
     depends_on:
       - api
     restart: unless-stopped
+
+  # Reached only through the tunnel: a second public hostname rule, the api's
+  # hostname with path `pgadmin`, to `http://pgadmin:80`, listed above the
+  # api's rule; and a Cloudflare Access application on that hostname/path.
+  # Cloudflare keeps the /pgadmin prefix, so SCRIPT_NAME tells pgAdmin it lives
+  # there. Its login is PGADMIN_EMAIL and PGADMIN_PASSWORD in docker.env.
+  pgadmin:
+    image: dpage/pgadmin4:9.18.0
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?}
+      SCRIPT_NAME: /pgadmin
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - envocc-card
+    depends_on:
+      - database-docker
+    restart: unless-stopped
+
+volumes:
+  pgadmin_data:

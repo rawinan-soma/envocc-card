@@ -79,7 +79,7 @@ sync:
 # Safe to repeat: the database keeps its volume, migrations and the seed
 # (upserts) re-run at the api's start, and only what changed restarts.
 run: sync
-	ssh -t $(HOST) "$(DC) pull api cloudflared && $(DC) up -d --wait database-docker redis && $(DC) up -d --remove-orphans && $(DC) ps"
+	ssh -t $(HOST) "$(DC) pull api cloudflared pgadmin && $(DC) up -d --wait database-docker redis && $(DC) up -d --remove-orphans && $(DC) ps"
 
 # The api builds, migrates and seeds before it listens, so this waits up to
 # three minutes for it to answer on the server, and stops waiting as soon as it
@@ -121,6 +121,7 @@ ps:
 
 logs:
 	ssh $(HOST) "$(DC) logs --tail 50 cloudflared"
+	ssh $(HOST) "$(DC) logs --tail 20 pgadmin"
 	ssh $(HOST) "$(DC) logs --tail 100 api"
 
 dc:
