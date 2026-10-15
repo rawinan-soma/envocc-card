@@ -94,8 +94,8 @@ export class OrganizationService {
         department_name: flatOrg?.DEPARTMENT?.name_th ?? null,
         ministry_id: flatOrg?.MINISTRY?.id,
         ministry_name: flatOrg?.MINISTRY?.name_th,
-        executive_name: organization?.executive[0].position_name,
-        executive_id: organization?.executive[0].position_id,
+        executive_name: organization?.executive[0]?.position_name ?? null,
+        executive_id: organization?.executive[0]?.position_id ?? null,
       };
     } catch (err) {
       this.logger.error(err);
