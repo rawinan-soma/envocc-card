@@ -1,0 +1,20 @@
+meta {
+  name: Delete user file
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/admins/users/:userId/files/:file
+  body: none
+  auth: none
+}
+
+params:path {
+  userId: 1
+  file: photo
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. `:file` is one of `envcard`, `expfile`, `govcard`, `photo`, `reqFile`.
+}

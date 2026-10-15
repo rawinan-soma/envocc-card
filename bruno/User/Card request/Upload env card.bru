@@ -1,0 +1,19 @@
+meta {
+  name: Upload env card
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/users/me/envcard
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  envcard: @file()
+}
+
+docs {
+  User login (cookie Authentication_User): run "User auth / Login" first. The user must also be approved (is_validate), or this answers 403. A PDF of at most 10 MB.
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Edit experience
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/users/me/experiences/:expId
+  body: json
+  auth: none
+}
+
+params:path {
+  expId: 1
+}
+
+body:json {
+  {
+    "exp_work": "งานอาชีวอนามัยและสิ่งแวดล้อม"
+  }
+}
+
+docs {
+  User login (cookie Authentication_User): run "User auth / Login" first. Any experience field.
+}

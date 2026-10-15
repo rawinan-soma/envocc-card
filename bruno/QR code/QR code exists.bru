@@ -1,0 +1,19 @@
+meta {
+  name: QR code exists
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/common/qrcode?qrcode_number=<qrcode>
+  body: none
+  auth: none
+}
+
+params:query {
+  qrcode_number: <qrcode>
+}
+
+docs {
+  No login.
+}

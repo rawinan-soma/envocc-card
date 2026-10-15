@@ -1,0 +1,22 @@
+meta {
+  name: Upload user documents
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/users/me/files
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  user: 1
+  requestFile: @file()
+  govCard: @file()
+  experienceForm: @file()
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Despite its path, this needs an **admin** login: it uploads PDFs (10 MB each) for the user in `user`. Each of the three files is optional.
+}

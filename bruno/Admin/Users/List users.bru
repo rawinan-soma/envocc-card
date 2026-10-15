@@ -1,0 +1,21 @@
+meta {
+  name: List users
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/admins/users?status=ongoing&page=1
+  body: none
+  auth: none
+}
+
+params:query {
+  status: ongoing
+  page: 1
+  ~search_term: สมชาย
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Users of the admin's organization and below. `status`: `ongoing`, `activated` or `suspended`.
+}

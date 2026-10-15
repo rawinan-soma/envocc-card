@@ -1,0 +1,25 @@
+meta {
+  name: Update status
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/admins/users/requests/update
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "user": 1,
+    "current_status": 4,
+    "next_status": 7,
+    "request_type": 1,
+    "description": "เอกสารครบถ้วน"
+  }
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Moves a user's request forward. Moving back to 0, 1, 6, 7 or 15 answers 400: use Revert. Statuses are in prisma/data/request_statuses.json.
+}

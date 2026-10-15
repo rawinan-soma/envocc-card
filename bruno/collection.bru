@@ -1,0 +1,14 @@
+docs {
+  # envocc-card API
+
+  Every route of the api, one request each, generated from the controllers in `src/`.
+
+  1. Pick an environment (top right): `local` (`bun run start:dev`) or `staging`.
+  2. Set the secret `adminPassword` / `userPassword` in the environment (and `userUsername`).
+     Secrets stay in Bruno on this machine; they are never written to these files.
+  3. Run "Admin auth / Login" or "User auth / Login". Auth is cookie-based: Bruno keeps the
+     Authentication_* and Refresh_* cookies the login sets and sends them with later requests.
+
+  Request bodies are examples: ids (user 1, organization 4, ...) need to exist in the
+  database you point at. Each request's Docs tab says who may call it.
+}

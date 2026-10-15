@@ -1,0 +1,19 @@
+meta {
+  name: Get seal
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/admins/seals?sealId=1
+  body: none
+  auth: none
+}
+
+params:query {
+  sealId: 1
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Known broken: the controller passes the whole query object as the id (`@Query() sealId`), so this errors whatever is sent.
+}

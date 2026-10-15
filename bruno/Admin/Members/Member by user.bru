@@ -1,0 +1,19 @@
+meta {
+  name: Member by user
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/admins/members/:userId
+  body: none
+  auth: none
+}
+
+params:path {
+  userId: 1
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first.
+}

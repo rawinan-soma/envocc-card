@@ -1,0 +1,20 @@
+meta {
+  name: User file
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/admins/users/:userId/files/:file
+  body: none
+  auth: none
+}
+
+params:path {
+  userId: 1
+  file: photo
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. `:file` is one of `envcard`, `expfile`, `govcard`, `photo`, `reqFile`.
+}

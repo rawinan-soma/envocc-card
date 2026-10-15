@@ -1,0 +1,19 @@
+meta {
+  name: Search organizations
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/public/organizations?q=กรม
+  body: none
+  auth: none
+}
+
+params:query {
+  q: กรม
+}
+
+docs {
+  No login. `q` matches part of name_th; leave it out to list all.
+}

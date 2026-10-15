@@ -1,0 +1,22 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/admins/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{adminUsername}}",
+    "password": "{{adminPassword}}"
+  }
+}
+
+docs {
+  Sets the cookies Authentication_Admin and Refresh_Admin; Bruno keeps them for the other admin requests. Answers `{ msg, id, role, level }`.
+}

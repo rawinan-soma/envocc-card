@@ -1,0 +1,15 @@
+meta {
+  name: Latest request
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/users/me/requests/latest
+  body: none
+  auth: none
+}
+
+docs {
+  User login (cookie Authentication_User): run "User auth / Login" first. The user must also be approved (is_validate), or this answers 403.
+}

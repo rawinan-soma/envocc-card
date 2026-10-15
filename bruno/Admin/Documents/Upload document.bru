@@ -1,0 +1,21 @@
+meta {
+  name: Upload document
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/admins/documents
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  document: @file()
+  doc_type: คู่มือ
+  doc_name: คู่มือการใช้งาน
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. A PDF of at most 10 MB in `document`.
+}

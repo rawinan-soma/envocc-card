@@ -1,0 +1,19 @@
+meta {
+  name: Delete experience
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/users/me/experiences/:expId
+  body: none
+  auth: none
+}
+
+params:path {
+  expId: 1
+}
+
+docs {
+  User login (cookie Authentication_User): run "User auth / Login" first.
+}

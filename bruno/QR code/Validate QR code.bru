@@ -1,0 +1,22 @@
+meta {
+  name: Validate QR code
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/common/qrcode/validate
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "qrcode": "<qrcode>",
+    "password": "<qr password>"
+  }
+}
+
+docs {
+  No login. Answers a token for "Verify token".
+}

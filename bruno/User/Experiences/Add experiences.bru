@@ -1,0 +1,29 @@
+meta {
+  name: Add experiences
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/users/me/experiences
+  body: json
+  auth: none
+}
+
+body:json {
+  [
+    {
+      "exp_fdate": "2020-01-01",
+      "exp_ldate": "2023-12-31",
+      "exp_typeoffice": 1,
+      "exp_office": "โรงพยาบาลตัวอย่าง",
+      "exp_position": "นักวิชาการสาธารณสุข",
+      "exp_work": "งานอาชีวอนามัย",
+      "userId": 1
+    }
+  ]
+}
+
+docs {
+  User login (cookie Authentication_User): run "User auth / Login" first. An array; each item names its `userId`.
+}

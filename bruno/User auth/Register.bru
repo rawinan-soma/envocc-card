@@ -1,0 +1,52 @@
+meta {
+  name: Register
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/users/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "user": {
+      "cid": "1234567890123",
+      "username": "{{userUsername}}",
+      "password": "{{userPassword}}",
+      "pname_th": "นาย",
+      "pname_other_th": "",
+      "fname_th": "ทดสอบ",
+      "lname_th": "ระบบ",
+      "pname_en": "Mr.",
+      "pname_other_en": "",
+      "fname_en": "Test",
+      "lname_en": "System",
+      "birthday": "1990-01-31",
+      "nationality": "ไทย",
+      "blood": "O",
+      "work_number": "021234567",
+      "private_number": "0812345678",
+      "email": "test.user@example.com",
+      "positionId": 201,
+      "position_lvId": 2,
+      "orgId": 4
+    },
+    "experiences": [
+      {
+        "exp_fdate": "2020-01-01",
+        "exp_ldate": "2023-12-31",
+        "exp_typeoffice": 1,
+        "exp_office": "โรงพยาบาลตัวอย่าง",
+        "exp_position": "นักวิชาการสาธารณสุข",
+        "exp_work": "งานอาชีวอนามัย"
+      }
+    ]
+  }
+}
+
+docs {
+  No login. With no `experiences` (or an empty array) the user is registered as an executive. `pname_th`: นาย, นาง, นางสาว, อื่นๆ; `pname_en`: Mr., Mrs., Ms., Other; `blood`: A, B, AB, O.
+}

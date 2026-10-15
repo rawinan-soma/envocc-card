@@ -1,0 +1,15 @@
+meta {
+  name: List experiences
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/users/me/experiences
+  body: none
+  auth: none
+}
+
+docs {
+  User login (cookie Authentication_User): run "User auth / Login" first.
+}

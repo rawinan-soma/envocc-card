@@ -1,0 +1,31 @@
+meta {
+  name: Register
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/admins/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "admin.example",
+    "password": "<password>",
+    "pname": "นาย",
+    "fname": "ผู้ดูแล",
+    "lname": "ระบบ",
+    "private_number": "0812345678",
+    "work_number": "021234567",
+    "email": "admin.example@example.com",
+    "positionId": "นักวิชาการสาธารณสุข",
+    "positionLvId": 2,
+    "orgId": 4
+  }
+}
+
+docs {
+  No login. `positionId` is free text (the position's name), not a positions id.
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Upload seal
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/admins/seals
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  seal: @file()
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. A PNG of at most 10 MB; becomes the admin organization's seal.
+}
