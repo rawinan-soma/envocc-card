@@ -446,6 +446,7 @@ export class UsersService {
           fname_en: true,
           lname_en: true,
           experiences: true,
+          is_validate: true,
         },
       });
 

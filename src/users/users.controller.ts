@@ -53,6 +53,14 @@ export class UsersController {
   async getRequestFormHandler(@Req() request: RequestwithUserData) {
     return this.usersService.getUserRequestForm(request.user.id);
   }
+
+  // No @ValidatedUser(): unapproved users can open the form; the client turns
+  // off printing until is_validate is true.
+  @UseGuards(JwtAccessGuardUser)
+  @Get('me/requests/exp')
+  async getExpFormHandler(@Req() request: RequestwithUserData) {
+    return this.usersService.getUserPrintExpForm(request.user.id);
+  }
   // @Post('me/govcard')
   // @UseInterceptors(
   //   FileInterceptor('govcard', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),

@@ -43,7 +43,6 @@ const blockedRoutes: (Route & { validatedStatus: number })[] = [
   },
   { method: 'post', path: '/users/me/requests', validatedStatus: 201 },
   { method: 'get', path: '/users/me/requests/latest', validatedStatus: 200 },
-  { method: 'get', path: '/users/me/requests/exp', validatedStatus: 200 },
   {
     method: 'post',
     path: '/users/me/photo',
@@ -70,6 +69,7 @@ const allowedRoutes: Route[] = [
   { method: 'patch', path: '/users/me/experiences/1' },
   { method: 'delete', path: '/users/me/experiences/1' },
   { method: 'get', path: '/users/me/requests/form' },
+  { method: 'get', path: '/users/me/requests/exp' },
 ];
 
 describe('@ValidatedUser() routes', () => {
