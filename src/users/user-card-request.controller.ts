@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Get,
   ParseIntPipe,
   Post,
   Query,
@@ -16,11 +15,6 @@ import { UserUpdateDto } from './dto/user-update.dto';
 @Controller('users')
 export class UserCardRequestController {
   constructor(private readonly usersService: UsersService) {}
-
-  @Get('me/requests/exp')
-  async getExpFormHandler(@Req() request: RequestwithUserData) {
-    return this.usersService.getUserPrintExpForm(request.user.id);
-  }
 
   @Post('me/card')
   async createNewCardRequestHandler(

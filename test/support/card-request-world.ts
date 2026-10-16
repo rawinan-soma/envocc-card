@@ -18,6 +18,7 @@ import { CommonMembersController } from 'src/members/common-members.controller';
 import { MembersService } from 'src/members/members.service';
 import { AdminRequestController } from 'src/request/admin-request.controller';
 import { RequestService } from 'src/request/request.service';
+import { JwtAccessStrategy as UserJwtAccessStrategy } from 'src/user-auth/jwt-access.strategy';
 import { AdminUserController } from 'src/users/admin-user.controller';
 import { UsersController } from 'src/users/users.controller';
 import { UsersService } from 'src/users/users.service';
@@ -113,6 +114,7 @@ export const createCardRequestWorld = async () => {
       ],
       providers: [
         JwtAccessStrategy,
+        UserJwtAccessStrategy,
         RequestService,
         UsersService,
         FilesService,
@@ -134,12 +136,13 @@ export const createCardRequestWorld = async () => {
     rmSync(workDir, { recursive: true, force: true });
   };
 
-  const asAdmin = (adminId: number) => {
+  // Admin and user sessions share ACCESS_SECRET; only the cookie name differs.
+  const signedIn = (cookieName: string, id: number) => {
     const token = new JwtService().sign(
-      { id: adminId },
+      { id },
       { secret: ACCESS_SECRET, expiresIn: '60s' },
     );
-    const cookie = `Authentication_Admin=${token}`;
+    const cookie = `${cookieName}=${token}`;
     const server = () => request(app.getHttpServer());
     return {
       get: (path: string) => server().get(path).set('Cookie', cookie),
@@ -149,10 +152,15 @@ export const createCardRequestWorld = async () => {
     };
   };
 
+  const asAdmin = (adminId: number) =>
+    signedIn('Authentication_Admin', adminId);
+
+  const asUser = (userId: number) => signedIn('Authentication_User', userId);
+
   const anonymous = () => request(app.getHttpServer());
 
-  // A validated user whose Status History walks through `history` in order;
-  // the last entry is their Request Status.
+  // A user whose Status History walks through `history` in order; the last
+  // entry is their Request Status. Approved if any status is above 0.
   const createUser = async ({
     orgId = ORG.UNIT,
     history,
@@ -275,6 +283,7 @@ export const createCardRequestWorld = async () => {
     stop,
     drop: db.drop,
     asAdmin,
+    asUser,
     anonymous,
     createUser,
     giveFile,
