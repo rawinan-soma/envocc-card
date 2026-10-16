@@ -1,0 +1,19 @@
+meta {
+  name: Positions
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/public/positions?orgId=4
+  body: none
+  auth: none
+}
+
+params:query {
+  orgId: 4
+}
+
+docs {
+  No login. With `orgId`: every executive position of that organization, by position_id. Without it (disable the param): the non-executive positions.
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Organization by id
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/public/organizations/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 4
+}
+
+docs {
+  No login. The organization, its parents up to the ministry, and its executive (`executive_name` and `executive_id` are null when it has none).
+}

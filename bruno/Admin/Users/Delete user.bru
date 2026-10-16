@@ -1,0 +1,19 @@
+meta {
+  name: Delete user
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/admins/users/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first.
+}

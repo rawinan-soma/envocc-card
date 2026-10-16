@@ -1,0 +1,27 @@
+meta {
+  name: Update organization
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/admins/organizations/:orgId
+  body: json
+  auth: none
+}
+
+params:path {
+  orgId: 1
+}
+
+body:json {
+  {
+    "code": "99999",
+    "name_th": "หน่วยงานตัวอย่าง",
+    "name_eng": "Example Unit"
+  }
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first.
+}

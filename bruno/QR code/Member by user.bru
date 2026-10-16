@@ -1,0 +1,19 @@
+meta {
+  name: Member by user
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/common/members/:userId
+  body: none
+  auth: none
+}
+
+params:path {
+  userId: 1
+}
+
+docs {
+  No login.
+}

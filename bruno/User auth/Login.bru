@@ -1,0 +1,22 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/users/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{userUsername}}",
+    "password": "{{userPassword}}"
+  }
+}
+
+docs {
+  Sets the cookies Authentication_User and Refresh_User; Bruno keeps them for the other user requests. An unapproved user can log in, but the card-request routes answer 403.
+}

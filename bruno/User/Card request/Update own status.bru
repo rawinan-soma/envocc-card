@@ -1,0 +1,25 @@
+meta {
+  name: Update own status
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/users/me/requests
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "user": 1,
+    "current_status": 2,
+    "next_status": 1,
+    "request_type": 1,
+    "description": "แก้ไขรูปถ่ายแล้ว"
+  }
+}
+
+docs {
+  User login (cookie Authentication_User): run "User auth / Login" first. The user must also be approved (is_validate), or this answers 403.
+}

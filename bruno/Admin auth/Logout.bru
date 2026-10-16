@@ -1,0 +1,15 @@
+meta {
+  name: Logout
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/admins/auth/logout
+  body: none
+  auth: none
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Clears both cookies.
+}

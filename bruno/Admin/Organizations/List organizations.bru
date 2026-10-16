@@ -1,0 +1,19 @@
+meta {
+  name: List organizations
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/admins/organizations?ministry=false
+  body: none
+  auth: none
+}
+
+params:query {
+  ministry: false
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. `ministry=true`: the organizations under the admin's own; `false`: all.
+}

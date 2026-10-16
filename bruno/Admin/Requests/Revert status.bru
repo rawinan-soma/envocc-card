@@ -1,0 +1,30 @@
+meta {
+  name: Revert status
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/admins/users/:userId/requests/revert
+  body: json
+  auth: none
+}
+
+params:path {
+  userId: 1
+}
+
+body:json {
+  {
+    "current_status": 9,
+    "target_status": 6,
+    "delete_files": [
+      "photo"
+    ],
+    "description": "แก้ไขข้อมูล"
+  }
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. `delete_files` (optional): any of `photo`, `govcard`, `expfile`.
+}

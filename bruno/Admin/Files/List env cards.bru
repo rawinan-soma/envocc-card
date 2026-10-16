@@ -1,0 +1,19 @@
+meta {
+  name: List env cards
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/admins/files/envcard
+  body: none
+  auth: none
+}
+
+params:query {
+  ~userId: 1
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. MOPH admins only (403 otherwise). All env-card files, or one user's.
+}

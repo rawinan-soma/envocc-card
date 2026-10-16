@@ -1,0 +1,24 @@
+meta {
+  name: Upload signature
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/admins/signatures
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  signature: @file()
+  sign_person_pname: นาย
+  sign_person_name: ผู้ลงนาม
+  sign_person_lname: ตัวอย่าง
+  sign_person_position: ผู้อำนวยการ
+  filename: signature.png
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. A PNG of at most 10 MB; becomes the admin organization's signature. `filename` is overwritten by the upload but required by validation.
+}

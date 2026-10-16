@@ -1,0 +1,23 @@
+meta {
+  name: Create organization
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/admins/organizations
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "code": "99999",
+    "name_th": "หน่วยงานตัวอย่าง",
+    "name_eng": "Example Unit"
+  }
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Created under the admin's organization, with its seal, signature and province.
+}

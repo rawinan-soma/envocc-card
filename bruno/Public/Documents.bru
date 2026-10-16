@@ -1,0 +1,19 @@
+meta {
+  name: Documents
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/public/documents
+  body: none
+  auth: none
+}
+
+params:query {
+  ~docId: 1
+}
+
+docs {
+  No login. All common documents, or one with `docId` (enable the param).
+}

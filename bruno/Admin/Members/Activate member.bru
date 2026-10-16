@@ -1,0 +1,25 @@
+meta {
+  name: Activate member
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/admins/members/:userId/activate
+  body: json
+  auth: none
+}
+
+params:path {
+  userId: 1
+}
+
+body:json {
+  {
+    "startDate": "2026-10-15"
+  }
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first.
+}

@@ -1,0 +1,37 @@
+meta {
+  name: New card request
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/users/me/card?requestType=1
+  body: json
+  auth: none
+}
+
+params:query {
+  requestType: 1
+}
+
+body:json {
+  {
+    "user": {
+      "work_number": "021234567"
+    },
+    "experiences": [
+      {
+        "exp_fdate": "2020-01-01",
+        "exp_ldate": "2023-12-31",
+        "exp_typeoffice": 1,
+        "exp_office": "โรงพยาบาลตัวอย่าง",
+        "exp_position": "นักวิชาการสาธารณสุข",
+        "exp_work": "งานอาชีวอนามัย"
+      }
+    ]
+  }
+}
+
+docs {
+  User login (cookie Authentication_User): run "User auth / Login" first. The user must also be approved (is_validate), or this answers 403. `requestType` picks the kind of request; `user` and `experiences` are optional updates sent with it.
+}

@@ -1,0 +1,22 @@
+meta {
+  name: List admins
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/admins/admins?pages=1
+  body: none
+  auth: none
+}
+
+params:query {
+  pages: 1
+  ~id: 1
+  ~username: test01
+  ~email: a@example.com
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Paged by `pages`. Enable at most one of `id`, `username`, `email` to find one admin; more than one answers 400.
+}

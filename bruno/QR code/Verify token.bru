@@ -1,0 +1,19 @@
+meta {
+  name: Verify token
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/common/qrcode/verify?token=<token>
+  body: none
+  auth: none
+}
+
+params:query {
+  token: <token>
+}
+
+docs {
+  No login.
+}
