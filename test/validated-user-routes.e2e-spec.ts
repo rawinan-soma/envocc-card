@@ -43,7 +43,6 @@ const blockedRoutes: (Route & { validatedStatus: number })[] = [
   },
   { method: 'post', path: '/users/me/requests', validatedStatus: 201 },
   { method: 'get', path: '/users/me/requests/latest', validatedStatus: 200 },
-  { method: 'get', path: '/users/me/requests/form', validatedStatus: 200 },
   { method: 'get', path: '/users/me/requests/exp', validatedStatus: 200 },
   {
     method: 'post',
@@ -70,6 +69,7 @@ const allowedRoutes: Route[] = [
   { method: 'post', path: '/users/me/experiences', body: [] },
   { method: 'patch', path: '/users/me/experiences/1' },
   { method: 'delete', path: '/users/me/experiences/1' },
+  { method: 'get', path: '/users/me/requests/form' },
 ];
 
 describe('@ValidatedUser() routes', () => {
@@ -256,7 +256,23 @@ describe('@ValidatedUser() routes', () => {
         expect(res.status).toBe(validatedStatus);
       },
     );
+
+    it.each(allowedRoutes)('gets 2xx on $method $path', async (route) => {
+      const res = await call(route);
+
+      expect(res.status).toBeGreaterThanOrEqual(200);
+      expect(res.status).toBeLessThan(300);
+    });
   });
+
+  it.each(allowedRoutes)(
+    'gets 401 without a cookie on $method $path',
+    async ({ method, path }) => {
+      const res = await request(app.getHttpServer())[method](path);
+
+      expect(res.status).toBe(401);
+    },
+  );
 
   it('lets the same session through once an admin validates it', async () => {
     isValidate = false;
