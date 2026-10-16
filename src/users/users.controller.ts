@@ -46,6 +46,13 @@ export class UsersController {
   ) {
     return this.usersService.updateUser(request.user.id, user);
   }
+
+  // No @ValidatedUser(): unapproved users read the profile they edit here.
+  @UseGuards(JwtAccessGuardUser)
+  @Get('me/requests/form')
+  async getRequestFormHandler(@Req() request: RequestwithUserData) {
+    return this.usersService.getUserRequestForm(request.user.id);
+  }
   // @Post('me/govcard')
   // @UseInterceptors(
   //   FileInterceptor('govcard', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),

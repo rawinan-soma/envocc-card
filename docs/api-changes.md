@@ -120,7 +120,6 @@ Until they're approved, these routes return **403**:
 
 | Method | Path |
 |---|---|
-| `GET` | `users/me/requests/form` |
 | `GET` | `users/me/requests/exp` |
 | `GET` | `users/me/requests/latest` |
 | `POST` | `users/me/requests` |
@@ -141,11 +140,13 @@ Cookie: Authentication_User=<token>
 { "message": "user not validated", "error": "Forbidden", "statusCode": 403 }
 ```
 
-These stay open to any logged-in user: `GET users/me`, `PATCH users/me`, and `GET`/`POST`/`PATCH`/`DELETE users/me/experiences…`.
+These stay open to any logged-in user: `GET users/me`, `PATCH users/me`, `GET users/me/requests/form`, and `GET`/`POST`/`PATCH`/`DELETE users/me/experiences…`.
+
+`GET users/me/requests/form` is the only route that returns the user's full profile, so an unapproved user can read what they edit with `PATCH users/me` (issue #17). Its response includes `is_validate`.
 
 Approval is read from the database on every request. Once an admin approves a user, the user doesn't need to log in again.
 
-Suggested frontend handling: after login, if `users/me` shows the user isn't approved, show a "waiting for approval" screen instead of the card-request flow. Treat a 403 with `user not validated` the same way.
+Suggested frontend handling: after login, if `is_validate` in `users/me/requests/form` is `false` (`users/me` doesn't include it), show a "waiting for approval" screen instead of the card-request flow. Treat a 403 with `user not validated` the same way.
 
 ### 5. Admin file routes need an admin login
 

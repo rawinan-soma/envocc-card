@@ -17,11 +17,6 @@ import { UserUpdateDto } from './dto/user-update.dto';
 export class UserCardRequestController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get('me/requests/form')
-  async getRequestFormHandler(@Req() request: RequestwithUserData) {
-    return this.usersService.getUserRequestForm(request.user.id);
-  }
-
   @Get('me/requests/exp')
   async getExpFormHandler(@Req() request: RequestwithUserData) {
     return this.usersService.getUserPrintExpForm(request.user.id);
