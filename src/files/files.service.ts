@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   InternalServerErrorException,
@@ -39,6 +40,8 @@ export type FileModelMap = {
 
   // member: members;
 };
+
+const PHOTO_REPLACEABLE_STATUSES = new Set([1, 2, 3]);
 
 @Injectable()
 export class FilesService {
@@ -188,6 +191,41 @@ export class FilesService {
       if (err instanceof BadRequestException) {
         throw err;
       }
+      throw new InternalServerErrorException('something went wrong');
+    }
+  }
+
+  // The upload is already on disk when this runs, so every failure path
+  // removes it. The old files go only after the transaction has committed.
+  async replacePhoto(userId: number, data: FileCreateDto) {
+    try {
+      // Not RequestService.getCurrentStatus: RequestService depends on this service.
+      const current = await this.prisma.requests.findFirst({
+        where: { userId: userId },
+        orderBy: { date_update: 'desc' },
+      });
+
+      if (!current || !PHOTO_REPLACEABLE_STATUSES.has(current.request_status)) {
+        throw new ForbiddenException(
+          'photo can be replaced only at request status 1, 2 or 3',
+        );
+      }
+
+      const { photo, oldPaths } = await this.prisma.$transaction(
+        async (tx) => ({
+          oldPaths: await this.txDeleteFilesForUser(['photo'], userId, tx),
+          photo: await this.txUploadFileForUser('photo', data, tx),
+        }),
+      );
+
+      await this.deleteFilesFromDisk(oldPaths);
+      return photo;
+    } catch (err) {
+      await fs.unlink(data.url).catch(() => undefined);
+      if (err instanceof ForbiddenException) {
+        throw err;
+      }
+      this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
   }

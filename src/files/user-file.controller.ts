@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   Post,
+  Put,
   Req,
   // UnauthorizedException,
   UploadedFile,
@@ -65,6 +66,26 @@ export class UserFileController {
     );
     const photo = await this.filesService.createFile('photo', dto);
     return { msg: 'photo create', id: photo?.id };
+  }
+
+  @Put('me/photo')
+  @UseInterceptors(
+    FileInterceptor(
+      'photo',
+      getMulterOptions(['.jpg', '.png'], 10 * 1024 * 1024),
+    ),
+  )
+  async replacePhotoHandler(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() request: RequestwithUserData,
+  ) {
+    const dto = this.createFileDtoMapper(
+      request.user.id,
+      file.filename,
+      file.path,
+    );
+    const photo = await this.filesService.replacePhoto(request.user.id, dto);
+    return { msg: 'photo replaced', id: photo?.id };
   }
 
   @Get('me/files/:file')
