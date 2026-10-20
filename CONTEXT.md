@@ -30,6 +30,10 @@ _Avoid_: rollback, undo, send back
 **Revert to 0**:
 A full reset: the user becomes unapproved again, and their Status History and everything uploaded for their request are deleted, as if they had just registered.
 
+**Replace photo**:
+A user swapping the photo on their card request for a new one, allowed only while their Request Status is 1, 2 or 3 (photo check, photo correction, document upload); from 4 on the photo is fixed.
+_Avoid_: update photo, re-upload
+
 **Member Number**:
 The running number printed on a user's card. A user keeps the same Member Number across Reverts and re-issues.
 _Avoid_: card number

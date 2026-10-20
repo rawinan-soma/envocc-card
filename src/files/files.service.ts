@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { promises as fs } from 'fs';
-import { latestStatusEntry } from 'src/request/status-history';
+import { canReplacePhoto, latestStatusEntry } from 'src/request/status-history';
 import {
   envocc_card_files,
   exp_files,
@@ -41,8 +41,6 @@ export type FileModelMap = {
 
   // member: members;
 };
-
-const PHOTO_REPLACEABLE_STATUSES = new Set([1, 2, 3]);
 
 @Injectable()
 export class FilesService {
@@ -202,10 +200,7 @@ export class FilesService {
     try {
       const { photo, oldPaths } = await this.prisma.$transaction(async (tx) => {
         const current = await latestStatusEntry(tx, userId);
-        if (
-          !current ||
-          !PHOTO_REPLACEABLE_STATUSES.has(current.request_status)
-        ) {
+        if (!current || !canReplacePhoto(current.request_status)) {
           throw new ForbiddenException(
             'photo can be replaced only at request status 1, 2 or 3',
           );

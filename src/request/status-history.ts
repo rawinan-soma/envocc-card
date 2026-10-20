@@ -11,6 +11,14 @@ export interface NewStatusEntry {
   from?: number | null;
 }
 
+// A user may replace their photo only while it is still being checked (1) or
+// corrected (2), or their documents are still being uploaded (3). See Replace
+// photo in CONTEXT.md.
+export const PHOTO_REPLACEABLE_STATUSES: readonly number[] = [1, 2, 3];
+
+export const canReplacePhoto = (status: number) =>
+  PHOTO_REPLACEABLE_STATUSES.includes(status);
+
 // The user's Request Status is whatever their most recent entry says.
 export const latestStatusEntry = (
   db: Prisma.TransactionClient,
