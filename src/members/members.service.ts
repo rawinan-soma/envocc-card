@@ -14,6 +14,7 @@ import { OrgLevel, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { addStatusEntry, latestStatusEntry } from 'src/request/status-history';
 // import { RequestService } from 'src/request/request.service';
 
 interface OrganizationWithParent {
@@ -366,23 +367,20 @@ export class MembersService {
           data: { start_date: startDate, end_date: endDate },
         });
 
-        const current = await tx.requests.findFirst({
-          where: { userId: user },
-          orderBy: { date_update: 'desc' },
-        });
+        const current = await latestStatusEntry(tx, user);
 
         const isReady =
           current?.request_status === 8 || current?.request_status === 11;
 
         if (isReady) {
-          return await tx.requests.create({
-            data: {
-              userId: user,
-              request_type: 1,
-              request_status: current.request_status + 1,
-              approver: approver,
-            },
+          const { entry } = await addStatusEntry(tx, {
+            userId: user,
+            status: current.request_status + 1,
+            requestType: 1,
+            approver: approver,
+            from: current.request_status,
           });
+          return entry;
         } else {
           throw new BadRequestException('Error Setting start date see-logs');
         }
@@ -422,13 +420,11 @@ export class MembersService {
           nextMemberNo = (latestMember.member_no as number) + 1;
         }
 
-        await tx.requests.create({
-          data: {
-            request_type: 1,
-            approver: admin,
-            request_status: signature_method,
-            userId: data.userId,
-          },
+        await addStatusEntry(tx, {
+          userId: data.userId,
+          status: signature_method,
+          requestType: 1,
+          approver: admin,
         });
 
         // A Revert keeps the card record, so passing step 7 again reuses it
