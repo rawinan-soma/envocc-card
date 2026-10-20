@@ -37,6 +37,20 @@ export class UserAuthService {
     return yearDiff;
   }
 
+  // A newly registered user starts at Request Status 0.
+  private registerUser(data: Prisma.usersCreateInput) {
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.users.create({ data });
+      await addStatusEntry(tx, {
+        userId: user.id,
+        status: 0,
+        requestType: 1,
+        from: null,
+      });
+      return user;
+    });
+  }
+
   async createUser(dto: UserExpCreateDto) {
     try {
       dto.user.password = await bcrypt.hash(dto.user.password, 10);
@@ -67,26 +81,14 @@ export class UserAuthService {
       });
 
       const { positionId, position_lvId, orgId, ...rest } = dto.user;
-      const experiences = dto.experiences;
 
-      return await this.prisma.$transaction(async (tx) => {
-        const user = await tx.users.create({
-          data: {
-            ...rest,
-            position: { connect: { position_id: positionId } },
-            position_lv: { connect: { position_lv_id: position_lvId } },
+      return await this.registerUser({
+        ...rest,
+        position: { connect: { position_id: positionId } },
+        position_lv: { connect: { position_lv_id: position_lvId } },
 
-            experiences: { createMany: { data: experiences } },
-            organization: { connect: { id: orgId } },
-          },
-        });
-        await addStatusEntry(tx, {
-          userId: user.id,
-          status: 0,
-          requestType: 1,
-          from: null,
-        });
-        return user;
+        experiences: { createMany: { data: dto.experiences } },
+        organization: { connect: { id: orgId } },
       });
     } catch (err) {
       this.logger.error(err);
@@ -126,23 +128,12 @@ export class UserAuthService {
 
       const { positionId, position_lvId, orgId, ...rest } = dto.user;
 
-      return await this.prisma.$transaction(async (tx) => {
-        const user = await tx.users.create({
-          data: {
-            ...rest,
-            position: { connect: { position_id: positionId } },
-            position_lv: { connect: { position_lv_id: position_lvId } },
+      return await this.registerUser({
+        ...rest,
+        position: { connect: { position_id: positionId } },
+        position_lv: { connect: { position_lv_id: position_lvId } },
 
-            organization: { connect: { id: orgId } },
-          },
-        });
-        await addStatusEntry(tx, {
-          userId: user.id,
-          status: 0,
-          requestType: 1,
-          from: null,
-        });
-        return user;
+        organization: { connect: { id: orgId } },
       });
     } catch (err) {
       this.logger.error(err);

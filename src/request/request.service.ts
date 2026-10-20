@@ -14,7 +14,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { RequestCreateDto } from './dto/request-create.dto';
 import { RevertStatusDto } from './dto/revert-status.dto';
 import { FilesService } from 'src/files/files.service';
-import { addStatusEntry } from './status-history';
+import { addStatusEntry, latestStatusEntry } from './status-history';
 
 // The only moves that are Reverts: each target and the statuses it can be
 // reached from (see Revert in CONTEXT.md).
@@ -47,16 +47,7 @@ export class RequestService {
 
   async getCurrentStatus(id: number) {
     try {
-      const currentStatus = await this.prisma.requests.findFirst({
-        where: {
-          userId: id,
-        },
-        orderBy: {
-          date_update: 'desc',
-        },
-      });
-
-      return currentStatus;
+      return await latestStatusEntry(this.prisma, id);
     } catch (err: any) {
       this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
@@ -161,10 +152,7 @@ export class RequestService {
         async (tx) => {
           await this.checkCanRevert(tx, adminId, userId);
 
-          const current = await tx.requests.findFirst({
-            where: { userId: userId },
-            orderBy: { date_update: 'desc' },
-          });
+          const current = await latestStatusEntry(tx, userId);
 
           if (current?.request_status !== revert.current_status) {
             throw new BadRequestException(`user's status mismatched`);

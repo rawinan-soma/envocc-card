@@ -11,6 +11,16 @@ export interface NewStatusEntry {
   from?: number | null;
 }
 
+// The user's Request Status is whatever their most recent entry says.
+export const latestStatusEntry = (
+  db: Prisma.TransactionClient,
+  userId: number,
+) =>
+  db.requests.findFirst({
+    where: { userId },
+    orderBy: { date_update: 'desc' },
+  });
+
 // The one place a new Request Status is written to a user's Status History.
 // Pass a transaction client to write inside an existing transaction.
 export const addStatusEntry = async (
@@ -18,11 +28,7 @@ export const addStatusEntry = async (
   { userId, status, requestType, approver, description, from }: NewStatusEntry,
 ) => {
   if (from === undefined) {
-    const current = await db.requests.findFirst({
-      where: { userId },
-      orderBy: { date_update: 'desc' },
-      select: { request_status: true },
-    });
+    const current = await latestStatusEntry(db, userId);
     from = current?.request_status ?? null;
   }
 

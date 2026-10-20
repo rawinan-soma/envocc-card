@@ -14,7 +14,7 @@ import { OrgLevel, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { addStatusEntry } from 'src/request/status-history';
+import { addStatusEntry, latestStatusEntry } from 'src/request/status-history';
 // import { RequestService } from 'src/request/request.service';
 
 interface OrganizationWithParent {
@@ -367,10 +367,7 @@ export class MembersService {
           data: { start_date: startDate, end_date: endDate },
         });
 
-        const current = await tx.requests.findFirst({
-          where: { userId: user },
-          orderBy: { date_update: 'desc' },
-        });
+        const current = await latestStatusEntry(tx, user);
 
         const isReady =
           current?.request_status === 8 || current?.request_status === 11;

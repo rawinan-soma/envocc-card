@@ -12,7 +12,7 @@ import { UserUpdateDto, UserUpdateInternalDto } from './dto/user-update.dto';
 import { StatusCreateDto } from 'src/request/dto/status-create.dto';
 import { FilesService } from 'src/files/files.service';
 import { FileCreateDto } from 'src/files/dto/file-create.dto';
-import { addStatusEntry } from 'src/request/status-history';
+import { addStatusEntry, latestStatusEntry } from 'src/request/status-history';
 
 type StepThreeFile = 'govcard' | 'reqFile' | 'expfile';
 const STEP_THREE_FILES: StepThreeFile[] = ['govcard', 'reqFile', 'expfile'];
@@ -542,10 +542,7 @@ export class UsersService {
           data: { is_validate: true },
         });
 
-        const currentStatus = await tx.requests.findFirst({
-          where: { userId: id },
-          orderBy: { date_update: 'desc' },
-        });
+        const currentStatus = await latestStatusEntry(tx, id);
 
         if (!currentStatus) {
           throw new BadRequestException('bad request by user');
