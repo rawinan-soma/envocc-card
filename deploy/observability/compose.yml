@@ -39,6 +39,7 @@ services:
   tempo:
     image: grafana/tempo:2.10.8
     command: ['-config.file=/etc/tempo.yml']
+    # Root, to write its named volume, which Docker creates root-owned.
     user: '0'
     volumes:
       - ./tempo.yml:/etc/tempo.yml:ro
@@ -48,6 +49,7 @@ services:
   loki:
     image: grafana/loki:3.7.8
     command: ['-config.file=/etc/loki/config.yml']
+    # Root, to write its named volume, which Docker creates root-owned.
     user: '0'
     volumes:
       - ./loki.yml:/etc/loki/config.yml:ro
@@ -70,6 +72,9 @@ services:
 
   grafana:
     image: grafana/grafana:13.2.4
+    # The admin login is set only when grafana_data is first created; to
+    # change it later, change it in Grafana (or reset the password with
+    # `make dc ARGS="exec grafana grafana cli admin reset-admin-password …"`).
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?}

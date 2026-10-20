@@ -19,12 +19,12 @@ curl_image=curlimages/curl:8.23.0
 service=observability-check
 
 hex() { od -An -N"$1" -tx1 /dev/urandom | tr -d ' \n'; }
-run=$(hex 4)
+run_id=$(hex 4)
 trace_id=$(hex 16)
 span_id=$(hex 8)
 now=$(date +%s%N)
 
-email="check.$run@example.com"
+email="check.$run_id@example.com"
 jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvYnNlcnZhYmlsaXR5LWNoZWNrIn0.c2lnbmF0dXJlLW5vdC1jaGVja2Vk
 id13=3100512345678
 
@@ -34,11 +34,11 @@ fail=0
 ok() { echo "ok    $*"; }
 bad() { echo "FAIL  $*"; fail=1; }
 
-# Polls for up to a minute until the command's output contains $run.
+# Polls for up to a minute until the command's output contains $run_id.
 await() {
   local out
   for _ in $(seq 30); do
-    out=$("$@" 2>/dev/null) && [[ $out == *"$run"* ]] && { printf '%s' "$out"; return 0; }
+    out=$("$@" 2>/dev/null) && [[ $out == *"$run_id"* ]] && { printf '%s' "$out"; return 0; }
     sleep 2
   done
   return 1
@@ -56,7 +56,7 @@ redacted() {
   fi
 }
 
-echo "run $run, trace $trace_id"
+echo "run $run_id, trace $trace_id"
 
 if ! docker network inspect "$network" >/dev/null 2>&1; then
   echo "FAIL  no network $network: is the stack up?"
@@ -71,11 +71,11 @@ attr() { printf '{"key":"%s","value":{"stringValue":"%s"}}' "$1" "$2"; }
 span='{"resourceSpans":[{"resource":'$resource',"scopeSpans":[{"scope":{"name":"check"},"spans":[{
   "traceId":"'$trace_id'","spanId":"'$span_id'","name":"observability check","kind":1,
   "startTimeUnixNano":"'$now'","endTimeUnixNano":"'$((now + 1000000))'",
-  "attributes":['$(attr check.run "$run")','$(attr check.email "$email")','$(attr check.jwt "$jwt")','$(attr check.id "id $id13")']}]}]}]}'
+  "attributes":['$(attr check.run "$run_id")','$(attr check.email "$email")','$(attr check.jwt "$jwt")','$(attr check.id "id $id13")']}]}]}]}'
 
 metric='{"resourceMetrics":[{"resource":'$resource',"scopeMetrics":[{"scope":{"name":"check"},"metrics":[{
   "name":"envocc_check","gauge":{"dataPoints":[{"asDouble":1,"timeUnixNano":"'$now'",
-  "attributes":['$(attr run "$run")']}]}}]}]}]}'
+  "attributes":['$(attr run "$run_id")']}]}}]}]}]}'
 
 on_net -o /dev/null -H 'Content-Type: application/json' -d "$span" http://otelcol:4318/v1/traces \
   && ok "span sent to the Collector" || bad "the Collector refused the span"
@@ -85,7 +85,7 @@ on_net -o /dev/null -H 'Content-Type: application/json' -d "$metric" http://otel
 # The Collector tails Docker's json-file logs of containers that opt in by
 # logging their compose service label, as the api's container does. The
 # container is kept until its line is in Loki, since removing it deletes the log.
-line='{"level":"log","context":"ObservabilityCheck","message":"run '$run' for '$email' with '$jwt' and '$id13'","trace_id":"'$trace_id'","span_id":"'$span_id'"}'
+line='{"level":"log","context":"ObservabilityCheck","message":"run '$run_id' for '$email' with '$jwt' and '$id13'","trace_id":"'$trace_id'","span_id":"'$span_id'"}'
 logger=$(docker run -d --label com.docker.compose.service=$service \
   --log-opt labels=com.docker.compose.service --entrypoint sh "$curl_image" -c 'echo "$0"' "$line" 2>/dev/null) \
   && ok "log line written by a container labelled $service" || bad "could not start the logging container"
@@ -97,7 +97,7 @@ if out=$(await on_net "http://tempo:3200/api/traces/$trace_id"); then
   ok "span is in Tempo"; redacted "span" "$out"
 else bad "span did not reach Tempo in a minute"; fi
 
-if out=$(await on_net -G http://prometheus:9090/api/v1/query --data-urlencode "query=envocc_check{run=\"$run\"}"); then
+if out=$(await on_net -G http://prometheus:9090/api/v1/query --data-urlencode "query=envocc_check{run=\"$run_id\"}"); then
   ok "metric is in Prometheus"
 else bad "metric did not reach Prometheus in a minute"; fi
 

@@ -6,8 +6,9 @@
 #   make -C deploy/observability run check HOST=<ssh host>                   # every change
 #
 # The env file holds GRAFANA_ADMIN_PASSWORD (and optionally GRAFANA_ADMIN_USER,
-# GRAFANA_PORT, GRAFANA_ROOT_URL). Every target syncs a commit, never the
-# working tree: TAG defaults to the tip of BRANCH (main). HOST has no default,
+# GRAFANA_PORT, GRAFANA_ROOT_URL), read by Grafana only on its first start.
+# `sync` (and so `run`) copies a commit, never the working tree: TAG defaults
+# to the tip of BRANCH (main). HOST has no default,
 # so no command reaches a server it did not name. `make -n <target>` prints
 # what it would run.
 #
@@ -40,6 +41,8 @@ CONFIG := compose.yml otelcol.yml tempo.yml loki.yml prometheus.yml grafana chec
 
 .DEFAULT_GOAL := help
 
+# Every server target must name HOST on the command line; help and the local
+# targets, which never leave this machine, need none.
 LOCAL_GOALS := help run-local check-local logs-local down-local
 ifneq ($(filter-out $(LOCAL_GOALS),$(or $(MAKECMDGOALS),help)),)
 ifneq ($(origin HOST),command line)
@@ -75,6 +78,7 @@ network:
 # This directory's config at TAG, replacing what the server had.
 sync:
 	@ssh $(HOST) 'test -f $(D)/observability.env' || { echo 'No observability.env on $(HOST): run `make env` first.' >&2; exit 1; }
+	@[ "$$(git -C $(ROOT) rev-parse $(TAG))" = "$$(git -C $(ROOT) rev-parse HEAD)" ] && git -C $(ROOT) diff --quiet HEAD -- . || echo 'note: syncing $(TAG); uncommitted or unmerged changes here are not synced'
 	@ssh $(HOST) 'docker network inspect $(NETWORK) >/dev/null 2>&1' || { echo 'No $(NETWORK) network on $(HOST): run `make network` first.' >&2; exit 1; }
 	git -C $(ROOT) archive --format=tar $(TAG):deploy/observability $(CONFIG) | \
 	  ssh $(HOST) 'cd $(D) && rm -rf $(CONFIG) && tar -x'

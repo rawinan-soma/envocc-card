@@ -82,15 +82,12 @@ processors:
     error_mode: ignore
     trace_statements:
       - context: span
-        statements:
+        statements: &redact_attributes
           - replace_all_patterns(attributes, "value", "eyJ[A-Za-z0-9_-]+[.][A-Za-z0-9_-]+[.][A-Za-z0-9_-]*", "REDACTED:jwt")
           - replace_all_patterns(attributes, "value", "[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+([.][A-Za-z0-9-]+)+", "REDACTED:email")
           - replace_all_patterns(attributes, "value", "\\b[0-9]{13}\\b", "REDACTED:id13")
       - context: spanevent
-        statements:
-          - replace_all_patterns(attributes, "value", "eyJ[A-Za-z0-9_-]+[.][A-Za-z0-9_-]+[.][A-Za-z0-9_-]*", "REDACTED:jwt")
-          - replace_all_patterns(attributes, "value", "[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+([.][A-Za-z0-9-]+)+", "REDACTED:email")
-          - replace_all_patterns(attributes, "value", "\\b[0-9]{13}\\b", "REDACTED:id13")
+        statements: *redact_attributes
     log_statements:
       - context: log
         statements:

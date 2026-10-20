@@ -28,12 +28,6 @@ datasources:
         filterBySpanID: false
         customQuery: true
         query: '{service_name=~".+"} | trace_id="$${__trace.traceId}"'
-      tracesToMetrics:
-        datasourceUid: prometheus
-      serviceMap:
-        datasourceUid: prometheus
-      nodeGraph:
-        enabled: true
 
   - name: Loki
     uid: loki
