@@ -14,7 +14,11 @@ import { OrgLevel, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { addStatusEntry, latestStatusEntry } from 'src/request/status-history';
+import {
+  addStatusEntry,
+  latestStatusEntry,
+  lockUser,
+} from 'src/request/status-history';
 // import { RequestService } from 'src/request/request.service';
 
 interface OrganizationWithParent {
@@ -346,7 +350,7 @@ export class MembersService {
   ) {
     try {
       return this.prisma.$transaction(async (tx) => {
-        // console.log(user);
+        await lockUser(tx, user);
         const targetMember = await tx.members.findFirst({
           where: { userId: user },
           orderBy: { create_date: 'desc' },
@@ -395,6 +399,7 @@ export class MembersService {
     try {
       const { signature_method, ...rest } = data;
       return this.prisma.$transaction(async (tx) => {
+        await lockUser(tx, data.userId);
         const initPassword = Math.floor(
           10000000 + Math.random() * 90000000,
         ).toString();

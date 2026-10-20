@@ -1,0 +1,19 @@
+meta {
+  name: Replace photo
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{baseUrl}}/users/me/photo
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  photo: @file()
+}
+
+docs {
+  User login (cookie Authentication_User): run "User auth / Login" first. Approved users only (otherwise 403 user not validated), and only while the request status is 1, 2 or 3, i.e. photo check, photo correction or document upload (otherwise 403). Replaces the current photo, or creates it if there is none; the old file is deleted best-effort. A JPG or PNG of at most 10 MB: no file is 400 "photo is required", another type is 400 "unsupported file type", over 10 MB is 413.
+}

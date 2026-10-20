@@ -248,6 +248,14 @@ describe('@ValidatedUser() routes', () => {
       expect(prisma.envocc_card_files.create).toHaveBeenCalledTimes(1);
     });
 
+    it('answers 400 for an envcard upload with no file, storing nothing', async () => {
+      const res = await call({ method: 'post', path: '/users/me/envcard' });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({ message: 'envcard is required' });
+      expect(prisma.envocc_card_files.create).not.toHaveBeenCalled();
+    });
+
     it.each(blockedRoutes)(
       'is not blocked on $method $path',
       async ({ validatedStatus, ...route }) => {

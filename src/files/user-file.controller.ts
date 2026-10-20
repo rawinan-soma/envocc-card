@@ -1,8 +1,11 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Param,
+  ParseFilePipe,
   Post,
+  Put,
   Req,
   // UnauthorizedException,
   UploadedFile,
@@ -14,6 +17,16 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { getMulterOptions } from 'src/shared/file-multer-options';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
 import { ValidatedUser } from 'src/user-auth/validated-user.decorator';
+
+const PHOTO_UPLOAD = FileInterceptor(
+  'photo',
+  getMulterOptions(['.jpg', '.png'], 10 * 1024 * 1024),
+);
+
+const fileRequired = (field: string) =>
+  new ParseFilePipe({
+    exceptionFactory: () => new BadRequestException(`${field} is required`),
+  });
 
 @ValidatedUser()
 @Controller('users')
@@ -34,7 +47,7 @@ export class UserFileController {
     FileInterceptor('envcard', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),
   )
   async createEnvCardHandler(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(fileRequired('envcard')) file: Express.Multer.File,
     @Req() request: RequestwithUserData,
   ) {
     const dto = this.createFileDtoMapper(
@@ -48,14 +61,9 @@ export class UserFileController {
   }
 
   @Post('me/photo')
-  @UseInterceptors(
-    FileInterceptor(
-      'photo',
-      getMulterOptions(['.jpg', '.png'], 10 * 1024 * 1024),
-    ),
-  )
+  @UseInterceptors(PHOTO_UPLOAD)
   async createPhotosHandler(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(fileRequired('photo')) file: Express.Multer.File,
     @Req() request: RequestwithUserData,
   ) {
     const dto = this.createFileDtoMapper(
@@ -65,6 +73,19 @@ export class UserFileController {
     );
     const photo = await this.filesService.createFile('photo', dto);
     return { msg: 'photo create', id: photo?.id };
+  }
+
+  @Put('me/photo')
+  @UseInterceptors(PHOTO_UPLOAD)
+  async replacePhotoHandler(
+    @UploadedFile(fileRequired('photo')) file: Express.Multer.File,
+    @Req() request: RequestwithUserData,
+  ) {
+    const photo = await this.filesService.replacePhoto(request.user.id, {
+      file_name: file.filename,
+      url: file.path,
+    });
+    return { msg: 'photo replaced', id: photo?.id };
   }
 
   @Get('me/files/:file')

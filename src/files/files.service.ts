@@ -1,11 +1,17 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import { promises as fs } from 'fs';
+import {
+  canReplacePhoto,
+  latestStatusEntry,
+  lockUser,
+} from 'src/request/status-history';
 import {
   envocc_card_files,
   exp_files,
@@ -192,6 +198,43 @@ export class FilesService {
     }
   }
 
+  async replacePhoto(
+    userId: number,
+    upload: Pick<FileCreateDto, 'file_name' | 'url'>,
+  ) {
+    const data = this.createFileDtoMapper(upload.file_name, upload.url, userId);
+    let swapped: { photo: photos | null; oldPaths: string[] };
+    try {
+      swapped = await this.prisma.$transaction(async (tx) => {
+        // Holds off status writers and other replaces for this user until the
+        // swap commits, so the status read below is still true when we write.
+        await lockUser(tx, userId);
+        const current = await latestStatusEntry(tx, userId);
+        if (!current || !canReplacePhoto(current.request_status)) {
+          throw new ForbiddenException(
+            'photo can be replaced only at request status 1, 2 or 3',
+          );
+        }
+
+        return {
+          oldPaths: await this.txDeleteFilesForUser(['photo'], userId, tx),
+          photo: await this.txUploadFileForUser('photo', data, tx),
+        };
+      });
+    } catch (err) {
+      // multer stored the upload before this ran, so a failed swap removes it.
+      await this.deleteFilesFromDisk([data.url]);
+      if (err instanceof ForbiddenException) {
+        throw err;
+      }
+      this.logger.error(err);
+      throw new InternalServerErrorException('something went wrong');
+    }
+
+    await this.deleteFilesFromDisk(swapped.oldPaths);
+    return swapped.photo;
+  }
+
   private txModelMap(tx: Prisma.TransactionClient) {
     return {
       envcard: tx.envocc_card_files,
@@ -213,10 +256,11 @@ export class FilesService {
         create: (args: any) => Promise<FileModelMap[T] | null>;
       };
 
+      // photos has no adminId column: Prisma skips undefined but rejects null.
       return await delegate.create({
         data: {
           userId: data.userId,
-          adminId: data.adminId,
+          adminId: data.adminId ?? undefined,
           filename: data.file_name,
           url: data.url,
         },

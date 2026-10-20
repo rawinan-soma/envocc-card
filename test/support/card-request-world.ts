@@ -20,6 +20,7 @@ import { AdminRequestController } from 'src/request/admin-request.controller';
 import { RequestService } from 'src/request/request.service';
 import { JwtAccessStrategy as UserJwtAccessStrategy } from 'src/user-auth/jwt-access.strategy';
 import { AdminUserController } from 'src/users/admin-user.controller';
+import { UserFileController } from 'src/files/user-file.controller';
 import { UsersController } from 'src/users/users.controller';
 import { UsersService } from 'src/users/users.service';
 import { startApp, testConfig } from './test-app';
@@ -111,6 +112,7 @@ export const createCardRequestWorld = async () => {
         AdminMemberController,
         CommonMembersController,
         UsersController,
+        UserFileController,
       ],
       providers: [
         JwtAccessStrategy,
@@ -147,6 +149,7 @@ export const createCardRequestWorld = async () => {
     return {
       get: (path: string) => server().get(path).set('Cookie', cookie),
       post: (path: string) => server().post(path).set('Cookie', cookie),
+      put: (path: string) => server().put(path).set('Cookie', cookie),
       patch: (path: string) => server().patch(path).set('Cookie', cookie),
       delete: (path: string) => server().delete(path).set('Cookie', cookie),
     };

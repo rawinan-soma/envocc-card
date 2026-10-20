@@ -19,6 +19,7 @@ Changes to the EnvOcc Card API since `b5a3abd` (agent skills setup), up to `ef03
   - [`POST admins/users/:userId/requests/revert`](#post-adminsusersuseridrequestsrevert)
   - [`GET admins/users/all`](#get-adminsusersall)
   - [`GET admins/files/envcard`](#get-adminsfilesenvcard)
+  - [`PUT users/me/photo`](#put-usersmephoto)
 - [Other behaviour changes](#other-behaviour-changes)
 
 ---
@@ -124,6 +125,7 @@ Until they're approved, these routes return **403**:
 | `POST` | `users/me/requests` |
 | `POST` | `users/me/card` |
 | `POST` | `users/me/photo` |
+| `PUT` | `users/me/photo` |
 | `POST` | `users/me/envcard` |
 | `GET` | `users/me/files/:file` |
 | `PATCH` | `users/me/members/qrcode` |
@@ -358,9 +360,60 @@ Not a MOPH admin:
 { "message": "admin is not from MOPH", "error": "Forbidden", "statusCode": 403 }
 ```
 
+### `PUT users/me/photo`
+
+`multipart/form-data` with the `photo` field, a JPG or PNG of at most 10 MB. It needs the `Authentication_User` cookie and an approved user. It replaces the user's photo, or creates it when there is none. `POST users/me/photo` still refuses a second photo with `400 user already has file(s)`.
+
+The photo can be replaced only while the user's current request status is **1, 2 or 3**, that is while the photo is being checked (1) or corrected (2), or the documents are still being uploaded (3).
+
+```http
+PUT /envocc-card/api/v2/users/me/photo
+Cookie: Authentication_User=<token>
+Content-Type: multipart/form-data; boundary=----X
+
+------X
+Content-Disposition: form-data; name="photo"; filename="photo.png"
+Content-Type: image/png
+
+<binary>
+------X--
+```
+
+```json
+200 OK
+{ "msg": "photo replaced", "id": 17 }
+```
+
+`id` is the new photo's id. Deleting the old file from the server is best-effort: the replace still succeeds if that file is already gone. At any other status:
+
+```json
+403 Forbidden
+{
+  "message": "photo can be replaced only at request status 1, 2 or 3",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+An unapproved user gets `403 user not validated`, as on the other card-request routes.
+
+**Errors**
+
+| Status | `message` | When |
+|---|---|---|
+| 400 | `photo is required` | The form has no `photo` field. `POST users/me/photo` returns the same instead of a 500. |
+| 400 | `unsupported file type` | The file isn't a `.jpg` or `.png`. |
+| 413 | `File too large` | The file is over 10 MB. |
+| 403 | `photo can be replaced only at request status 1, 2 or 3` | The user's request status isn't 1, 2 or 3, or they have no status history. |
+| 403 | `user not validated` | The user isn't approved yet. |
+
 ---
 
 ## Other behaviour changes
+
+### Uploads with no file answer 400
+
+`POST users/me/photo`, `PUT users/me/photo` and `POST users/me/envcard` used to answer 500 when the form had no file field. They now answer 400 with `photo is required` or `envcard is required`.
 
 ### Step 3 upload: the request file is optional
 

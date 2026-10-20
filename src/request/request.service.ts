@@ -14,7 +14,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { RequestCreateDto } from './dto/request-create.dto';
 import { RevertStatusDto } from './dto/revert-status.dto';
 import { FilesService } from 'src/files/files.service';
-import { addStatusEntry, latestStatusEntry } from './status-history';
+import { addStatusEntry, latestStatusEntry, lockUser } from './status-history';
 
 // The only moves that are Reverts: each target and the statuses it can be
 // reached from (see Revert in CONTEXT.md).
@@ -56,40 +56,43 @@ export class RequestService {
 
   async updateStatus(updated: StatusCreateDto, approver: number) {
     try {
-      const current = await this.getCurrentStatus(updated.user);
-      const mismatchedStatus =
-        current?.request_status !== updated.current_status;
-      const sameStatus = current?.request_status === updated.next_status;
+      return await this.prisma.$transaction(async (tx) => {
+        await lockUser(tx, updated.user);
+        const current = await latestStatusEntry(tx, updated.user);
+        const mismatchedStatus =
+          current?.request_status !== updated.current_status;
+        const sameStatus = current?.request_status === updated.next_status;
 
-      if (mismatchedStatus) {
-        throw new BadRequestException(`user's status mismatched`);
-      }
+        if (mismatchedStatus) {
+          throw new BadRequestException(`user's status mismatched`);
+        }
 
-      if (sameStatus) {
-        throw new BadRequestException(`user's already in this status`);
-      }
+        if (sameStatus) {
+          throw new BadRequestException(`user's already in this status`);
+        }
 
-      // Going back to a Revert target must go through the Revert, so its
-      // rules and clean-up can't be bypassed.
-      const backwardToRevertTarget =
-        REVERT_TARGETS.has(updated.next_status) &&
-        updated.next_status < current.request_status;
+        // Going back to a Revert target must go through the Revert, so its
+        // rules and clean-up can't be bypassed.
+        const backwardToRevertTarget =
+          REVERT_TARGETS.has(updated.next_status) &&
+          updated.next_status < current.request_status;
 
-      if (backwardToRevertTarget) {
-        throw new BadRequestException(
-          `moving back to ${updated.next_status} is a revert: use POST admins/users/:userId/requests/revert`,
-        );
-      }
+        if (backwardToRevertTarget) {
+          throw new BadRequestException(
+            `moving back to ${updated.next_status} is a revert: use POST admins/users/:userId/requests/revert`,
+          );
+        }
 
-      const { entry } = await addStatusEntry(this.prisma, {
-        userId: updated.user,
-        status: updated.next_status,
-        requestType: current.request_type,
-        approver: approver,
-        description: updated.description,
-        from: current.request_status,
+        const { entry } = await addStatusEntry(tx, {
+          userId: updated.user,
+          status: updated.next_status,
+          requestType: current.request_type,
+          approver: approver,
+          description: updated.description,
+          from: current.request_status,
+        });
+        return entry;
       });
-      return entry;
     } catch (err: any) {
       this.logger.error(err);
       if (err instanceof BadRequestException) {
@@ -121,18 +124,21 @@ export class RequestService {
 
   async createNewRequest(data: RequestCreateDto) {
     try {
-      const user = await this.getCurrentStatus(data.userId);
-      if (user) {
-        throw new BadRequestException(
-          'user already has new card request, please ensure the card from user',
-        );
-      }
+      await this.prisma.$transaction(async (tx) => {
+        await lockUser(tx, data.userId);
+        const user = await latestStatusEntry(tx, data.userId);
+        if (user) {
+          throw new BadRequestException(
+            'user already has new card request, please ensure the card from user',
+          );
+        }
 
-      await addStatusEntry(this.prisma, {
-        userId: data.userId,
-        status: 1,
-        requestType: data.request_type,
-        from: null,
+        await addStatusEntry(tx, {
+          userId: data.userId,
+          status: 1,
+          requestType: data.request_type,
+          from: null,
+        });
       });
     } catch (err: any) {
       this.logger.error(err);
@@ -150,6 +156,7 @@ export class RequestService {
     try {
       const { entry, filesToDelete } = await this.prisma.$transaction(
         async (tx) => {
+          await lockUser(tx, userId);
           await this.checkCanRevert(tx, adminId, userId);
 
           const current = await latestStatusEntry(tx, userId);
