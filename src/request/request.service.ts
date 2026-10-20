@@ -14,6 +14,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { RequestCreateDto } from './dto/request-create.dto';
 import { RevertStatusDto } from './dto/revert-status.dto';
 import { FilesService } from 'src/files/files.service';
+import { addStatusEntry, latestStatusEntry } from './status-history';
 
 // The only moves that are Reverts: each target and the statuses it can be
 // reached from (see Revert in CONTEXT.md).
@@ -46,16 +47,7 @@ export class RequestService {
 
   async getCurrentStatus(id: number) {
     try {
-      const currentStatus = await this.prisma.requests.findFirst({
-        where: {
-          userId: id,
-        },
-        orderBy: {
-          date_update: 'desc',
-        },
-      });
-
-      return currentStatus;
+      return await latestStatusEntry(this.prisma, id);
     } catch (err: any) {
       this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
@@ -89,15 +81,15 @@ export class RequestService {
         );
       }
 
-      return await this.prisma.requests.create({
-        data: {
-          userId: updated.user,
-          request_status: updated.next_status,
-          request_type: current.request_type,
-          approver: approver,
-          description: updated.description,
-        },
+      const { entry } = await addStatusEntry(this.prisma, {
+        userId: updated.user,
+        status: updated.next_status,
+        requestType: current.request_type,
+        approver: approver,
+        description: updated.description,
+        from: current.request_status,
       });
+      return entry;
     } catch (err: any) {
       this.logger.error(err);
       if (err instanceof BadRequestException) {
@@ -136,9 +128,12 @@ export class RequestService {
         );
       }
 
-      data.request_status = 1;
-
-      await this.prisma.requests.create({ data: data });
+      await addStatusEntry(this.prisma, {
+        userId: data.userId,
+        status: 1,
+        requestType: data.request_type,
+        from: null,
+      });
     } catch (err: any) {
       this.logger.error(err);
       if (err instanceof BadRequestException) {
@@ -157,10 +152,7 @@ export class RequestService {
         async (tx) => {
           await this.checkCanRevert(tx, adminId, userId);
 
-          const current = await tx.requests.findFirst({
-            where: { userId: userId },
-            orderBy: { date_update: 'desc' },
-          });
+          const current = await latestStatusEntry(tx, userId);
 
           if (current?.request_status !== revert.current_status) {
             throw new BadRequestException(`user's status mismatched`);
@@ -218,14 +210,13 @@ export class RequestService {
             });
           }
 
-          const entry = await tx.requests.create({
-            data: {
-              userId: userId,
-              request_status: revert.target_status,
-              request_type: current.request_type,
-              approver: adminId,
-              description: revert.description,
-            },
+          const { entry } = await addStatusEntry(tx, {
+            userId: userId,
+            status: revert.target_status,
+            requestType: current.request_type,
+            approver: adminId,
+            description: revert.description,
+            from: current.request_status,
           });
 
           return { entry, filesToDelete };
