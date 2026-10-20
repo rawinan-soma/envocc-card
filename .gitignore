@@ -69,3 +69,5 @@ assets/*
 !assets/.gitkeep
 
 /makefile
+spike/otel/out/
+spans.jsonl

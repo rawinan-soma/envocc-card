@@ -28,6 +28,7 @@ import { SignaturesModule } from './signatures/signatures.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { BullModule } from '@nestjs/bullmq';
+import { BullMQOtel } from 'bullmq-otel';
 import { QueueModule } from './queue/queue.module';
 import { AuthModule } from './auth/auth.module';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -66,7 +67,14 @@ import { ThrottlerModule } from '@nestjs/throttler';
       serveRoot: '/app/assets',
     }),
     BullModule.forRoot({
-      connection: { host: 'redis', port: 6379 },
+      connection: {
+        host: process.env.REDIS_HOST ?? 'redis',
+        port: Number(process.env.REDIS_PORT ?? 6379),
+      },
+      // SPIKE (ticket #21): BullMQ's own telemetry option.
+      ...(process.env.OTEL_SPIKE_BULLMQ_TELEMETRY
+        ? { telemetry: new BullMQOtel({ tracerName: 'envocc-card' }) }
+        : {}),
     }),
     QueueModule,
     AuthModule,
