@@ -12,7 +12,11 @@ import { UserUpdateDto, UserUpdateInternalDto } from './dto/user-update.dto';
 import { StatusCreateDto } from 'src/request/dto/status-create.dto';
 import { FilesService } from 'src/files/files.service';
 import { FileCreateDto } from 'src/files/dto/file-create.dto';
-import { addStatusEntry, latestStatusEntry } from 'src/request/status-history';
+import {
+  addStatusEntry,
+  latestStatusEntry,
+  lockUser,
+} from 'src/request/status-history';
 
 type StepThreeFile = 'govcard' | 'reqFile' | 'expfile';
 const STEP_THREE_FILES: StepThreeFile[] = ['govcard', 'reqFile', 'expfile'];
@@ -525,6 +529,7 @@ export class UsersService {
   async validateUser(id: number, approver: number) {
     try {
       return this.prisma.$transaction(async (tx) => {
+        await lockUser(tx, id);
         const existedUser = await tx.users.findUnique({
           where: { id: id },
         });
@@ -631,6 +636,7 @@ export class UsersService {
     );
     try {
       const replaced = await this.prisma.$transaction(async (tx) => {
+        await lockUser(tx, user);
         const replaced: string[] = [];
         for (const model of STEP_THREE_FILES) {
           const upload = uploads[model];
@@ -697,12 +703,14 @@ export class UsersService {
   }
 
   async createRequest(userId: number, requestType: number) {
-    const { entry } = await addStatusEntry(this.prisma, {
-      userId: userId,
-      status: 1,
-      requestType: requestType,
-      approver: userId,
-    });
+    const { entry } = await this.prisma.$transaction((tx) =>
+      addStatusEntry(tx, {
+        userId: userId,
+        status: 1,
+        requestType: requestType,
+        approver: userId,
+      }),
+    );
     return entry;
   }
 

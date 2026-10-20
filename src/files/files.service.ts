@@ -7,7 +7,11 @@ import {
   Logger,
 } from '@nestjs/common';
 import { promises as fs } from 'fs';
-import { canReplacePhoto, latestStatusEntry } from 'src/request/status-history';
+import {
+  canReplacePhoto,
+  latestStatusEntry,
+  lockUser,
+} from 'src/request/status-history';
 import {
   envocc_card_files,
   exp_files,
@@ -199,6 +203,7 @@ export class FilesService {
   async replacePhoto(userId: number, data: FileCreateDto) {
     try {
       const { photo, oldPaths } = await this.prisma.$transaction(async (tx) => {
+        await lockUser(tx, userId);
         const current = await latestStatusEntry(tx, userId);
         if (!current || !canReplacePhoto(current.request_status)) {
           throw new ForbiddenException(

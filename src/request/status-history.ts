@@ -37,11 +37,13 @@ export const latestStatusEntry = (
   });
 
 // The one place a new Request Status is written to a user's Status History.
-// Pass a transaction client to write inside an existing transaction.
+// It takes the user lock itself, so pass a transaction client or the lock ends
+// with that statement. A caller that already holds the lock pays nothing.
 export const addStatusEntry = async (
   db: Prisma.TransactionClient,
   { userId, status, requestType, approver, description, from }: NewStatusEntry,
 ) => {
+  await lockUser(db, userId);
   if (from === undefined) {
     const current = await latestStatusEntry(db, userId);
     from = current?.request_status ?? null;
