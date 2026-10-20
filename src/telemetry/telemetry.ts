@@ -47,7 +47,7 @@ export interface Telemetry {
   shutdown(): Promise<void>;
 }
 
-const off: Telemetry = { shutdown: () => Promise.resolve() };
+const disabled: Telemetry = { shutdown: () => Promise.resolve() };
 
 // Registers the global trace and metric providers. Must run before the Nest
 // app is created. With telemetry off nothing is registered and the API's
@@ -57,7 +57,7 @@ export const startTelemetry = (
   config: TelemetryConfig = telemetryConfig(),
   exporters?: TelemetryExporters,
 ): Telemetry => {
-  if (!config.enabled && !exporters) return off;
+  if (!config.enabled && !exporters) return disabled;
 
   const resource = resourceFromAttributes({
     'service.name': config.serviceName,

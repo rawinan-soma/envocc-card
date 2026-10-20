@@ -11,6 +11,9 @@ import { httpSpans } from './telemetry/http-spans';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+  // First, so every request is traced: Swagger registers its routes as soon
+  // as it is set up.
+  app.use(httpSpans());
 
   const config = new DocumentBuilder()
     .setTitle('EnvOcc Card API')
@@ -20,7 +23,6 @@ async function bootstrap() {
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('apidoc', app, documentFactory);
 
-  app.use(httpSpans());
   app.enableCors();
 
   app.use(cookieParser());

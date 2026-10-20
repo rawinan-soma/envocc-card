@@ -36,9 +36,11 @@ export const httpSpans =
       // Set once a route matches; an unmatched request keeps just the method.
       const route = (req.route as { path?: unknown } | undefined)?.path;
       const user = req.user as SignedIn | undefined;
-      const attributes: Attributes = {
-        'http.response.status_code': res.statusCode,
-      };
+      const attributes: Attributes = {};
+      // A request the client aborted has no status code to report.
+      if (res.writableFinished) {
+        attributes['http.response.status_code'] = res.statusCode;
+      }
       if (typeof route === 'string') {
         attributes['http.route'] = route;
         span.updateName(`${req.method} ${route}`);

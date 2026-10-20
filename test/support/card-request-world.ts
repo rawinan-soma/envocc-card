@@ -25,13 +25,13 @@ import { MembersService } from 'src/members/members.service';
 import { AdminRequestController } from 'src/request/admin-request.controller';
 import { RequestService } from 'src/request/request.service';
 import { JwtAccessStrategy as UserJwtAccessStrategy } from 'src/user-auth/jwt-access.strategy';
-import { AdminUserController } from 'src/users/admin-user.controller';
-import { UsersController } from 'src/users/users.controller';
 import {
   startTelemetry,
   Telemetry,
   telemetryConfig,
 } from 'src/telemetry/telemetry';
+import { AdminUserController } from 'src/users/admin-user.controller';
+import { UsersController } from 'src/users/users.controller';
 import { UsersService } from 'src/users/users.service';
 import { startApp, testConfig } from './test-app';
 import { createTestDb, TestDb } from './test-db';
