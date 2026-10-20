@@ -12,6 +12,7 @@ import { UserUpdateDto, UserUpdateInternalDto } from './dto/user-update.dto';
 import { StatusCreateDto } from 'src/request/dto/status-create.dto';
 import { FilesService } from 'src/files/files.service';
 import { FileCreateDto } from 'src/files/dto/file-create.dto';
+import { addStatusEntry } from 'src/request/status-history';
 
 type StepThreeFile = 'govcard' | 'reqFile' | 'expfile';
 const STEP_THREE_FILES: StepThreeFile[] = ['govcard', 'reqFile', 'expfile'];
@@ -564,18 +565,14 @@ export class UsersService {
           current_status: 0,
         };
 
-        return await tx.requests.create({
-          data: {
-            userId: data.user,
-            request_status: data.next_status,
-            request_type: data.request_type,
-            approver: approver,
-          },
-          select: {
-            id: true,
-            request_status: true,
-          },
+        const { entry } = await addStatusEntry(tx, {
+          userId: data.user,
+          status: data.next_status,
+          requestType: data.request_type,
+          approver: approver,
+          from: currentStatus.request_status,
         });
+        return { id: entry.id, request_status: entry.request_status };
       });
     } catch (err) {
       this.logger.error(err);
@@ -657,9 +654,7 @@ export class UsersService {
           }
         }
 
-        await tx.requests.create({
-          data: { userId: user, request_type: 1, request_status: 4 },
-        });
+        await addStatusEntry(tx, { userId: user, status: 4, requestType: 1 });
 
         return replaced;
       });
@@ -705,14 +700,13 @@ export class UsersService {
   }
 
   async createRequest(userId: number, requestType: number) {
-    return await this.prisma.requests.create({
-      data: {
-        userId: userId,
-        request_status: 1,
-        request_type: requestType,
-        approver: userId,
-      },
+    const { entry } = await addStatusEntry(this.prisma, {
+      userId: userId,
+      status: 1,
+      requestType: requestType,
+      approver: userId,
     });
+    return entry;
   }
 
   async createNewCardRequest(
