@@ -11,4 +11,7 @@ target=[r for r in roots if r['name'].startswith(sys.argv[2])]
 for r in target:
     print(f"### trace {r['traceId']}")
     show(r,0)
-    others=[s for s in spans if s['traceId']==r['traceId'] and s not in [r]]
+# Spans outside the shown traces: if propagation broke, Prisma/BullMQ spans land here as their own roots.
+shown={r['traceId'] for r in target}
+other=collections.Counter(r['name'] for r in roots if r['traceId'] not in shown)
+print(f"### other trace roots ({sum(other.values())}):", dict(other))
