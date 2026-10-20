@@ -74,6 +74,46 @@ describe('Replace photo (PUT users/me/photo)', () => {
     expect(existsSync(rows[0].url!)).toBe(true);
   });
 
+  describe.each(['put', 'post'] as const)('%s with a bad upload', (method) => {
+    const send = (user: number) =>
+      world.asUser(user)[method]('/users/me/photo');
+
+    it('is a 400 without a photo field', async () => {
+      const user = await world.createUser({ history: [0, 1] });
+
+      const res = await send(user).field('note', 'no file here');
+
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({ message: 'photo is required' });
+      expect(await photosOf(user)).toEqual([]);
+    });
+
+    it('is a 400 for a file that is not a jpg or png', async () => {
+      const user = await world.createUser({ history: [0, 1] });
+
+      const res = await send(user).attach('photo', PNG, 'p.gif');
+
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({ message: 'unsupported file type' });
+      expect(await photosOf(user)).toEqual([]);
+      expect(assets()).toEqual([]);
+    });
+
+    it('is a 413 for a file over 10 MB', async () => {
+      const user = await world.createUser({ history: [0, 1] });
+
+      const res = await send(user).attach(
+        'photo',
+        Buffer.alloc(10 * 1024 * 1024 + 1),
+        'p.png',
+      );
+
+      expect(res.status).toBe(413);
+      expect(await photosOf(user)).toEqual([]);
+      expect(assets()).toEqual([]);
+    });
+  });
+
   it.each([
     ['status 4', [0, 1, 2, 3, 4], REPLACE_REFUSED],
     ['status 15', [0, 1, 15], REPLACE_REFUSED],

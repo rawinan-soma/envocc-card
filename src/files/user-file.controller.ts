@@ -1,7 +1,9 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Param,
+  ParseFilePipe,
   Post,
   Put,
   Req,
@@ -15,6 +17,15 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { getMulterOptions } from 'src/shared/file-multer-options';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
 import { ValidatedUser } from 'src/user-auth/validated-user.decorator';
+
+const PHOTO_UPLOAD = FileInterceptor(
+  'photo',
+  getMulterOptions(['.jpg', '.png'], 10 * 1024 * 1024),
+);
+
+const PHOTO_REQUIRED = new ParseFilePipe({
+  exceptionFactory: () => new BadRequestException('photo is required'),
+});
 
 @ValidatedUser()
 @Controller('users')
@@ -49,14 +60,9 @@ export class UserFileController {
   }
 
   @Post('me/photo')
-  @UseInterceptors(
-    FileInterceptor(
-      'photo',
-      getMulterOptions(['.jpg', '.png'], 10 * 1024 * 1024),
-    ),
-  )
+  @UseInterceptors(PHOTO_UPLOAD)
   async createPhotosHandler(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(PHOTO_REQUIRED) file: Express.Multer.File,
     @Req() request: RequestwithUserData,
   ) {
     const dto = this.createFileDtoMapper(
@@ -69,14 +75,9 @@ export class UserFileController {
   }
 
   @Put('me/photo')
-  @UseInterceptors(
-    FileInterceptor(
-      'photo',
-      getMulterOptions(['.jpg', '.png'], 10 * 1024 * 1024),
-    ),
-  )
+  @UseInterceptors(PHOTO_UPLOAD)
   async replacePhotoHandler(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(PHOTO_REQUIRED) file: Express.Multer.File,
     @Req() request: RequestwithUserData,
   ) {
     const photo = await this.filesService.replacePhoto(request.user.id, {
