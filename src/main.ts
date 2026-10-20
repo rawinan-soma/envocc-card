@@ -1,3 +1,4 @@
+import './telemetry/start';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
@@ -5,10 +6,14 @@ import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { httpSpans } from './telemetry/http-spans';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+  // First, so every request is traced: Swagger registers its routes as soon
+  // as it is set up.
+  app.use(httpSpans());
 
   const config = new DocumentBuilder()
     .setTitle('EnvOcc Card API')

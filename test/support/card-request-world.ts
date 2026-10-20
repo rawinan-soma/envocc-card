@@ -2,6 +2,12 @@ import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { getQueueToken } from '@nestjs/bullmq';
 import { Test } from '@nestjs/testing';
+import {
+  AggregationTemporality,
+  InMemoryMetricExporter,
+  PeriodicExportingMetricReader,
+} from '@opentelemetry/sdk-metrics';
+import { InMemorySpanExporter } from '@opentelemetry/sdk-trace-base';
 import { PrismaClient } from '@prisma/client';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
@@ -19,6 +25,11 @@ import { MembersService } from 'src/members/members.service';
 import { AdminRequestController } from 'src/request/admin-request.controller';
 import { RequestService } from 'src/request/request.service';
 import { JwtAccessStrategy as UserJwtAccessStrategy } from 'src/user-auth/jwt-access.strategy';
+import {
+  startTelemetry,
+  Telemetry,
+  telemetryConfig,
+} from 'src/telemetry/telemetry';
 import { AdminUserController } from 'src/users/admin-user.controller';
 import { UsersController } from 'src/users/users.controller';
 import { UsersService } from 'src/users/users.service';
@@ -94,6 +105,8 @@ export const createCardRequestWorld = async () => {
   let app: INestApplication<App>;
   let workDir: string;
   let userCount = 0;
+  let telemetry: Telemetry;
+  let spanExporter: InMemorySpanExporter;
 
   const start = async () => {
     workDir = mkdtempSync(join(tmpdir(), 'card-request-'));
@@ -103,6 +116,15 @@ export const createCardRequestWorld = async () => {
     await db.reset();
     await seedWorld(db.prisma);
     userCount = 0;
+
+    // Fresh each time: shutting telemetry down stops its exporters for good.
+    spanExporter = new InMemorySpanExporter();
+    telemetry = startTelemetry(telemetryConfig({}), {
+      spanExporter,
+      metricReader: new PeriodicExportingMetricReader({
+        exporter: new InMemoryMetricExporter(AggregationTemporality.CUMULATIVE),
+      }),
+    });
 
     const moduleRef = await Test.createTestingModule({
       controllers: [
@@ -132,6 +154,7 @@ export const createCardRequestWorld = async () => {
 
   const stop = async () => {
     await app.close();
+    await telemetry.shutdown();
     jest.restoreAllMocks();
     rmSync(workDir, { recursive: true, force: true });
   };
@@ -290,6 +313,8 @@ export const createCardRequestWorld = async () => {
     filesOf,
     giveMember,
     historyOf,
+    // Spans that have ended since start(), in the order they ended.
+    spans: () => spanExporter.getFinishedSpans(),
     workDir: () => workDir,
   };
 };
