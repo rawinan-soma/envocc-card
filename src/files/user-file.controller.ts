@@ -23,9 +23,10 @@ const PHOTO_UPLOAD = FileInterceptor(
   getMulterOptions(['.jpg', '.png'], 10 * 1024 * 1024),
 );
 
-const PHOTO_REQUIRED = new ParseFilePipe({
-  exceptionFactory: () => new BadRequestException('photo is required'),
-});
+const fileRequired = (field: string) =>
+  new ParseFilePipe({
+    exceptionFactory: () => new BadRequestException(`${field} is required`),
+  });
 
 @ValidatedUser()
 @Controller('users')
@@ -46,7 +47,7 @@ export class UserFileController {
     FileInterceptor('envcard', getMulterOptions(['.pdf'], 10 * 1024 * 1024)),
   )
   async createEnvCardHandler(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(fileRequired('envcard')) file: Express.Multer.File,
     @Req() request: RequestwithUserData,
   ) {
     const dto = this.createFileDtoMapper(
@@ -62,7 +63,7 @@ export class UserFileController {
   @Post('me/photo')
   @UseInterceptors(PHOTO_UPLOAD)
   async createPhotosHandler(
-    @UploadedFile(PHOTO_REQUIRED) file: Express.Multer.File,
+    @UploadedFile(fileRequired('photo')) file: Express.Multer.File,
     @Req() request: RequestwithUserData,
   ) {
     const dto = this.createFileDtoMapper(
@@ -77,7 +78,7 @@ export class UserFileController {
   @Put('me/photo')
   @UseInterceptors(PHOTO_UPLOAD)
   async replacePhotoHandler(
-    @UploadedFile(PHOTO_REQUIRED) file: Express.Multer.File,
+    @UploadedFile(fileRequired('photo')) file: Express.Multer.File,
     @Req() request: RequestwithUserData,
   ) {
     const photo = await this.filesService.replacePhoto(request.user.id, {

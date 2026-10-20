@@ -411,6 +411,10 @@ An unapproved user gets `403 user not validated`, as on the other card-request r
 
 ## Other behaviour changes
 
+### Uploads with no file answer 400
+
+`POST users/me/photo`, `PUT users/me/photo` and `POST users/me/envcard` used to answer 500 when the form had no file field. They now answer 400 with `photo is required` or `envcard is required`.
+
 ### Step 3 upload: the request file is optional
 
 Issue #11. `POST users/me/files` takes `multipart/form-data` and requires the admin cookie. The `user` field is the target user's id.
