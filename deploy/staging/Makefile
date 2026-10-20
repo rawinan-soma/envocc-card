@@ -74,7 +74,6 @@ sync:
 	git -C $(ROOT) archive --format=tar $(TAG) docker-compose.yaml prisma/data deploy/staging/compose.staging.yml | \
 	  ssh $(HOST) 'mkdir -p $(D)/assets && rm -rf $(D)/prisma/data && tar -x -C $(D) && mv $(D)/deploy/staging/compose.staging.yml $(D)/ && rm -rf $(D)/deploy'
 	ssh $(HOST) "docker network inspect shared-web-network >/dev/null 2>&1 || docker network create shared-web-network"
-	ssh $(HOST) "docker network inspect telemetry >/dev/null 2>&1 || docker network create telemetry"
 	ssh $(HOST) "echo API_TAG=$(TAG) > $(D)/release.env && $(DC) config --quiet && echo config ok"
 
 # Safe to repeat: the database keeps its volume, migrations and the seed
