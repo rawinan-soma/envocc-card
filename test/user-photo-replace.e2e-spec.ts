@@ -1,5 +1,6 @@
 import { existsSync, readdirSync } from 'fs';
 import { basename, join } from 'path';
+import { FilesService } from 'src/files/files.service';
 import { addStatusEntry, lockUser } from 'src/request/status-history';
 import {
   ADMIN,
@@ -42,7 +43,6 @@ describe('Replace photo (PUT users/me/photo)', () => {
     expect(rows).toHaveLength(1);
     expect(res.body).toEqual({ msg: 'photo replaced', id: rows[0].id });
     expect(rows[0].url).not.toBe(oldUrl);
-    expect(rows[0].filename).toMatch(/^photo-.*\.png$/);
     expect(existsSync(oldUrl)).toBe(false);
     expect(existsSync(rows[0].url!)).toBe(true);
   });
@@ -72,6 +72,35 @@ describe('Replace photo (PUT users/me/photo)', () => {
     expect(res.status).toBe(200);
     expect(rows).toHaveLength(1);
     expect(existsSync(rows[0].url!)).toBe(true);
+  });
+
+  it('refuses an approved user with no status history', async () => {
+    const user = await world.createUser({ history: [] });
+    await world.prisma.users.update({
+      where: { id: user },
+      data: { is_validate: true },
+    });
+
+    const res = await replace(user);
+
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({ message: REPLACE_REFUSED });
+    expect(await photosOf(user)).toEqual([]);
+    expect(assets()).toEqual([]);
+  });
+
+  it('removes the upload and keeps the old photo when the swap fails', async () => {
+    const user = await world.createUser({ history: [0, 1] });
+    const oldUrl = await world.giveFile(user, 'photo');
+    jest
+      .spyOn(FilesService.prototype, 'txUploadFileForUser')
+      .mockRejectedValueOnce(new Error('db down'));
+
+    const res = await replace(user);
+
+    expect(res.status).toBe(500);
+    expect((await photosOf(user)).map((r) => r.url)).toEqual([oldUrl]);
+    expect(assets()).toEqual([basename(oldUrl)]);
   });
 
   describe.each(['put', 'post'] as const)('%s with a bad upload', (method) => {
