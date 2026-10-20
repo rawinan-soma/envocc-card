@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { promises as fs } from 'fs';
+import { latestStatusEntry } from 'src/request/status-history';
 import {
   envocc_card_files,
   exp_files,
@@ -199,24 +200,22 @@ export class FilesService {
   // removes it. The old files go only after the transaction has committed.
   async replacePhoto(userId: number, data: FileCreateDto) {
     try {
-      // Not RequestService.getCurrentStatus: RequestService depends on this service.
-      const current = await this.prisma.requests.findFirst({
-        where: { userId: userId },
-        orderBy: { date_update: 'desc' },
-      });
+      const { photo, oldPaths } = await this.prisma.$transaction(async (tx) => {
+        const current = await latestStatusEntry(tx, userId);
+        if (
+          !current ||
+          !PHOTO_REPLACEABLE_STATUSES.has(current.request_status)
+        ) {
+          throw new ForbiddenException(
+            'photo can be replaced only at request status 1, 2 or 3',
+          );
+        }
 
-      if (!current || !PHOTO_REPLACEABLE_STATUSES.has(current.request_status)) {
-        throw new ForbiddenException(
-          'photo can be replaced only at request status 1, 2 or 3',
-        );
-      }
-
-      const { photo, oldPaths } = await this.prisma.$transaction(
-        async (tx) => ({
+        return {
           oldPaths: await this.txDeleteFilesForUser(['photo'], userId, tx),
           photo: await this.txUploadFileForUser('photo', data, tx),
-        }),
-      );
+        };
+      });
 
       await this.deleteFilesFromDisk(oldPaths);
       return photo;
