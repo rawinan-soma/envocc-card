@@ -1,0 +1,42 @@
+# Tempo, single binary, blocks on local disk.
+#
+# Retention: 7 days. Size cap: Tempo has no on-disk size limit, so ingestion
+# is rate-limited instead, which bounds what 7 days can hold: at most
+# 20 kB/s × 7 d ≈ 12 GB of spans before compression, a few GB on disk. Raise
+# both together if the pilot outgrows them.
+stream_over_http_enabled: true
+
+server:
+  http_listen_port: 3200
+  log_level: warn
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+
+ingester:
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    block_retention: 168h
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+overrides:
+  defaults:
+    ingestion:
+      rate_strategy: local
+      rate_limit_bytes: 20000
+      burst_size_bytes: 2000000
+    global:
+      max_bytes_per_trace: 1000000

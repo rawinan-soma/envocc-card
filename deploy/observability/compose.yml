@@ -1,0 +1,108 @@
+# The self-hosted observability stack (ADR 0002), its own Compose project
+# beside the app so that redeploying, stopping or resetting the app leaves
+# telemetry alone. On the server in ~/envocc-observability, beside
+# observability.env; deploy/observability/Makefile copies this directory there
+# and runs
+#   docker compose --project-name envocc-observability \
+#     --env-file ~/envocc-observability/observability.env \
+#     -f ~/envocc-observability/compose.yml <command>
+#
+# - The Collector is the only way in: OTLP traces and metrics from the api over
+#   the external `telemetry` network, and the api's stdout from Docker's
+#   json-file logs on the host. It redacts, then exports to Tempo, Prometheus
+#   and Loki.
+# - Grafana is the only thing published, on the host's loopback, for
+#   `tailscale serve` to put on the tailnet. Nothing else publishes a port.
+# - Retention and size caps are in each store's config (and Prometheus's flags
+#   below).
+services:
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.163.1
+    command: ['--config=/etc/otelcol/config.yml']
+    # Root, to read the host's container logs (mounted read-only).
+    user: '0'
+    volumes:
+      - ./otelcol.yml:/etc/otelcol/config.yml:ro
+      - ${DOCKER_CONTAINERS_DIR:-/var/lib/docker/containers}:/var/lib/docker/containers:ro
+      # How far each container log has been read, so logs written while the
+      # Collector is down are picked up when it returns.
+      - otelcol_data:/var/lib/otelcol
+    networks:
+      - default
+      - telemetry
+    depends_on:
+      - tempo
+      - loki
+      - prometheus
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.10.8
+    command: ['-config.file=/etc/tempo.yml']
+    # Root, to write its named volume, which Docker creates root-owned.
+    user: '0'
+    volumes:
+      - ./tempo.yml:/etc/tempo.yml:ro
+      - tempo_data:/var/tempo
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.7.8
+    command: ['-config.file=/etc/loki/config.yml']
+    # Root, to write its named volume, which Docker creates root-owned.
+    user: '0'
+    volumes:
+      - ./loki.yml:/etc/loki/config.yml:ro
+      - loki_data:/loki
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.13.4
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=90d
+      - --storage.tsdb.retention.size=5GB
+      # The Collector pushes metrics here over OTLP; nothing is scraped.
+      - --web.enable-otlp-receiver
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:13.2.4
+    # The admin login is set only when grafana_data is first created; to
+    # change it later, change it in Grafana (or reset the password with
+    # `make dc ARGS="exec grafana grafana cli admin reset-admin-password …"`).
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?}
+      GF_AUTH_ANONYMOUS_ENABLED: 'false'
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_ANALYTICS_REPORTING_ENABLED: 'false'
+      GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3300/}
+    ports:
+      - '127.0.0.1:${GRAFANA_PORT:-3300}:3000'
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - tempo
+      - loki
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  otelcol_data:
+  tempo_data:
+  loki_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  # Created once by `make network`; the api joins it and sends OTLP to
+  # http://otelcol:4318.
+  telemetry:
+    external: true
