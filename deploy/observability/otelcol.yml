@@ -1,0 +1,133 @@
+# The OpenTelemetry Collector: the stack's one way in.
+#
+#   OTLP traces  ─┐                  ┌─▶ Tempo
+#   OTLP metrics ─┼─▶ redact, batch ─┼─▶ Prometheus (its OTLP endpoint)
+#   Docker logs  ─┘                  └─▶ Loki (its OTLP endpoint)
+#
+# Redaction is a backstop (ADR 0002): the api sends only allowlisted data, and
+# this masks anything that still looks like an email, a JWT or a 13-digit ID
+# number in log bodies and span, span event and log attributes.
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  file_storage:
+    directory: /var/lib/otelcol
+    create_directory: true
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  # The api logs to stdout only; Docker keeps it in json-file logs, read here.
+  # Only containers that opt in are read: they log their compose service label
+  # (`logging.options.labels: com.docker.compose.service`), which becomes
+  # service.name. Everything else on the host, this stack included, is dropped.
+  # file_storage remembers offsets, so logs written while the stack is down are
+  # read when it returns.
+  filelog/docker:
+    include: [/var/lib/docker/containers/*/*-json.log]
+    start_at: beginning
+    storage: file_storage
+    operators:
+      - type: json_parser
+        timestamp:
+          parse_from: attributes.time
+          layout_type: gotime
+          layout: '2006-01-02T15:04:05.999999999Z07:00'
+      - type: filter
+        expr: 'attributes.attrs == nil or attributes.attrs["com.docker.compose.service"] == nil'
+      - type: move
+        from: attributes.attrs["com.docker.compose.service"]
+        to: resource["service.name"]
+      - type: move
+        from: attributes.log
+        to: body
+      # The api's lines are JSON from Nest's logger with trace_id and span_id:
+      # they become the record's trace context (Loki's trace_id, which Grafana
+      # links to Tempo) and its severity.
+      - type: json_parser
+        if: 'body matches "^\\{"'
+        parse_from: body
+        parse_to: attributes
+        on_error: send_quiet
+      - type: trace_parser
+        if: 'attributes.trace_id != nil'
+        trace_id:
+          parse_from: attributes.trace_id
+        span_id:
+          parse_from: attributes.span_id
+        on_error: send_quiet
+      - type: severity_parser
+        if: 'attributes.level != nil'
+        parse_from: attributes.level
+        mapping:
+          trace: verbose
+          info: log
+        on_error: send_quiet
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 400
+    spike_limit_mib: 100
+
+  batch: {}
+
+  transform/redact:
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          - replace_all_patterns(attributes, "value", "eyJ[A-Za-z0-9_-]+[.][A-Za-z0-9_-]+[.][A-Za-z0-9_-]*", "REDACTED:jwt")
+          - replace_all_patterns(attributes, "value", "[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+([.][A-Za-z0-9-]+)+", "REDACTED:email")
+          - replace_all_patterns(attributes, "value", "\\b[0-9]{13}\\b", "REDACTED:id13")
+      - context: spanevent
+        statements:
+          - replace_all_patterns(attributes, "value", "eyJ[A-Za-z0-9_-]+[.][A-Za-z0-9_-]+[.][A-Za-z0-9_-]*", "REDACTED:jwt")
+          - replace_all_patterns(attributes, "value", "[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+([.][A-Za-z0-9-]+)+", "REDACTED:email")
+          - replace_all_patterns(attributes, "value", "\\b[0-9]{13}\\b", "REDACTED:id13")
+    log_statements:
+      - context: log
+        statements:
+          # What the logs receiver kept only to parse: Docker's own fields, and
+          # the trace context now on the record itself. The body, a string,
+          # still holds the whole line.
+          - delete_matching_keys(attributes, "^(attrs|time|log\\.file\\.name|trace_id|span_id|timestamp|message)$")
+          - replace_pattern(body, "\\n$", "") where IsString(body)
+          - replace_pattern(body, "eyJ[A-Za-z0-9_-]+[.][A-Za-z0-9_-]+[.][A-Za-z0-9_-]*", "REDACTED:jwt") where IsString(body)
+          - replace_pattern(body, "[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+([.][A-Za-z0-9-]+)+", "REDACTED:email") where IsString(body)
+          - replace_pattern(body, "\\b[0-9]{13}\\b", "REDACTED:id13") where IsString(body)
+          - replace_all_patterns(attributes, "value", "eyJ[A-Za-z0-9_-]+[.][A-Za-z0-9_-]+[.][A-Za-z0-9_-]*", "REDACTED:jwt")
+          - replace_all_patterns(attributes, "value", "[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+([.][A-Za-z0-9-]+)+", "REDACTED:email")
+          - replace_all_patterns(attributes, "value", "\\b[0-9]{13}\\b", "REDACTED:id13")
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  otlphttp/prometheus:
+    endpoint: http://prometheus:9090/api/v1/otlp
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+
+service:
+  extensions: [health_check, file_storage]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, transform/redact, batch]
+      exporters: [otlp/tempo]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/prometheus]
+    logs:
+      receivers: [filelog/docker]
+      processors: [memory_limiter, transform/redact, batch]
+      exporters: [otlphttp/loki]
