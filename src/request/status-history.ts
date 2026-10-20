@@ -19,6 +19,13 @@ export const PHOTO_REPLACEABLE_STATUSES: readonly number[] = [1, 2, 3];
 export const canReplacePhoto = (status: number) =>
   PHOTO_REPLACEABLE_STATUSES.includes(status);
 
+// Serializes every writer of a user's card request (Status History, uploaded
+// files) by holding the user's row until the transaction ends. Call it first:
+// before any read the write depends on, and before touching other tables, so
+// two transactions on one user always queue in the same order.
+export const lockUser = (tx: Prisma.TransactionClient, userId: number) =>
+  tx.$queryRaw`SELECT 1 FROM users WHERE id = ${userId} FOR UPDATE`;
+
 // The user's Request Status is whatever their most recent entry says.
 export const latestStatusEntry = (
   db: Prisma.TransactionClient,
