@@ -198,11 +198,16 @@ export class FilesService {
     }
   }
 
-  // The upload is already on disk when this runs, so every failure path
-  // removes it. The old files go only after the transaction has committed.
-  async replacePhoto(userId: number, data: FileCreateDto) {
+  async replacePhoto(
+    userId: number,
+    upload: Pick<FileCreateDto, 'file_name' | 'url'>,
+  ) {
+    const data = this.createFileDtoMapper(upload.file_name, upload.url, userId);
+    let swapped: { photo: photos | null; oldPaths: string[] };
     try {
-      const { photo, oldPaths } = await this.prisma.$transaction(async (tx) => {
+      swapped = await this.prisma.$transaction(async (tx) => {
+        // Holds off status writers and other replaces for this user until the
+        // swap commits, so the status read below is still true when we write.
         await lockUser(tx, userId);
         const current = await latestStatusEntry(tx, userId);
         if (!current || !canReplacePhoto(current.request_status)) {
@@ -216,17 +221,18 @@ export class FilesService {
           photo: await this.txUploadFileForUser('photo', data, tx),
         };
       });
-
-      await this.deleteFilesFromDisk(oldPaths);
-      return photo;
     } catch (err) {
-      await fs.unlink(data.url).catch(() => undefined);
+      // multer stored the upload before this ran, so a failed swap removes it.
+      await this.deleteFilesFromDisk([data.url]);
       if (err instanceof ForbiddenException) {
         throw err;
       }
       this.logger.error(err);
       throw new InternalServerErrorException('something went wrong');
     }
+
+    await this.deleteFilesFromDisk(swapped.oldPaths);
+    return swapped.photo;
   }
 
   private txModelMap(tx: Prisma.TransactionClient) {
@@ -250,10 +256,11 @@ export class FilesService {
         create: (args: any) => Promise<FileModelMap[T] | null>;
       };
 
+      // photos has no adminId column: Prisma skips undefined but rejects null.
       return await delegate.create({
         data: {
           userId: data.userId,
-          adminId: data.adminId,
+          adminId: data.adminId ?? undefined,
           filename: data.file_name,
           url: data.url,
         },

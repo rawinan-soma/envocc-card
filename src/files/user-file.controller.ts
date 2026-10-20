@@ -79,12 +79,10 @@ export class UserFileController {
     @UploadedFile() file: Express.Multer.File,
     @Req() request: RequestwithUserData,
   ) {
-    const dto = this.createFileDtoMapper(
-      request.user.id,
-      file.filename,
-      file.path,
-    );
-    const photo = await this.filesService.replacePhoto(request.user.id, dto);
+    const photo = await this.filesService.replacePhoto(request.user.id, {
+      file_name: file.filename,
+      url: file.path,
+    });
     return { msg: 'photo replaced', id: photo?.id };
   }
 
