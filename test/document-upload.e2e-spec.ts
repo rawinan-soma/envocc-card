@@ -8,7 +8,7 @@ import {
 
 type Field = 'govCard' | 'requestFile' | 'experienceForm';
 
-describe('Step 3: uploading documents (POST users/me/files)', () => {
+describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => {
   let world: CardRequestWorld;
 
   beforeAll(async () => {
@@ -19,10 +19,7 @@ describe('Step 3: uploading documents (POST users/me/files)', () => {
   afterEach(() => world.stop());
 
   const upload = (userId: number, fields: Field[]) => {
-    let req = world
-      .asAdmin(ADMIN.UNIT)
-      .post('/users/me/files')
-      .field('user', String(userId));
+    let req = world.asAdmin(ADMIN.UNIT).post(`/admins/users/${userId}/files`);
     for (const field of fields) {
       req = req.attach(field, Buffer.from('fake'), `${field}.pdf`);
     }

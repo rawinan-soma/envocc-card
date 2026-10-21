@@ -10,17 +10,11 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
 import { UserUpdateDto, UserUpdateInternalDto } from './dto/user-update.dto';
 import { StatusCreateDto } from 'src/request/dto/status-create.dto';
-import { FilesService } from 'src/files/files.service';
-import { FileCreateDto } from 'src/files/dto/file-create.dto';
 import {
   addStatusEntry,
   latestStatusEntry,
   lockUser,
 } from 'src/request/status-history';
-
-type StepThreeFile = 'govcard' | 'reqFile' | 'expfile';
-const STEP_THREE_FILES: StepThreeFile[] = ['govcard', 'reqFile', 'expfile'];
-const REQUIRED_STEP_THREE_FILES: StepThreeFile[] = ['govcard'];
 
 interface UsersPageQuery {
   page: number;
@@ -37,10 +31,7 @@ interface OrganizationWithParent {
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly filesService: FilesService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private async getChildIds(orgId: number): Promise<number[]> {
     const parent = await this.prisma.organizations.findUnique({
@@ -621,52 +612,6 @@ export class UsersService {
       } else {
         throw new InternalServerErrorException('something went wrong');
       }
-    }
-  }
-
-  // Step 3. Each document replaces the user's existing one(s) of that type.
-  // A type the user already has may be left out; the government card is
-  // required otherwise. The request file is always optional.
-  async txUploadFileandUpdateRequest(
-    user: number,
-    uploads: Partial<Record<StepThreeFile, FileCreateDto>>,
-  ) {
-    const uploaded = Object.values(uploads).flatMap((dto) =>
-      dto ? [dto.url] : [],
-    );
-    try {
-      const replaced = await this.prisma.$transaction(async (tx) => {
-        await lockUser(tx, user);
-        const replaced: string[] = [];
-        for (const model of STEP_THREE_FILES) {
-          const upload = uploads[model];
-          if (upload) {
-            replaced.push(
-              ...(await this.filesService.txDeleteFilesForUser(
-                [model],
-                user,
-                tx,
-              )),
-            );
-            await this.filesService.txUploadFileForUser(model, upload, tx);
-          } else if (
-            REQUIRED_STEP_THREE_FILES.includes(model) &&
-            (await this.filesService.txCountFilesForUser(model, user, tx)) === 0
-          ) {
-            throw new BadRequestException(`${model} is required`);
-          }
-        }
-
-        await addStatusEntry(tx, { userId: user, status: 4, requestType: 1 });
-
-        return replaced;
-      });
-
-      await this.filesService.deleteFilesFromDisk(replaced);
-    } catch (err) {
-      this.logger.error(err);
-      await this.filesService.deleteFilesFromDisk(uploaded);
-      throw err;
     }
   }
 

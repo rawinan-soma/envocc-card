@@ -3,7 +3,6 @@ import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { AdminUserController } from './admin-user.controller';
 import { UserCardRequestController } from './user-card-request.controller';
-import { FilesService } from 'src/files/files.service';
 import { AdminsService } from 'src/admins/admins.service';
 import { ExperiencesService } from 'src/experiences/experiences.service';
 
@@ -13,7 +12,7 @@ import { ExperiencesService } from 'src/experiences/experiences.service';
     UserCardRequestController,
     AdminUserController,
   ],
-  providers: [UsersService, FilesService, AdminsService, ExperiencesService],
+  providers: [UsersService, AdminsService, ExperiencesService],
   exports: [UsersService],
 })
 export class UsersModule {}

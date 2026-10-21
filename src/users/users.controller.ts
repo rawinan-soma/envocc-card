@@ -5,9 +5,7 @@ import {
   Get,
   Patch,
   Body,
-  UploadedFiles,
   Post,
-  UseInterceptors,
   ParseIntPipe,
   ParseArrayPipe,
   Param,
@@ -17,10 +15,6 @@ import { UsersService } from './users.service';
 import { JwtAccessGuardUser } from 'src/user-auth/jwt-access.guard';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
 import { UserUpdateInternalDto } from './dto/user-update.dto';
-import { FileCreateDto } from 'src/files/dto/file-create.dto';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { getMulterOptions } from 'src/shared/file-multer-options';
-import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 import { UpdateExpDto } from 'src/experiences/update-exp.dto';
 import { ExperiencesService } from 'src/experiences/experiences.service';
 import { SepExpCreateDto } from 'src/experiences/create-exp.dto';
@@ -111,59 +105,6 @@ export class UsersController {
   //   const photo = await this.filesService.createFile('photo', dto);
   //   return { msg: 'photo create', id: photo?.id };
   // }
-
-  private createFileDtoMapper(
-    filename: string,
-    url: string,
-    user?: number,
-    admin?: number,
-  ) {
-    const dto = new FileCreateDto();
-    dto.userId = user ?? null;
-    dto.adminId = admin ?? null;
-    dto.file_name = filename;
-    dto.url = url;
-
-    return dto;
-  }
-
-  @UseGuards(JwtAccessGuardAdmin)
-  @Post('me/files')
-  @UseInterceptors(
-    FileFieldsInterceptor(
-      [
-        { name: 'requestFile', maxCount: 1 },
-        { name: 'govCard', maxCount: 1 },
-        { name: 'experienceForm', maxCount: 1 },
-      ],
-      getMulterOptions(['.pdf'], 10 * 1024 * 1024),
-    ),
-  )
-  async uploadFilesHandler(
-    @UploadedFiles()
-    files: {
-      requestFile?: Express.Multer.File[];
-      govCard?: Express.Multer.File[];
-      experienceForm?: Express.Multer.File[];
-    },
-    @Req() request: RequestwithUserData,
-    @Body('user', ParseIntPipe) user: number,
-  ) {
-    const toDto = (file?: Express.Multer.File[]) =>
-      file?.[0] &&
-      this.createFileDtoMapper(
-        file[0].filename,
-        file[0].path,
-        user,
-        request.user.id,
-      );
-
-    return await this.usersService.txUploadFileandUpdateRequest(user, {
-      govcard: toDto(files?.govCard),
-      reqFile: toDto(files?.requestFile),
-      expfile: toDto(files?.experienceForm),
-    });
-  }
 
   @UseGuards(JwtAccessGuardUser)
   @Patch('me/experiences/:expId')

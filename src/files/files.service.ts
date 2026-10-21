@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import {
+  addStatusEntry,
   canReplacePhoto,
   latestStatusEntry,
   lockUser,
@@ -45,6 +46,26 @@ export type FileModelMap = {
 
   // member: members;
 };
+
+type StepThreeFile = 'govcard' | 'reqFile' | 'expfile' | 'photo';
+
+interface StepThreeRule {
+  files: readonly StepThreeFile[];
+  required: readonly StepThreeFile[];
+  // Request Statuses the upload may start from; undefined = any.
+  from?: readonly number[];
+}
+
+const STEP_THREE_RULES = {
+  admin: { files: ['govcard', 'reqFile', 'expfile'], required: ['govcard'] },
+  user: {
+    files: ['govcard', 'expfile', 'photo'],
+    required: ['govcard', 'expfile'],
+    from: [3],
+  },
+} satisfies Record<'admin' | 'user', StepThreeRule>;
+
+export type StepThreeUploader = keyof typeof STEP_THREE_RULES;
 
 @Injectable()
 export class FilesService {
@@ -233,6 +254,59 @@ export class FilesService {
 
     await this.deleteFilesFromDisk(swapped.oldPaths);
     return swapped.photo;
+  }
+
+  // Step 3. Each document replaces the user's existing one(s) of that type.
+  // A required type the user already has may be left out. Files the rule does
+  // not list are ignored and removed from disk with the rest on failure.
+  async uploadStepThree(
+    uploader: StepThreeUploader,
+    userId: number,
+    uploads: Partial<Record<StepThreeFile, FileCreateDto>>,
+  ) {
+    const rule: StepThreeRule = STEP_THREE_RULES[uploader];
+    const uploaded = Object.values(uploads).flatMap((dto) =>
+      dto ? [dto.url] : [],
+    );
+    try {
+      const replaced = await this.prisma.$transaction(async (tx) => {
+        await lockUser(tx, userId);
+        if (rule.from) {
+          const current = await latestStatusEntry(tx, userId);
+          if (!current || !rule.from.includes(current.request_status)) {
+            throw new ForbiddenException(
+              `documents can be uploaded only at request status ${rule.from.join(', ')}`,
+            );
+          }
+        }
+
+        const replaced: string[] = [];
+        for (const model of rule.files) {
+          const upload = uploads[model];
+          if (upload) {
+            replaced.push(
+              ...(await this.txDeleteFilesForUser([model], userId, tx)),
+            );
+            await this.txUploadFileForUser(model, upload, tx);
+          } else if (
+            rule.required.includes(model) &&
+            (await this.txCountFilesForUser(model, userId, tx)) === 0
+          ) {
+            throw new BadRequestException(`${model} is required`);
+          }
+        }
+
+        await addStatusEntry(tx, { userId, status: 4, requestType: 1 });
+
+        return replaced;
+      });
+
+      await this.deleteFilesFromDisk(replaced);
+    } catch (err) {
+      this.logger.error(err);
+      await this.deleteFilesFromDisk(uploaded);
+      throw err;
+    }
   }
 
   private txModelMap(tx: Prisma.TransactionClient) {
