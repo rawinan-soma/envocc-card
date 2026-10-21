@@ -353,11 +353,15 @@ export class UsersService {
         }),
       );
 
-      const flatOrg = this.pickLevelForRequestForm(user?.organization);
+      if (!user) {
+        throw new NotFoundException('user not found');
+      }
+
+      const flatOrg = this.pickLevelForRequestForm(user.organization);
       const unit = await this.prisma.organizations.findUnique(
         Prisma.validator<Prisma.organizationsFindUniqueArgs>()({
           where: {
-            id: user!.organizationId,
+            id: user.organizationId,
           },
           include: {
             signature: {
