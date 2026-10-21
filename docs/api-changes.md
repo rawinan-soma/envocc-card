@@ -19,6 +19,8 @@ Changes to the EnvOcc Card API since `b5a3abd` (agent skills setup), up to `ef03
 - [New endpoints](#new-endpoints)
   - [`POST admins/users/:userId/requests/revert`](#post-adminsusersuseridrequestsrevert)
   - [`GET admins/users/all`](#get-adminsusersall)
+  - [`GET admins/users/:userId/requests/form`](#get-adminsusersuseridrequestsform)
+  - [`GET admins/users/:userId/requests/exp`](#get-adminsusersuseridrequestsexp)
   - [`GET admins/files/envcard`](#get-adminsfilesenvcard)
   - [`PUT users/me/photo`](#put-usersmephoto)
   - [`POST users/me/files`](#post-usersmefiles)
@@ -318,6 +320,33 @@ Not a ministry admin:
 ```json
 403 Forbidden
 { "message": "admin not at ministry level", "error": "Forbidden", "statusCode": 403 }
+```
+
+### `GET admins/users/:userId/requests/form`
+
+Lets an admin read a user's request form. The response is the same as the user's own `GET users/me/requests/form`.
+
+**Who can call it:** any admin (admin cookie required). It isn't limited to the admin's organization, like `GET admins/users/:userId/files/:file`. It works for users who aren't approved yet; check `is_validate` in the response.
+
+```http
+GET /envocc-card/api/v2/admins/users/42/requests/form
+Cookie: Authentication_Admin=<token>
+```
+
+`:userId` must be an integer, otherwise 400. A user that doesn't exist returns 404. A user cookie or no cookie returns 401.
+
+```json
+404 Not Found
+{ "message": "user not found", "error": "Not Found", "statusCode": 404 }
+```
+
+### `GET admins/users/:userId/requests/exp`
+
+Lets an admin read a user's experience form. The response is the same as the user's own `GET users/me/requests/exp`, including `is_validate`. The access rules and errors are the same as [`GET admins/users/:userId/requests/form`](#get-adminsusersuseridrequestsform).
+
+```http
+GET /envocc-card/api/v2/admins/users/42/requests/exp
+Cookie: Authentication_Admin=<token>
 ```
 
 ### `GET admins/files/envcard`

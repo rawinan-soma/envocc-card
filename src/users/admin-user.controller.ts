@@ -60,6 +60,19 @@ export class AdminUserController {
     });
   }
 
+  // Same response as the user's own GET users/me/requests/form, for any user.
+  @Get('users/:userId/requests/form')
+  async getUserRequestFormHandler(
+    @Param('userId', ParseIntPipe) userId: number,
+  ) {
+    return await this.usersService.getUserRequestForm(userId);
+  }
+
+  @Get('users/:userId/requests/exp')
+  async getUserExpFormHandler(@Param('userId', ParseIntPipe) userId: number) {
+    return await this.usersService.getUserPrintExpForm(userId);
+  }
+
   @Delete('users/:id')
   async deleteUserHandler(@Param('id', ParseIntPipe) id: number) {
     return await this.usersService.deleteUserById(id);
