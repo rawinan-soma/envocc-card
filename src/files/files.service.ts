@@ -270,7 +270,9 @@ export class FilesService {
     );
     try {
       const replaced = await this.prisma.$transaction(async (tx) => {
-        await lockUser(tx, userId);
+        if ((await lockUser(tx, userId)).length === 0) {
+          throw new NotFoundException('user not found');
+        }
         const current = await latestStatusEntry(tx, userId);
         if (rule.from) {
           if (!current || !rule.from.includes(current.request_status)) {

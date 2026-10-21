@@ -117,7 +117,8 @@ describe('@ValidatedUser() routes', () => {
         findFirst: jest.fn().mockResolvedValue({ request_status: 3 }),
       },
       gov_card_files: { count: jest.fn().mockResolvedValue(0) },
-      $queryRaw: jest.fn().mockResolvedValue([]),
+      // The user lock's row: the user exists.
+      $queryRaw: jest.fn().mockResolvedValue([{}]),
       $transaction: jest.fn((run: (tx: unknown) => unknown) => run(prisma)),
     };
 

@@ -24,8 +24,11 @@ export const canReplacePhoto = (status: number) =>
 // before any read the write depends on, and before touching other tables, so
 // two transactions on one user always queue in the same order. NO KEY so rows
 // that only reference the user (foreign keys) can still be inserted meanwhile.
+// Resolves to no rows when the user does not exist.
 export const lockUser = (tx: Prisma.TransactionClient, userId: number) =>
-  tx.$queryRaw`SELECT 1 FROM users WHERE id = ${userId} FOR NO KEY UPDATE`;
+  tx.$queryRaw<
+    unknown[]
+  >`SELECT 1 FROM users WHERE id = ${userId} FOR NO KEY UPDATE`;
 
 // The user's Request Status is whatever their most recent entry says.
 export const latestStatusEntry = (

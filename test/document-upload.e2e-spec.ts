@@ -289,6 +289,14 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
     });
   });
 
+  it('answers 404 for a user that does not exist, storing nothing', async () => {
+    const res = await upload(999, ['govCard', 'requestFile']);
+
+    expect(res.status).toBe(404);
+    expect(res.body).toMatchObject({ message: 'user not found' });
+    expect(assets()).toEqual([]);
+  });
+
   it('lets an admin upload at any request status', async () => {
     const user = await world.createUser({ history: [0, 1, 4] });
 
