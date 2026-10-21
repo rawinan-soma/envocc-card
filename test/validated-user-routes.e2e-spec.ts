@@ -55,6 +55,9 @@ const blockedRoutes: (Route & { validatedStatus: number })[] = [
     upload: envcardUpload,
     validatedStatus: 201,
   },
+  // 400: reaches FilesService, whose stubbed user is at status 3 with no
+  // government card stored.
+  { method: 'post', path: '/users/me/files', validatedStatus: 400 },
   // 404: reaches FilesService, which finds no stored photo for this user.
   { method: 'get', path: '/users/me/files/photo', validatedStatus: 404 },
   { method: 'patch', path: '/users/me/members/qrcode', validatedStatus: 200 },
@@ -81,6 +84,10 @@ describe('@ValidatedUser() routes', () => {
     users: { findUnique: jest.Mock };
     photos: { findFirst: jest.Mock; create: jest.Mock };
     envocc_card_files: { findFirst: jest.Mock; create: jest.Mock };
+    requests: { findFirst: jest.Mock };
+    gov_card_files: { count: jest.Mock };
+    $queryRaw: jest.Mock;
+    $transaction: jest.Mock;
   };
 
   const stubReturningOk = () => jest.fn().mockResolvedValue({ ok: true });
@@ -106,6 +113,12 @@ describe('@ValidatedUser() routes', () => {
         findFirst: jest.fn(),
         create: stubReturningOk(),
       },
+      requests: {
+        findFirst: jest.fn().mockResolvedValue({ request_status: 3 }),
+      },
+      gov_card_files: { count: jest.fn().mockResolvedValue(0) },
+      $queryRaw: jest.fn().mockResolvedValue([]),
+      $transaction: jest.fn((run: (tx: unknown) => unknown) => run(prisma)),
     };
 
     const moduleRef = await Test.createTestingModule({

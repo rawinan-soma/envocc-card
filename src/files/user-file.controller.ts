@@ -9,11 +9,15 @@ import {
   Req,
   // UnauthorizedException,
   UploadedFile,
+  UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileModelMap, FilesService } from './files.service';
 import { FileCreateDto } from './dto/file-create.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+} from '@nestjs/platform-express';
 import { getMulterOptions } from 'src/shared/file-multer-options';
 import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
 import { ValidatedUser } from 'src/user-auth/validated-user.decorator';
@@ -21,6 +25,22 @@ import { ValidatedUser } from 'src/user-auth/validated-user.decorator';
 const PHOTO_UPLOAD = FileInterceptor(
   'photo',
   getMulterOptions(['.jpg', '.png'], 10 * 1024 * 1024),
+);
+
+const STEP_THREE_UPLOAD = FileFieldsInterceptor(
+  [
+    { name: 'govCard', maxCount: 1 },
+    { name: 'experienceForm', maxCount: 1 },
+    { name: 'photo', maxCount: 1 },
+  ],
+  getMulterOptions(
+    {
+      govCard: ['.pdf'],
+      experienceForm: ['.pdf'],
+      photo: ['.jpg', '.png'],
+    },
+    10 * 1024 * 1024,
+  ),
 );
 
 const fileRequired = (field: string) =>
@@ -86,6 +106,29 @@ export class UserFileController {
       url: file.path,
     });
     return { msg: 'photo replaced', id: photo?.id };
+  }
+
+  // Step 3 upload: needs the user to be at Request Status 3.
+  @Post('me/files')
+  @UseInterceptors(STEP_THREE_UPLOAD)
+  async uploadFilesHandler(
+    @UploadedFiles()
+    files: {
+      govCard?: Express.Multer.File[];
+      experienceForm?: Express.Multer.File[];
+      photo?: Express.Multer.File[];
+    },
+    @Req() request: RequestwithUserData,
+  ) {
+    const toDto = (file?: Express.Multer.File[]) =>
+      file?.[0] &&
+      this.createFileDtoMapper(request.user.id, file[0].filename, file[0].path);
+
+    return await this.filesService.uploadStepThree('user', request.user.id, {
+      govcard: toDto(files?.govCard),
+      expfile: toDto(files?.experienceForm),
+      photo: toDto(files?.photo),
+    });
   }
 
   @Get('me/files/:file')
