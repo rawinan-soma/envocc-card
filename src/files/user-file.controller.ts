@@ -91,7 +91,7 @@ export class UserFileController {
     return { msg: 'photo replaced', id: photo?.id };
   }
 
-  // Step 3 upload: needs the user to be at Request Status 3.
+  // Step 3 upload: needs the user to be at Request Status 1 or 3.
   @Post('me/files')
   @UseInterceptors(STEP_THREE_UPLOAD)
   async uploadFilesHandler(

@@ -35,7 +35,7 @@ A user swapping the photo on their card request for a new one, allowed only whil
 _Avoid_: update photo, re-upload
 
 **Step 3 upload**:
-Sending the documents for a card request in one go, which moves the user from Request Status 3 to 4. The user sends the government card and experience form (each unless already stored) and may send a new photo. An admin may also send it for a user, at any Request Status, with the government card as the only required file.
+Sending the documents for a card request in one go, which moves the user from Request Status 1 or 3 to 4. The user sends the government card and experience form (each unless already stored) and may send a new photo. An admin may also send it for a user, at any Request Status, with the government card as the only required file.
 
 **Member Number**:
 The running number printed on a user's card. A user keeps the same Member Number across Reverts and re-issues.
