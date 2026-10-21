@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { SealsService } from './seals.service';
 import { AdminsService } from 'src/admins/admins.service';
-import { FilesService } from 'src/files/files.service';
+import { fileDto } from 'src/files/dto/file-create.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { getMulterOptions } from 'src/shared/file-multer-options';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
@@ -23,7 +23,6 @@ export class AdminSealController {
   constructor(
     private readonly sealsService: SealsService,
     private readonly adminsService: AdminsService,
-    private readonly filesService: FilesService,
   ) {}
 
   @Post('seals')
@@ -35,12 +34,7 @@ export class AdminSealController {
     @Req() request: RequestwithAdminData,
     // @Body() seal_name: string,
   ) {
-    const sealDto = this.filesService.createFileDtoMapper(
-      seal.filename,
-      seal.path,
-      undefined,
-      request.user.id,
-    );
+    const sealDto = fileDto(seal, null, request.user.id);
 
     const admin = await this.adminsService.getAdminById(request.user.id);
 

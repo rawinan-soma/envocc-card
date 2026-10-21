@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  HttpException,
   Injectable,
   NotFoundException,
   InternalServerErrorException,
@@ -8,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import {
+  addStatusEntry,
   canReplacePhoto,
   latestStatusEntry,
   lockUser,
@@ -45,6 +47,26 @@ export type FileModelMap = {
 
   // member: members;
 };
+
+type StepThreeFile = 'govcard' | 'reqFile' | 'expfile' | 'photo';
+
+interface StepThreeRule {
+  files: readonly StepThreeFile[];
+  required: readonly StepThreeFile[];
+  // Request Statuses the upload may start from; undefined = any.
+  from?: readonly number[];
+}
+
+const STEP_THREE_RULES = {
+  admin: { files: ['govcard', 'reqFile', 'expfile'], required: ['govcard'] },
+  user: {
+    files: ['govcard', 'expfile', 'photo'],
+    required: ['govcard', 'expfile'],
+    from: [3],
+  },
+} satisfies Record<'admin' | 'user', StepThreeRule>;
+
+export type StepThreeUploader = keyof typeof STEP_THREE_RULES;
 
 @Injectable()
 export class FilesService {
@@ -198,11 +220,7 @@ export class FilesService {
     }
   }
 
-  async replacePhoto(
-    userId: number,
-    upload: Pick<FileCreateDto, 'file_name' | 'url'>,
-  ) {
-    const data = this.createFileDtoMapper(upload.file_name, upload.url, userId);
+  async replacePhoto(userId: number, data: FileCreateDto) {
     let swapped: { photo: photos | null; oldPaths: string[] };
     try {
       swapped = await this.prisma.$transaction(async (tx) => {
@@ -233,6 +251,70 @@ export class FilesService {
 
     await this.deleteFilesFromDisk(swapped.oldPaths);
     return swapped.photo;
+  }
+
+  // Step 3. Each document replaces the user's existing one(s) of that type.
+  // A required type the user already has may be left out. Files the rule does
+  // not list are ignored and removed from disk with the rest on failure.
+  async uploadStepThree(
+    uploader: StepThreeUploader,
+    userId: number,
+    uploads: Partial<Record<StepThreeFile, FileCreateDto>>,
+  ) {
+    const rule: StepThreeRule = STEP_THREE_RULES[uploader];
+    const uploaded = Object.values(uploads).flatMap((dto) =>
+      dto ? [dto.url] : [],
+    );
+    let replaced: string[];
+    try {
+      replaced = await this.prisma.$transaction(async (tx) => {
+        if ((await lockUser(tx, userId)).length === 0) {
+          throw new NotFoundException('user not found');
+        }
+        const current = await latestStatusEntry(tx, userId);
+        if (rule.from) {
+          if (!current || !rule.from.includes(current.request_status)) {
+            throw new ForbiddenException(
+              `documents can be uploaded only at request status ${rule.from.join(', ')}`,
+            );
+          }
+        }
+
+        const replaced: string[] = [];
+        for (const model of rule.files) {
+          const upload = uploads[model];
+          if (upload) {
+            replaced.push(
+              ...(await this.txDeleteFilesForUser([model], userId, tx)),
+            );
+            await this.txUploadFileForUser(model, upload, tx);
+          } else if (
+            rule.required.includes(model) &&
+            (await this.txCountFilesForUser(model, userId, tx)) === 0
+          ) {
+            throw new BadRequestException(`${model} is required`);
+          }
+        }
+
+        await addStatusEntry(tx, {
+          userId,
+          status: 4,
+          requestType: current?.request_type ?? 1,
+          from: current?.request_status ?? null,
+        });
+
+        return replaced;
+      });
+    } catch (err) {
+      await this.deleteFilesFromDisk(uploaded);
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      this.logger.error(err);
+      throw new InternalServerErrorException('something went wrong');
+    }
+
+    await this.deleteFilesFromDisk(replaced);
   }
 
   private txModelMap(tx: Prisma.TransactionClient) {
@@ -316,20 +398,5 @@ export class FilesService {
         this.logger.warn(`cannot delete file ${path}: ${String(err)}`);
       }
     }
-  }
-
-  createFileDtoMapper(
-    filename: string,
-    url: string,
-    user?: number,
-    admin?: number,
-  ) {
-    const dto = new FileCreateDto();
-    dto.userId = user ?? null;
-    dto.adminId = admin ?? null;
-    dto.file_name = filename;
-    dto.url = url;
-
-    return dto;
   }
 }

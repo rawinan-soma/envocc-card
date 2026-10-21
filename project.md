@@ -163,7 +163,7 @@ Login/refresh return `{ id, role, level }` where `level` is the admin's **org le
 
 ### `UsersModule`
 Admin side (`AdminUserController`, JWT admin): `GET admins/users?page&status&search_term`, `DELETE admins/users/:id`, `PATCH admins/users/validate/:id`.
-User side (`UsersController`, per-route guards): `GET users/me`, `PATCH users/me`, `GET users/me/requests/form` (fully-flattened print payload incl. org hierarchy names th/en and the signer's position), `GET users/me/requests/exp`, `POST users/me/card?requestType`, `POST users/me/files` (**guarded by the *admin* JWT** despite living on the `users` path — this is the admin uploading requestFile/govCard/experienceForm on the applicant's behalf), and `GET|POST|PATCH|DELETE users/me/experiences[/:expId]`.
+User side (`UsersController`, per-route guards): `GET users/me`, `PATCH users/me`, `GET users/me/requests/form` (fully-flattened print payload incl. org hierarchy names th/en and the signer's position), `GET users/me/requests/exp`, `POST users/me/card?requestType`, and `GET|POST|PATCH|DELETE users/me/experiences[/:expId]`.
 
 ### `MembersModule`
 Admin: `GET admins/members/:userId`, `POST admins/members`, `PATCH admins/members/:userId/deactivate`, `PATCH admins/members/:userId/activate`.
@@ -184,8 +184,7 @@ Public: `GET public/organizations?q`, `GET public/organizations/:id` (flattens t
 No `orgId` → all non-executive positions. With `orgId` → that org's single executive position.
 
 ### `FilesModule`
-User: `POST users/me/envcard` (.pdf), `POST users/me/photo` (.jpg/.png), `GET users/me/files/:file`.
-Admin: `GET|DELETE admins/users/:userId/files/:file` — **the `@UseGuards(JwtAccessGuardAdmin)` is commented out on this controller.**
+User: `POST users/me/envcard` (.pdf), `POST users/me/photo` (.jpg/.png), `PUT users/me/photo`, `POST users/me/files` (step 3: govCard + experienceForm PDFs, optional photo; only at request status 3; moves the user to 4), `GET users/me/files/:file`. Admin: `POST admins/users/:userId/files` (the same step 3 upload on the user's behalf: requestFile/govCard/experienceForm, only govCard required, no status gate), `GET|DELETE admins/users/:userId/files/:file`.
 
 ### `SealsModule` / `SignaturesModule` (JWT admin)
 `POST admins/seals` (.png), `GET admins/seals`; `POST admins/signatures` (.png + signer name/position), `GET admins/signatures`. Both use a transaction that creates the new asset then re-points the admin's org **and its direct children** at it.

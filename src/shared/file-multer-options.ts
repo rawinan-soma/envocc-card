@@ -3,15 +3,20 @@ import { MulterModuleOptions } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 
+// `extension` is one list for every file field, or a list per field name when
+// the fields differ. A field missing from the map accepts nothing.
 export function getMulterOptions(
-  extension: string[],
+  extension: string[] | Record<string, string[]>,
   size: number,
 ): MulterModuleOptions {
   return {
     fileFilter: (req, file, cb) => {
       const fileExt = extname(file.originalname).toLowerCase();
+      const allowed = Array.isArray(extension)
+        ? extension
+        : (extension[file.fieldname] ?? []);
 
-      if (!extension.includes(fileExt)) {
+      if (!allowed.includes(fileExt)) {
         return cb(new BadRequestException('unsupported file type'), false);
       }
       cb(null, true);

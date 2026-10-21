@@ -5,18 +5,21 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/users/me/files
+  url: {{baseUrl}}/admins/users/:userId/files
   body: multipartForm
   auth: none
 }
 
+params:path {
+  userId: 1
+}
+
 body:multipart-form {
-  user: 1
   requestFile: @file()
   govCard: @file()
   experienceForm: @file()
 }
 
 docs {
-  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Despite its path, this needs an **admin** login: it uploads PDFs (10 MB each) for the user in `user`. Each of the three files is optional.
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Uploads PDFs (10 MB each) for the user in the `:userId` path parameter, at any request status, and moves them to 4. `govCard` is required unless the user already has one; `requestFile` and `experienceForm` are optional.
 }
