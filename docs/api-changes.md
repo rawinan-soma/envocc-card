@@ -461,12 +461,15 @@ The body of a `201 Created` is empty. At any other status:
 | 400 | `govcard is required` | The user has no stored government card and the form has no `govCard`. |
 | 400 | `expfile is required` | The user has no stored experience form and the form has no `experienceForm`. |
 | 400 | `unsupported file type` | A `govCard` or `experienceForm` isn't a `.pdf`, or the `photo` isn't a `.jpg` or `.png`. |
+| 400 | `Unexpected field - <field>` | The form has a field this route doesn't take, such as `requestFile`. |
 | 413 | `File too large` | A file is over 10 MB. |
 | 403 | `documents can be uploaded only at request status 3` | The user's request status isn't 3, or they have no status history. |
 | 403 | `user not validated` | The user isn't approved yet. |
 | 401 | `Unauthorized` | No `Authentication_User` cookie, or an admin cookie. |
 
 Nothing is stored when the request fails.
+
+The stored `gov_card_files` and `exp_files` rows have no admin, so `GET users/me/files/govcard` and `GET users/me/files/expfile` (and the admin's `GET admins/users/:userId/files/:file`) return `"adminId": null` for them.
 
 ---
 
@@ -500,6 +503,8 @@ Content-Type: application/pdf
 ```
 
 On success the user moves to status 4. A file sent again replaces the existing one; files left out are kept.
+
+If no user has the id `:userId`, the route answers `404` with `user not found` and stores nothing.
 
 ### Smaller changes
 

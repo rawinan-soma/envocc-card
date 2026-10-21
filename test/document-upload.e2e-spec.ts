@@ -156,8 +156,12 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
           where: { userId: user, request_status: 4 },
         }),
       ).toMatchObject({ request_type: 1 });
-      expect(await world.filesOf(user, 'govcard')).toHaveLength(1);
-      expect(await world.filesOf(user, 'expfile')).toHaveLength(1);
+      expect(
+        await world.prisma.gov_card_files.findMany({ where: { userId: user } }),
+      ).toEqual([expect.objectContaining({ adminId: null })]);
+      expect(
+        await world.prisma.exp_files.findMany({ where: { userId: user } }),
+      ).toEqual([expect.objectContaining({ adminId: null })]);
       expect(await world.filesOf(user, 'photo')).toEqual([]);
       expect(assets()).toHaveLength(2);
     });

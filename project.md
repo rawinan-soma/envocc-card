@@ -185,7 +185,6 @@ No `orgId` → all non-executive positions. With `orgId` → that org's single e
 
 ### `FilesModule`
 User: `POST users/me/envcard` (.pdf), `POST users/me/photo` (.jpg/.png), `PUT users/me/photo`, `POST users/me/files` (step 3: govCard + experienceForm PDFs, optional photo; only at request status 3; moves the user to 4), `GET users/me/files/:file`. Admin: `POST admins/users/:userId/files` (the same step 3 upload on the user's behalf: requestFile/govCard/experienceForm, only govCard required, no status gate), `GET|DELETE admins/users/:userId/files/:file`.
-Admin: `GET|DELETE admins/users/:userId/files/:file` — **the `@UseGuards(JwtAccessGuardAdmin)` is commented out on this controller.**
 
 ### `SealsModule` / `SignaturesModule` (JWT admin)
 `POST admins/seals` (.png), `GET admins/seals`; `POST admins/signatures` (.png + signer name/position), `GET admins/signatures`. Both use a transaction that creates the new asset then re-points the admin's org **and its direct children** at it.
