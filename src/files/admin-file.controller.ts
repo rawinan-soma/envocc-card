@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { FileModelMap, FilesService } from './files.service';
+import { fileDto } from './dto/file-create.dto';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 import { MophAdminGuard } from 'src/admin-auth/ministry-admin.guard';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
@@ -55,19 +56,11 @@ export class AdminFileController {
     @Param('userId', ParseIntPipe) userId: number,
     @Req() request: RequestwithAdminData,
   ) {
-    const toDto = (file?: Express.Multer.File[]) =>
-      file?.[0] &&
-      this.filesService.createFileDtoMapper(
-        file[0].filename,
-        file[0].path,
-        userId,
-        request.user.id,
-      );
-
+    const adminId = request.user.id;
     return await this.filesService.uploadStepThree('admin', userId, {
-      govcard: toDto(files?.govCard),
-      reqFile: toDto(files?.requestFile),
-      expfile: toDto(files?.experienceForm),
+      govcard: fileDto(files?.govCard?.[0], userId, adminId),
+      reqFile: fileDto(files?.requestFile?.[0], userId, adminId),
+      expfile: fileDto(files?.experienceForm?.[0], userId, adminId),
     });
   }
 

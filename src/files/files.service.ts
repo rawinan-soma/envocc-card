@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  HttpException,
   Injectable,
   NotFoundException,
   InternalServerErrorException,
@@ -219,11 +220,7 @@ export class FilesService {
     }
   }
 
-  async replacePhoto(
-    userId: number,
-    upload: Pick<FileCreateDto, 'file_name' | 'url'>,
-  ) {
-    const data = this.createFileDtoMapper(upload.file_name, upload.url, userId);
+  async replacePhoto(userId: number, data: FileCreateDto) {
     let swapped: { photo: photos | null; oldPaths: string[] };
     try {
       swapped = await this.prisma.$transaction(async (tx) => {
@@ -268,8 +265,9 @@ export class FilesService {
     const uploaded = Object.values(uploads).flatMap((dto) =>
       dto ? [dto.url] : [],
     );
+    let replaced: string[];
     try {
-      const replaced = await this.prisma.$transaction(async (tx) => {
+      replaced = await this.prisma.$transaction(async (tx) => {
         if ((await lockUser(tx, userId)).length === 0) {
           throw new NotFoundException('user not found');
         }
@@ -307,13 +305,16 @@ export class FilesService {
 
         return replaced;
       });
-
-      await this.deleteFilesFromDisk(replaced);
     } catch (err) {
-      this.logger.error(err);
       await this.deleteFilesFromDisk(uploaded);
-      throw err;
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      this.logger.error(err);
+      throw new InternalServerErrorException('something went wrong');
     }
+
+    await this.deleteFilesFromDisk(replaced);
   }
 
   private txModelMap(tx: Prisma.TransactionClient) {
@@ -397,20 +398,5 @@ export class FilesService {
         this.logger.warn(`cannot delete file ${path}: ${String(err)}`);
       }
     }
-  }
-
-  createFileDtoMapper(
-    filename: string,
-    url: string,
-    user?: number,
-    admin?: number,
-  ) {
-    const dto = new FileCreateDto();
-    dto.userId = user ?? null;
-    dto.adminId = admin ?? null;
-    dto.file_name = filename;
-    dto.url = url;
-
-    return dto;
   }
 }
