@@ -62,7 +62,7 @@ const STEP_THREE_RULES = {
   user: {
     files: ['govcard', 'expfile', 'photo'],
     required: ['govcard', 'expfile'],
-    from: [3],
+    from: [1, 3],
   },
 } satisfies Record<'admin' | 'user', StepThreeRule>;
 

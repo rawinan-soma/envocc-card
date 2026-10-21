@@ -183,6 +183,17 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
       ).toMatchObject({ request_type: 2 });
     });
 
+    it('accepts the upload from request status 1 and moves the user to 4', async () => {
+      const user = await world.createUser({ history: [0, 1] });
+
+      const res = await uploadAsUser(user, ['govCard', 'experienceForm']);
+
+      expect(res.status).toBe(201);
+      expect(await world.historyOf(user)).toEqual([0, 1, 4]);
+      expect(await world.filesOf(user, 'govcard')).toHaveLength(1);
+      expect(await world.filesOf(user, 'expfile')).toHaveLength(1);
+    });
+
     it('requires an experience form from a user who has none, storing nothing', async () => {
       const user = await world.createUser({ history: [0, 1, 3] });
 
@@ -227,7 +238,7 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
       expect(existsSync(oldPhoto)).toBe(false);
     });
 
-    it.each([1, 4])(
+    it.each([2, 4])(
       'answers 403 at request status %i, storing nothing',
       async (status) => {
         const user = await world.createUser({ history: [0, 1, status] });
@@ -236,7 +247,7 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
 
         expect(res.status).toBe(403);
         expect(res.body).toMatchObject({
-          message: 'documents can be uploaded only at request status 3',
+          message: 'documents can be uploaded only at request status 1, 3',
         });
         expect(await world.historyOf(user)).toEqual([0, 1, status]);
         expect(await world.filesOf(user, 'govcard')).toEqual([]);
