@@ -169,9 +169,11 @@ export const createCardRequestWorld = async () => {
   const createUser = async ({
     orgId = ORG.UNIT,
     history,
+    requestType = 1,
   }: {
     orgId?: number;
     history: number[];
+    requestType?: number;
   }) => {
     const n = ++userCount;
     const user = await db.prisma.users.create({
@@ -215,7 +217,7 @@ export const createCardRequestWorld = async () => {
         data: {
           userId: user.id,
           request_status: status,
-          request_type: 1,
+          request_type: requestType,
           date_update: new Date(start + i * 60_000),
         },
       });

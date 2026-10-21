@@ -58,6 +58,19 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
     expect(await world.filesOf(user, 'reqFile')).toEqual([]);
   });
 
+  it('keeps the request type of a type 2 request when moving them to 4', async () => {
+    const user = await world.createUser({ history: [0, 1, 3], requestType: 2 });
+
+    const res = await upload(user, ['govCard']);
+
+    expect(res.status).toBe(201);
+    expect(
+      await world.prisma.requests.findFirst({
+        where: { userId: user, request_status: 4 },
+      }),
+    ).toMatchObject({ request_type: 2 });
+  });
+
   it('stores the experience form when no request file is sent', async () => {
     const user = await world.createUser({ history: [0, 1, 3] });
 
@@ -147,6 +160,23 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
       expect(await world.filesOf(user, 'expfile')).toHaveLength(1);
       expect(await world.filesOf(user, 'photo')).toEqual([]);
       expect(assets()).toHaveLength(2);
+    });
+
+    it('keeps the request type of a type 2 request when moving them to 4', async () => {
+      const user = await world.createUser({
+        history: [0, 1, 3],
+        requestType: 2,
+      });
+
+      const res = await uploadAsUser(user, ['govCard', 'experienceForm']);
+
+      expect(res.status).toBe(201);
+      expect(await world.historyOf(user)).toEqual([0, 1, 3, 4]);
+      expect(
+        await world.prisma.requests.findFirst({
+          where: { userId: user, request_status: 4 },
+        }),
+      ).toMatchObject({ request_type: 2 });
     });
 
     it('requires an experience form from a user who has none, storing nothing', async () => {

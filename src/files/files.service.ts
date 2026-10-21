@@ -271,8 +271,8 @@ export class FilesService {
     try {
       const replaced = await this.prisma.$transaction(async (tx) => {
         await lockUser(tx, userId);
+        const current = await latestStatusEntry(tx, userId);
         if (rule.from) {
-          const current = await latestStatusEntry(tx, userId);
           if (!current || !rule.from.includes(current.request_status)) {
             throw new ForbiddenException(
               `documents can be uploaded only at request status ${rule.from.join(', ')}`,
@@ -296,7 +296,12 @@ export class FilesService {
           }
         }
 
-        await addStatusEntry(tx, { userId, status: 4, requestType: 1 });
+        await addStatusEntry(tx, {
+          userId,
+          status: 4,
+          requestType: current?.request_type ?? 1,
+          from: current?.request_status ?? null,
+        });
 
         return replaced;
       });
