@@ -326,18 +326,23 @@ Not a ministry admin:
 
 Lets an admin read a user's request form. The response is the same as the user's own `GET users/me/requests/form`.
 
-**Who can call it:** any admin (admin cookie required). It isn't limited to the admin's organization, like `GET admins/users/:userId/files/:file`. It works for users who aren't approved yet; check `is_validate` in the response.
+**Who can call it:** any admin (admin cookie required). Any admin level works, but only for users in the admin's own organization or one below it; any other user returns 403. It works for users who aren't approved yet; check `is_validate` in the response.
 
 ```http
 GET /envocc-card/api/v2/admins/users/42/requests/form
 Cookie: Authentication_Admin=<token>
 ```
 
-`:userId` must be an integer, otherwise 400. A user that doesn't exist returns 404. A user cookie or no cookie returns 401.
+`:userId` must be an integer, otherwise 400. A user that doesn't exist returns 404. A user outside the admin's organization returns 403. A user cookie or no cookie returns 401.
 
 ```json
 404 Not Found
 { "message": "user not found", "error": "Not Found", "statusCode": 404 }
+```
+
+```json
+403 Forbidden
+{ "message": "user is outside your organization", "error": "Forbidden", "statusCode": 403 }
 ```
 
 ### `GET admins/users/:userId/requests/exp`

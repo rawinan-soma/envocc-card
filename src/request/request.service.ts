@@ -14,6 +14,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { RequestCreateDto } from './dto/request-create.dto';
 import { RevertStatusDto } from './dto/revert-status.dto';
 import { FilesService } from 'src/files/files.service';
+import { assertUserInOrg } from 'src/organizations/user-org-scope';
 import { addStatusEntry, latestStatusEntry, lockUser } from './status-history';
 
 // The only moves that are Reverts: each target and the statuses it can be
@@ -270,28 +271,7 @@ export class RequestService {
       );
     }
 
-    const user = await tx.users.findUnique({
-      where: { id: userId },
-      select: { organizationId: true },
-    });
-
-    if (!user) {
-      throw new NotFoundException('user not found');
-    }
-
-    let orgId: number | null = user.organizationId;
-    while (orgId !== null && orgId !== admin.organization.id) {
-      const org: { parentId: number | null } | null =
-        await tx.organizations.findUnique({
-          where: { id: orgId },
-          select: { parentId: true },
-        });
-      orgId = org?.parentId ?? null;
-    }
-
-    if (orgId === null) {
-      throw new ForbiddenException('user is outside your organization');
-    }
+    await assertUserInOrg(tx, admin.organization.id, userId);
   }
 
   // async transactionDeleteRequest(tx: Prisma.TransactionClient, id: number) {

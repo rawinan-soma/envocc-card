@@ -1,5 +1,6 @@
 import {
   ADMIN,
+  ORG,
   CardRequestWorld,
   createCardRequestWorld,
 } from './support/card-request-world';
@@ -55,6 +56,34 @@ describe('Admin reads a user request form and experience form', () => {
 
       expect(res.status).toBe(404);
       expect(res.body).toMatchObject({ message: 'user not found' });
+    });
+
+    it.each([
+      ['an admin of an ancestor organization', ADMIN.DEPARTMENT],
+      ['an admin of the same organization', ADMIN.UNIT],
+    ])('lets %s read the user', async (_label, adminId) => {
+      const user = await world.createUser({ history: [0, 1] });
+
+      const res = await world.asAdmin(adminId).get(path(user));
+
+      expect(res.status).toBe(200);
+    });
+
+    it.each([
+      ['an unrelated organization', ADMIN.OTHER_DEPARTMENT],
+      ['a descendant organization', ADMIN.UNIT],
+    ])('answers 403 to an admin of %s', async (_label, adminId) => {
+      const user = await world.createUser({
+        history: [0, 1],
+        orgId: adminId === ADMIN.UNIT ? ORG.PROVINCE : ORG.UNIT,
+      });
+
+      const res = await world.asAdmin(adminId).get(path(user));
+
+      expect(res.status).toBe(403);
+      expect(res.body).toMatchObject({
+        message: 'user is outside your organization',
+      });
     });
 
     it('answers 400 for a non-numeric id', async () => {
