@@ -1,0 +1,21 @@
+meta {
+  name: Upload documents
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/users/me/files
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  govCard: @file()
+  experienceForm: @file()
+  photo: @file()
+}
+
+docs {
+  User login (cookie Authentication_User): run "User auth / Login" first. Approved users only (otherwise 403 user not validated), and only while the request status is 3 (otherwise 403 "documents can be uploaded only at request status 3"). Moves the user to status 4. `govCard` and `experienceForm` are PDFs of at most 10 MB, each required unless the user already has one (400 "govcard is required" / "expfile is required"). `photo` is an optional JPG or PNG that replaces the current photo.
+}

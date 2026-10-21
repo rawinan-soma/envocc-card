@@ -15,11 +15,13 @@ Changes to the EnvOcc Card API since `b5a3abd` (agent skills setup), up to `ef03
   3. [Admin `positionId` is a string](#3-admin-positionid-is-a-string)
   4. [Unapproved users can log in; card-request routes need approval](#4-unapproved-users-can-log-in-card-request-routes-need-approval)
   5. [Admin file routes need an admin login](#5-admin-file-routes-need-an-admin-login)
+  6. [The admin document upload moved to `POST admins/users/:userId/files`](#6-the-admin-document-upload-moved-to-post-adminsusersuseridfiles)
 - [New endpoints](#new-endpoints)
   - [`POST admins/users/:userId/requests/revert`](#post-adminsusersuseridrequestsrevert)
   - [`GET admins/users/all`](#get-adminsusersall)
   - [`GET admins/files/envcard`](#get-adminsfilesenvcard)
   - [`PUT users/me/photo`](#put-usersmephoto)
+  - [`POST users/me/files`](#post-usersmefiles)
 - [Other behaviour changes](#other-behaviour-changes)
 
 ---
@@ -164,6 +166,10 @@ Without the cookie:
 401 Unauthorized
 { "message": "Unauthorized", "statusCode": 401 }
 ```
+
+### 6. The admin document upload moved to `POST admins/users/:userId/files`
+
+`POST users/me/files` used to be the admin's upload, with the target user in a `user` field. That route now belongs to the user (see [`POST users/me/files`](#post-usersmefiles)), and an admin cookie on it answers `401`. Admins upload on behalf of a user at `POST admins/users/:userId/files`, with the user's id in the path and no `user` field. The other fields and rules are unchanged; see [Step 3 upload](#step-3-upload-the-request-file-is-optional).
 
 ---
 
@@ -407,6 +413,61 @@ An unapproved user gets `403 user not validated`, as on the other card-request r
 | 403 | `photo can be replaced only at request status 1, 2 or 3` | The user's request status isn't 1, 2 or 3, or they have no status history. |
 | 403 | `user not validated` | The user isn't approved yet. |
 
+### `POST users/me/files`
+
+A user uploads their own step 3 documents. `multipart/form-data`, with the `Authentication_User` cookie and an approved user. The user is taken from the cookie.
+
+| Field | Required | Notes |
+|---|---|---|
+| `govCard` | yes, unless the user already has one | PDF, at most 10 MB. |
+| `experienceForm` | yes, unless the user already has one | PDF, at most 10 MB. |
+| `photo` | no | JPG or PNG, at most 10 MB. When sent, it replaces the user's current photo. |
+
+The upload is allowed only while the user's current request status is **3**. On success the user moves to status 4. A document sent again replaces the existing one; a `govCard` or `experienceForm` left out is kept. The old files are deleted from the server after the upload commits, best-effort.
+
+```http
+POST /envocc-card/api/v2/users/me/files
+Cookie: Authentication_User=<token>
+Content-Type: multipart/form-data; boundary=----X
+
+------X
+Content-Disposition: form-data; name="govCard"; filename="govcard.pdf"
+Content-Type: application/pdf
+
+<binary>
+------X
+Content-Disposition: form-data; name="experienceForm"; filename="exp.pdf"
+Content-Type: application/pdf
+
+<binary>
+------X--
+```
+
+The body of a `201 Created` is empty. At any other status:
+
+```json
+403 Forbidden
+{
+  "message": "documents can be uploaded only at request status 3",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**Errors**
+
+| Status | `message` | When |
+|---|---|---|
+| 400 | `govcard is required` | The user has no stored government card and the form has no `govCard`. |
+| 400 | `expfile is required` | The user has no stored experience form and the form has no `experienceForm`. |
+| 400 | `unsupported file type` | A `govCard` or `experienceForm` isn't a `.pdf`, or the `photo` isn't a `.jpg` or `.png`. |
+| 413 | `File too large` | A file is over 10 MB. |
+| 403 | `documents can be uploaded only at request status 3` | The user's request status isn't 3, or they have no status history. |
+| 403 | `user not validated` | The user isn't approved yet. |
+| 401 | `Unauthorized` | No `Authentication_User` cookie, or an admin cookie. |
+
+Nothing is stored when the request fails.
+
 ---
 
 ## Other behaviour changes
@@ -417,24 +478,19 @@ An unapproved user gets `403 user not validated`, as on the other card-request r
 
 ### Step 3 upload: the request file is optional
 
-Issue #11. `POST users/me/files` takes `multipart/form-data` and requires the admin cookie. The `user` field is the target user's id.
+Issue #11. `POST admins/users/:userId/files` takes `multipart/form-data` and requires the admin cookie. `:userId` is the target user's id. It has no status gate: an admin may upload at any request status.
 
 | Field | Required | Notes |
 |---|---|---|
-| `user` | yes | |
 | `govCard` | yes, unless the user already has one | PDF, at most 10 MB. |
 | `requestFile` | **no** (it used to be required, and leaving it out caused a 500) | PDF, at most 10 MB. |
 | `experienceForm` | no | PDF, at most 10 MB. |
 
 ```http
-POST /envocc-card/api/v2/users/me/files
+POST /envocc-card/api/v2/admins/users/42/files
 Cookie: Authentication_Admin=<token>
 Content-Type: multipart/form-data; boundary=----X
 
-------X
-Content-Disposition: form-data; name="user"
-
-42
 ------X
 Content-Disposition: form-data; name="govCard"; filename="govcard.pdf"
 Content-Type: application/pdf
