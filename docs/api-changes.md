@@ -454,7 +454,7 @@ A user uploads their own step 3 documents. `multipart/form-data`, with the `Auth
 | Field | Required | Notes |
 |---|---|---|
 | `govCard` | yes, unless the user already has one | PDF, at most 10 MB. |
-| `experienceForm` | yes, unless the user already has one | PDF, at most 10 MB. |
+| `experienceForm` | no | PDF, at most 10 MB. |
 | `photo` | no | JPG or PNG, at most 10 MB. When sent, it replaces the user's current photo. |
 
 The upload is allowed only while the user's current request status is **1 or 3**. On success the user moves to status 4. A document sent again replaces the existing one; a `govCard` or `experienceForm` left out is kept. The old files are deleted from the server after the upload commits, best-effort.
@@ -493,7 +493,6 @@ The body of a `201 Created` is empty. At any other status:
 | Status | `message` | When |
 |---|---|---|
 | 400 | `govcard is required` | The user has no stored government card and the form has no `govCard`. |
-| 400 | `expfile is required` | The user has no stored experience form and the form has no `experienceForm`. |
 | 400 | `unsupported file type` | A `govCard` or `experienceForm` isn't a `.pdf`, or the `photo` isn't a `.jpg` or `.png`. |
 | 400 | `Unexpected field - <field>` | The form has a field this route doesn't take, such as `requestFile`. |
 | 413 | `File too large` | A file is over 10 MB. |
