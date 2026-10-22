@@ -194,15 +194,26 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
       expect(await world.filesOf(user, 'expfile')).toHaveLength(1);
     });
 
-    it('requires an experience form from a user who has none, storing nothing', async () => {
+    it('accepts an upload without an experience form from a user who has none', async () => {
       const user = await world.createUser({ history: [0, 1, 3] });
 
       const res = await uploadAsUser(user, ['govCard']);
 
+      expect(res.status).toBe(201);
+      expect(await world.historyOf(user)).toEqual([0, 1, 3, 4]);
+      expect(await world.filesOf(user, 'govcard')).toHaveLength(1);
+      expect(await world.filesOf(user, 'expfile')).toEqual([]);
+    });
+
+    it('requires a government card from a user who has none, storing nothing', async () => {
+      const user = await world.createUser({ history: [0, 1, 3] });
+
+      const res = await uploadAsUser(user, ['experienceForm']);
+
       expect(res.status).toBe(400);
-      expect(res.body).toMatchObject({ message: 'expfile is required' });
+      expect(res.body).toMatchObject({ message: 'govcard is required' });
       expect(await world.historyOf(user)).toEqual([0, 1, 3]);
-      expect(await world.filesOf(user, 'govcard')).toEqual([]);
+      expect(await world.filesOf(user, 'expfile')).toEqual([]);
       expect(assets()).toEqual([]);
     });
 
