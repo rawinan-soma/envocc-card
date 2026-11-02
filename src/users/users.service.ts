@@ -131,13 +131,17 @@ export class UsersService {
 
   // Every user at every request status, across every organization.
   async getAllUsersUnfiltered(queryData: UsersPageQuery) {
-    return await this.getUsersPage(queryData);
+    return await this.getUsersPage({ ...queryData, includeUsername: true });
   }
 
   // statuses filters on each user's latest request; orgId limits the result
   // to that organization and its descendants. Omit either to skip it.
   private async getUsersPage(
-    queryData: UsersPageQuery & { statuses?: number[]; orgId?: number },
+    queryData: UsersPageQuery & {
+      statuses?: number[];
+      orgId?: number;
+      includeUsername?: boolean;
+    },
   ) {
     try {
       const { statuses, orgId } = queryData;
@@ -163,6 +167,7 @@ export class UsersService {
         Prisma.validator<Prisma.usersFindManyArgs>()({
           select: {
             id: true,
+            username: queryData.includeUsername,
             pname_th: true,
             pname_other_th: true,
             fname_th: true,

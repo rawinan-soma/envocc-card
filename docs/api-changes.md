@@ -264,7 +264,7 @@ Issue #6. Lists users at **every** status, across **all** organizations.
 | `page` | integer ≥ 1 | `1` | 10 users per page. |
 | `search_term` | string | | Matches first name, last name or organization name (Thai). |
 
-The response shape matches `GET admins/users`, but there's no `status` filter and no organization limit.
+The response shape matches `GET admins/users`, with one added field, `username`. There's no `status` filter and no organization limit.
 
 ```http
 GET /envocc-card/api/v2/admins/users/all?page=1&search_term=สม
@@ -277,6 +277,7 @@ Cookie: Authentication_Admin=<token>
   "data": [
     {
       "id": 42,
+      "username": "somchai.j",
       "pname_th": "นาย",
       "pname_other_th": null,
       "fname_th": "สมชาย",
@@ -295,6 +296,7 @@ Cookie: Authentication_Admin=<token>
     },
     {
       "id": 57,
+      "username": "somying.r",
       "pname_th": "นางสาว",
       "pname_other_th": null,
       "fname_th": "สมหญิง",
