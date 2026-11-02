@@ -29,6 +29,7 @@ const org = (id: number, name_th: string) => ({
 // Shaped like the projection UsersService selects from prisma.users.
 const userRow = (id: number, statuses: number[], orgId = ADMIN_ORG_ID) => ({
   id,
+  username: `user${id}`,
   pname_th: 'นาย',
   pname_other_th: null,
   fname_th: `ชื่อ${id}`,
@@ -113,6 +114,13 @@ describe('admin user listing routes', () => {
       ]
     )[0].where;
 
+  const selectOfLastFindMany = (): Record<string, unknown> =>
+    (
+      prisma.users.findMany.mock.lastCall as [
+        { select: Record<string, unknown> },
+      ]
+    )[0].select;
+
   describe('GET /admins/users/all', () => {
     it('rejects requests without an admin token', async () => {
       const res = await request(app.getHttpServer()).get('/admins/users/all');
@@ -159,6 +167,18 @@ describe('admin user listing routes', () => {
       const where = whereOfLastFindMany();
       expect(where).not.toHaveProperty('requests');
       expect(where).not.toHaveProperty('organizationId');
+    });
+
+    it("returns each user's username and selects it", async () => {
+      prisma.users.findMany.mockResolvedValue([userRow(7, [15])]);
+
+      const res = await get('/admins/users/all');
+
+      expect(res.status).toBe(200);
+      expect(
+        (res.body as { data: { username: string }[] }).data[0].username,
+      ).toBe('user7');
+      expect(selectOfLastFindMany().username).toBeTruthy();
     });
 
     it('returns request_status null for a user with no requests', async () => {
@@ -212,6 +232,15 @@ describe('admin user listing routes', () => {
       const res = await get('/admins/users?status=activated');
 
       expect(res.status).toBe(200);
+    });
+
+    it('does not select username', async () => {
+      prisma.users.findMany.mockResolvedValue([userRow(1, [0])]);
+
+      const res = await get('/admins/users?status=ongoing');
+
+      expect(res.status).toBe(200);
+      expect(selectOfLastFindMany().username).toBeFalsy();
     });
 
     it('still requires status', async () => {
