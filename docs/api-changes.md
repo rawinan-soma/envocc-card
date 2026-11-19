@@ -586,7 +586,7 @@ Content-Type: application/json
 { "user": { "position_lvId": 3 } }
 ```
 
-- **When:** only while the user's current request status is **15** (card issued) or **16** (card cancelled). Before, it was accepted at any status.
+- **When:** only while the user's current request status is **15** (card issued) or **16** (card cancelled), and type 11 only at **16**: see [Change of organization (type 11)](#change-of-organization-type-11). Before, it was accepted at any status.
 - **Body:** `user` (the user's details) and `experiences` (items added to the user's experiences) are both optional. They are saved in the same transaction as the new status: either the request starts and they are saved, or nothing is saved. Before, `user` was required (`400 invalid user input`) and sending `experiences` failed with 500.
 - **Response:** `201` with an empty body. The user is now at status 1. The new Status History entry has the `request_type` given and no `approver` (it used to carry the user's own id in that admin field).
 - **Two requests sent at once** start one request. The other answers 403.
@@ -599,10 +599,11 @@ Content-Type: application/json
 | 400 | `requestType must be one of 2, 3, 4, 5, 6, 7, 8, 9, 10, 11` | `requestType` is 1, or not a Request Type (0, 12, …). |
 | 400 | `Validation failed (numeric string is expected)` | `requestType` is missing or not a number. |
 | 403 | `a new card can be requested only at request status 15 or 16` | The user is at any other status, or has no status history. |
+| 403 | `a new card can be requested only at request status 16` | `requestType` is 11 and the user is at any other status, 15 included. |
 
 Once started, the request walks the same statuses to 15 as a first-card request, and every Status History entry it adds carries its `request_type`, whichever route writes it. Before, the entries written by `POST admins/members` (signing method) and `PATCH admins/members/:userId/activate` (approval date) always had `request_type` 1.
 
-The user keeps their Member Number and QR code: step 7 reuses their card record.
+The user keeps their QR code, and their Member Number unless `requestType` is 11: step 7 reuses their card record.
 
 ### The Old card while a request for a new card runs
 
@@ -656,7 +657,34 @@ Example: the card ends on 1 Mar 2027. The request may start from 30 Jan 2027. Th
 
 **The card in effect today.** `GET users/me/envcard/qrcode`, `GET common/members/:userId` and `GET common/qrcode` return the card in effect today: valid, with `start_date` ≤ today ≤ `end_date`. Until 1 Mar 2027 in the example they return the Old card, and from 2 Mar 2027 the new one. Before, they returned the active card with the latest end date, whatever today was. A card past its end date, or with a `start_date` still to come, is no longer returned (`404` or `400` as above).
 
-**One card record per card.** Each request for a new card adds a card record (a `members` row) with the same Member Number, QR code and QR password as the one before it, so the Old card keeps its own dates. `GET admins/members/:userId` returns the latest record. A Revert to 1, 6 or 7 clears the dates of the latest record only, and a Revert from 16 to 15 sets only the latest record active. `PATCH users/me/members/qrcode` sets the password on the latest record, which `POST common/qrcode/validate` checks. `PATCH admins/members/:userId/deactivate` sets every record of the user inactive.
+**One card record per card.** Each request for a new card adds a card record (a `members` row) with the same Member Number (a new one for type 11), QR code and QR password as the one before it, so the Old card keeps its own dates. `GET admins/members/:userId` returns the latest record. A Revert to 1, 6 or 7 clears the dates of the latest record only, and a Revert from 16 to 15 sets only the latest record active. `PATCH users/me/members/qrcode` sets the password on the latest record, which `POST common/qrcode/validate` checks. `PATCH admins/members/:userId/deactivate` sets every record of the user inactive.
+
+### Change of organization (type 11)
+
+Issue #56. A user who moves to another organization asks for a card with `POST users/me/card?requestType=11`.
+
+**Starting it.** Accepted only at request status **16** (card cancelled). At 15 it answers:
+
+```json
+403 Forbidden
+{
+  "message": "a new card can be requested only at request status 16",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+The check reads the request status, not whether the card is set inactive. So the old organization's admin cancels the card first: `POST admins/users/requests/update` from 15 to 16, and `PATCH admins/members/:userId/deactivate` to stop the card being valid. When the old organization does not act, a Ministry admin may do the same. Both routes accept any admin for any user, whatever their organization, as before.
+
+```http
+POST /envocc-card/api/v2/admins/users/requests/update
+Cookie: Authentication_Admin=<token>
+Content-Type: application/json
+
+{ "user": 42, "current_status": 15, "next_status": 16, "request_type": 1, "description": "ย้ายสังกัด" }
+```
+
+**A new Member Number.** The card issued for a type 11 request has a Member Number no one has held before, including users since deleted. Every other type keeps the number the user had. The number is given when the request starts, on the new card record, so `GET admins/members/:userId` shows it while the request runs. A Revert keeps it. The Old card keeps its old number. The QR code and QR password stay the same, as for every other type.
 
 ### Request Type in the admin user lists
 

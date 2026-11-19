@@ -14,6 +14,9 @@ interface RequestTypeRule {
   // A user may start the request only from this many days before their card's
   // end date. Left out when the end date does not matter.
   startsDaysBeforeEndDate?: number;
+  // The new card gets a Member Number never used before instead of keeping the
+  // Old card's (see Member Number in CONTEXT.md).
+  newMemberNumber?: true;
 }
 
 // Registering starts a first-card request; a user cannot pick it.
@@ -50,7 +53,8 @@ export const REQUEST_TYPES: Readonly<Record<number, RequestTypeRule>> = {
     userStartsFrom: CARD_ISSUED_OR_CANCELLED,
   },
   10: { name: 'เปลี่ยนตำแหน่ง', userStartsFrom: CARD_ISSUED_OR_CANCELLED },
-  11: { name: 'ย้ายสังกัด', userStartsFrom: CARD_ISSUED_OR_CANCELLED },
+  // The old organization cancels the card (16) before the user moves.
+  11: { name: 'ย้ายสังกัด', userStartsFrom: [16], newMemberNumber: true },
 };
 
 export const USER_STARTED_TYPES = Object.entries(REQUEST_TYPES).flatMap(

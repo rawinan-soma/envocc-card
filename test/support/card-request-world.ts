@@ -288,8 +288,10 @@ export const createCardRequestWorld = async () => {
 
   const giveMember = async (
     userId: number,
+    // Left out, member_no comes from the sequence, as for a card an admin
+    // issues.
     data: {
-      member_no: number;
+      member_no?: number;
       qrcode: string;
       is_active?: boolean;
       start_date?: Date;

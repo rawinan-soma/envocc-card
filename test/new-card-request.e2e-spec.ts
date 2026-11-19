@@ -93,7 +93,7 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
     }
   };
 
-  it.each([2, 3, 4, 5, 6, 7, 8, 9, 10, 11])(
+  it.each([2, 3, 4, 5, 6, 7, 8, 9, 10])(
     'starts a request of type %i at status 1 from status 15',
     async (requestType) => {
       const user = await world.createUser({ history: ISSUED });
@@ -267,6 +267,137 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
     });
   });
 
+  describe('a change of organization (type 11)', () => {
+    const cardsOf = (userId: number) =>
+      world.prisma.members.findMany({
+        where: { userId },
+        orderBy: { member_id: 'asc' },
+      });
+
+    it('refuses to start from 15 with 403, saving nothing', async () => {
+      const user = await world.createUser({ history: ISSUED });
+      const before = await detailsOf(user);
+
+      const res = await startRequest(user, 11);
+
+      expect(res.status).toBe(403);
+      expect(res.body).toMatchObject({
+        message: 'a new card can be requested only at request status 16',
+      });
+      expect(await world.historyOf(user)).toEqual(ISSUED);
+      expect(await detailsOf(user)).toEqual(before);
+    });
+
+    it('starts from 16 at status 1', async () => {
+      const user = await world.createUser({ history: [...ISSUED, 16] });
+
+      const res = await startRequest(user, 11);
+
+      expect(res.status).toBe(201);
+      expect(await world.historyOf(user)).toEqual([...ISSUED, 16, 1]);
+      expect((await entriesOf(user)).at(-1)).toMatchObject({
+        request_status: 1,
+        request_type: 11,
+      });
+    });
+
+    it('lets a Ministry admin cancel the card of a user in an organization below theirs, so the user can start it', async () => {
+      const user = await world.createUser({ history: ISSUED });
+      await world.giveMember(user, { qrcode: '12341234' });
+      const admin = world.asAdmin(ADMIN.MINISTRY);
+
+      const moved = await admin.post('/admins/users/requests/update').send({
+        user,
+        current_status: 15,
+        next_status: 16,
+        request_type: 1,
+        description: 'ย้ายสังกัด',
+      });
+      const deactivated = await admin.patch(
+        `/admins/members/${user}/deactivate`,
+      );
+
+      expect(moved.status).toBe(201);
+      expect(deactivated.status).toBe(200);
+      expect(await world.historyOf(user)).toEqual([...ISSUED, 16]);
+      expect(await cardsOf(user)).toEqual([
+        expect.objectContaining({ is_active: false }),
+      ]);
+      expect((await startRequest(user, 11)).status).toBe(201);
+    });
+
+    // Every card given here takes its number from the sequence, as in the app.
+    const numbersInUse = async () => {
+      const other = await world.createUser({ history: ISSUED });
+      await world.giveMember(other, { qrcode: '20002000' });
+      const deleted = await world.createUser({ history: ISSUED });
+      await world.giveMember(deleted, { qrcode: '30003000' });
+      const held = (await world.prisma.members.findMany()).map(
+        (c) => c.member_no,
+      );
+      await world.prisma.users.delete({ where: { id: deleted } });
+      return held;
+    };
+
+    it('issues a card with a Member Number not used before, keeping the QR code', async () => {
+      const user = await world.createUser({ history: [...ISSUED, 16] });
+      const oldCard = await world.giveMember(user, {
+        qrcode: '10001000',
+        is_active: false,
+      });
+      const used = await numbersInUse();
+
+      expect((await startRequest(user, 11)).status).toBe(201);
+      await walkToIssued(user);
+
+      expect(await world.historyOf(user)).toEqual([
+        ...ISSUED,
+        16,
+        1,
+        4,
+        7,
+        8,
+        9,
+        15,
+      ]);
+      const [old, issued] = await cardsOf(user);
+      expect(old).toMatchObject({
+        member_no: oldCard.member_no,
+        is_active: false,
+      });
+      expect(issued).toMatchObject({ qrcode: '10001000', is_active: true });
+      expect(issued.member_no).toEqual(expect.any(Number));
+      expect(used).not.toContain(issued.member_no);
+      const printed = await world
+        .asAdmin(ADMIN.MINISTRY)
+        .get(`/admins/members/${user}`);
+      expect(printed.body).toMatchObject({ member_no: issued.member_no });
+    });
+
+    it.each([3, 4, 5, 6, 7, 8, 9, 10])(
+      "issues a type %i card with the Old card's Member Number",
+      async (requestType) => {
+        const user = await world.createUser({ history: [...ISSUED, 16] });
+        const oldCard = await world.giveMember(user, {
+          qrcode: '10001000',
+          is_active: false,
+        });
+        await numbersInUse();
+
+        expect((await startRequest(user, requestType)).status).toBe(201);
+        await walkToIssued(user);
+
+        expect(await cardsOf(user)).toEqual([
+          expect.objectContaining({ member_no: oldCard.member_no }),
+          expect.objectContaining({
+            member_no: oldCard.member_no,
+            is_active: true,
+          }),
+        ]);
+      },
+    );
+  });
+
   describe('the files sent for the earlier request', () => {
     const KINDS: FileKind[] = [
       'photo',
@@ -312,7 +443,7 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
     it.each([3, 4, 5, 6, 7, 8, 9, 10, 11])(
       'deletes the photo, government card and police report when a type %i request starts, and keeps the rest',
       async (requestType) => {
-        const { user, paths } = await cardHolder();
+        const { user, paths } = await cardHolder([...ISSUED, 16]);
 
         expect((await startRequest(user, requestType, {})).status).toBe(201);
 

@@ -34,7 +34,7 @@ History. Both findings were reproduced in the live app and fixed:
 Limits of the fix:
 
 - `member_no` has no unique constraint. Only rows that take the default are guarded, so any code or import that writes `member_no` explicitly must also run `setval('members_member_no_seq', <max>+1, false)`, or the sequence will later hand out a number that row already holds.
-- `startNewCard` (`src/members/cards.ts`, starting a request for a new card) writes `member_no` explicitly: it adds a card record that copies the user's own number from their latest record. The number came from the sequence, or predates it, so it is below the sequence and held only by that user. The model does not cover this path; it still treats one record per user.
+- `startNewCard` (`src/members/cards.ts`, starting a request for a new card) adds a card record. For Request Types 2–10 it writes `member_no` explicitly, copying the user's own number from their latest record. That number came from the sequence, or predates it, so it is below the sequence and held only by that user. For a type whose rule has `newMemberNumber` (type 11, change of organization, in `src/request/request-types.ts`) it leaves `member_no` to the default, so the number comes from the sequence like a first card's. The model does not cover this path; it still treats one record per user. The e2e test `issues a card with a Member Number not used before, keeping the QR code` (`test/new-card-request.e2e-spec.ts`) covers the type 11 case against a deleted user's number.
 - The migration starts the sequence after the highest number present when it runs. Numbers of users deleted before that are unknown, and each can still be given out once.
 
 ## Run it
@@ -91,7 +91,7 @@ Each model action is one Prisma statement. Keep it that way. When the code chang
 
 ## What it does not cover
 
-- Request Type 11 (a change of organization gets a new number, per CONTEXT.md). The code always reuses the existing number and writes `requestType: 1`, so the rule isn't implemented and isn't modeled.
+- Request Type 11 (a change of organization gets a new number, per CONTEXT.md). `startNewCard` takes it from the sequence (see "Limits of the fix"), outside the modeled actions.
 - The Status History entry written by `addStatusEntry` in the same transaction, statuses in general, and whether issuing is allowed at the user's current status (the route checks neither).
 - Rows written with an explicit `member_no` (imports, manual SQL), and numbers held by users deleted before the migration. See "Limits of the fix".
 - More than 2 admins, 3 users or 4 issues. A pass covers only that bound.

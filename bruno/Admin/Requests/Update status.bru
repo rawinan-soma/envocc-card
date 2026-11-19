@@ -21,5 +21,5 @@ body:json {
 }
 
 docs {
-  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Moves a user's request forward, e.g. 4 → 7 when the documents and photo pass the check, or 4 → 6 when they fail it. Moving back to 0, 1, 6, 7 or 15 answers 400: use Revert. Statuses 2, 3 and 5 are retired: moving anyone to them answers 400 "request status N is not in use". Statuses are in prisma/data/request_statuses.json.
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Moves a user's request forward, e.g. 4 → 7 when the documents and photo pass the check, or 4 → 6 when they fail it, or 15 → 16 to cancel a card (the user may then start a change of organization, Request Type 11). Any admin may move any user, whatever their organization; a Ministry admin cancels the card when the user's old organization does not. Moving back to 0, 1, 6, 7 or 15 answers 400: use Revert. Statuses 2, 3 and 5 are retired: moving anyone to them answers 400 "request status N is not in use". Statuses are in prisma/data/request_statuses.json.
 }

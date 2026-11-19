@@ -4,10 +4,11 @@ import { addDays, clock, isoDate } from 'src/common/clock';
 import { REQUEST_TYPES } from 'src/request/request-types';
 
 // A user's cards are their members rows, one per card, and a new card keeps
-// the Member Number and QR code of the one before it. The latest row is the
-// card of the user's current request: being issued while the request runs,
-// the card in hand once it reaches 15. An earlier row stays as the Old card,
-// with its own dates, so a type 2 Old card is still shown until its end date.
+// the QR code of the one before it, and its Member Number unless the Request
+// Type gives a new one. The latest row is the card of the user's current
+// request: being issued while the request runs, the card in hand once it
+// reaches 15. An earlier row stays as the Old card, with its own dates, so a
+// type 2 Old card is still shown until its end date.
 export const latestCard = (db: Prisma.TransactionClient, userId: number) =>
   db.members.findFirst({ where: { userId }, orderBy: { member_id: 'desc' } });
 
@@ -56,7 +57,9 @@ export const startNewCard = async (
   await tx.members.create({
     data: {
       userId,
-      member_no: oldCard.member_no,
+      // Left out, member_no takes nextval of members_member_no_seq. See
+      // .claude/skills/member-number.
+      member_no: rule.newMemberNumber ? undefined : oldCard.member_no,
       qrcode: oldCard.qrcode,
       qrcode_pass: oldCard.qrcode_pass,
       signatureId: oldCard.signatureId,
