@@ -39,8 +39,9 @@ export class AdminFileController {
     return await this.filesService.listEnvcardFiles(userId);
   }
 
-  // Document upload on behalf of a user. No status gate: an admin may attach
-  // documents at any Request Status.
+  // Document upload on behalf of a user in the admin's organization or one
+  // below it. No status gate: an admin may attach documents at any Request
+  // Status.
   @Post('users/:userId/files')
   @UseInterceptors(
     FileFieldsInterceptor(
@@ -65,12 +66,16 @@ export class AdminFileController {
     @Req() request: RequestwithAdminData,
   ) {
     const adminId = request.user.id;
-    return await this.filesService.uploadDocuments('admin', userId, {
-      govcard: fileDto(files?.govCard?.[0], userId, adminId),
-      reqFile: fileDto(files?.requestFile?.[0], userId, adminId),
-      expfile: fileDto(files?.experienceForm?.[0], userId, adminId),
-      policeReport: fileDto(files?.policeReport?.[0], userId, adminId),
-    });
+    return await this.filesService.uploadDocuments(
+      { role: 'admin', adminId },
+      userId,
+      {
+        govcard: fileDto(files?.govCard?.[0], userId, adminId),
+        reqFile: fileDto(files?.requestFile?.[0], userId, adminId),
+        expfile: fileDto(files?.experienceForm?.[0], userId, adminId),
+        policeReport: fileDto(files?.policeReport?.[0], userId, adminId),
+      },
+    );
   }
 
   // Admins reach only users in their organization or one below it.

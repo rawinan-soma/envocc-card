@@ -198,7 +198,7 @@ Issue #48. The Request Status steps were redrawn: the user sends their documents
 
 ### 8. Admin file routes are limited to the admin's organization
 
-`GET` and `DELETE admins/users/:userId/files/:file` now work only for users in the admin's own organization or one below it, for every file kind. Before, any admin could read or delete any user's files.
+`GET` and `DELETE admins/users/:userId/files/:file` and the admin's Document upload, `POST admins/users/:userId/files`, now work only for users in the admin's own organization or one below it, for every file kind. Before, any admin could read, delete or upload any user's files. A refused upload stores nothing and leaves the user's Request Status as it was.
 
 `:file` is one of `envcard`, `expfile`, `govcard`, `photo`, `policeReport` (new, issue #57) or `reqFile`, spelled exactly so. `policeReport` is the police report (ใบแจ้งความ) of a lost-card request (Request Type 3); its `adminId` is the admin who uploaded it, or `null` when the user sent it. `GET users/me/files/:file` takes the same kinds.
 
@@ -774,7 +774,7 @@ Content-Type: application/pdf
 
 On success the user moves to status 4. A file sent again replaces the existing one; files left out are kept.
 
-If no user has the id `:userId`, the route answers `404` with `user not found` and stores nothing.
+If no user has the id `:userId`, the route answers `404` with `user not found` and stores nothing. For a user outside the admin's organization or the ones below it, it answers `403` with `user is outside your organization` and stores nothing (see [breaking change 8](#8-admin-file-routes-are-limited-to-the-admins-organization)).
 
 ### Smaller changes
 

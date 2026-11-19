@@ -37,6 +37,7 @@ import {
 import { PrismaService } from 'prisma/prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { FileCreateDto } from './dto/file-create.dto';
+import { assertUserInAdminOrg } from 'src/organizations/user-org-scope';
 
 // Every file kind the :file route parameter may name.
 export const FILE_KINDS = [
@@ -92,7 +93,10 @@ const requiredDocuments = (requestType: number): DocumentUploadFile[] => [
     : []),
 ];
 
-export type DocumentUploader = keyof typeof DOCUMENT_UPLOAD_RULES;
+// An admin uploads only for users in their organization or one below it.
+export type DocumentUploader =
+  | { role: 'user' }
+  | { role: 'admin'; adminId: number };
 
 @Injectable()
 export class FilesService {
@@ -327,7 +331,7 @@ export class FilesService {
     userId: number,
     uploads: Partial<Record<DocumentUploadFile, FileCreateDto>>,
   ) {
-    const rule: DocumentUploadRule = DOCUMENT_UPLOAD_RULES[uploader];
+    const rule: DocumentUploadRule = DOCUMENT_UPLOAD_RULES[uploader.role];
     const uploaded = Object.values(uploads).flatMap((dto) =>
       dto ? [dto.url] : [],
     );
@@ -336,6 +340,9 @@ export class FilesService {
       replaced = await this.prisma.$transaction(async (tx) => {
         if ((await lockUser(tx, userId)).length === 0) {
           throw new NotFoundException('user not found');
+        }
+        if (uploader.role === 'admin') {
+          await assertUserInAdminOrg(tx, uploader.adminId, userId);
         }
         const current = await latestStatusEntry(tx, userId);
         if (rule.from) {

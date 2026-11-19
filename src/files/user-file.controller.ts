@@ -109,7 +109,7 @@ export class UserFileController {
     @Req() request: RequestwithUserData,
   ) {
     const userId = request.user.id;
-    return await this.filesService.uploadDocuments('user', userId, {
+    return await this.filesService.uploadDocuments({ role: 'user' }, userId, {
       govcard: fileDto(files?.govCard?.[0], userId),
       expfile: fileDto(files?.experienceForm?.[0], userId),
       photo: fileDto(files?.photo?.[0], userId),
