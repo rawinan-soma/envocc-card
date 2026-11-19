@@ -35,13 +35,13 @@ for cfg in "${configs[@]}"; do
   echo "=== $cfg"
   set +e
   docker run --rm --user "$(id -u):$(id -g)" -v "$work:/spec" -v "$JAR:/tla2tools.jar:ro" -w /spec "$JAVA_IMAGE" \
-    java -XX:+UseParallelGC -cp /tla2tools.jar tlc2.TLC -workers auto -deadlock \
+    java -XX:+UseParallelGC -cp /tla2tools.jar tlc2.TLC -workers auto \
     -config "$cfg.cfg" MemberNumber.tla > "$OUT_DIR/$cfg.out" 2>&1
   code=$?
   set -e
   rm -rf "$work"
-  if grep -q "is violated" "$OUT_DIR/$cfg.out"; then
-    grep -m1 "is violated" "$OUT_DIR/$cfg.out"
+  if grep -qE "is violated|Deadlock reached" "$OUT_DIR/$cfg.out"; then
+    grep -m1 -E "is violated|Deadlock reached" "$OUT_DIR/$cfg.out"
     # The step names of the counterexample; the full states are in the .out file.
     grep -E '^State [0-9]+: <' "$OUT_DIR/$cfg.out" | sed -E 's/ line [0-9]+.*>/>/' || true
     echo "last state:"

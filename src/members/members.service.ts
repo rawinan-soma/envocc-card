@@ -412,6 +412,12 @@ export class MembersService {
           where: { userId: data.userId },
         });
 
+        // Member Numbers are the highest one + 1, so card creations for
+        // different users must not interleave: otherwise both read the same
+        // highest number. Held until this transaction ends. See
+        // .claude/skills/member-number.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('members.member_no'))`;
+
         const latestMember = await tx.members.findFirst({
           orderBy: { member_no: 'desc' },
         });

@@ -37,6 +37,22 @@ describe('Step 7: creating the card record (POST admins/members)', () => {
     expect(await world.historyOf(user)).toEqual([0, 1, 3, 4, 7]);
   });
 
+  it('gives different Member Numbers to users whose cards are created at the same time', async () => {
+    const users: number[] = [];
+    for (let i = 0; i < 10; i++) {
+      users.push(await world.createUser({ history: [0, 1, 4] }));
+    }
+
+    const responses = await Promise.all(users.map((user) => passStep7(user)));
+
+    expect(responses.map((res) => res.status)).toEqual(users.map(() => 201));
+    const numbers = (await world.prisma.members.findMany()).map(
+      (member) => member.member_no,
+    );
+    expect(numbers).toHaveLength(10);
+    expect(new Set(numbers).size).toBe(10);
+  });
+
   it('keeps one card record with the original Member Number and QR code when passed a second time', async () => {
     const user = await world.createUser({
       history: [0, 1, 3, 4, 7, 8, 9, 6],

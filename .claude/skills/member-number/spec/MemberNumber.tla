@@ -28,6 +28,7 @@ VARIABLES
     issued,   \* every <<user, member_no>> ever committed (history variable)
     alive,    \* users not deleted
     lockOf,   \* users row lock: lockOf[u] is the admin holding it, or None
+    numLock,  \* advisory lock on Member Numbers: the admin holding it, or None
     pc,       \* each admin's next statement
     target,   \* the user an admin is issuing for
     existed,  \* result of the existedMember read: a row or None
@@ -35,7 +36,7 @@ VARIABLES
     pending,  \* the admin's uncommitted members write: a row or None
     calls     \* POST admins/members calls started so far
 
-vars == <<members, issued, alive, lockOf, pc, target, existed, latest, pending, calls>>
+vars == <<members, issued, alive, lockOf, numLock, pc, target, existed, latest, pending, calls>>
 
 Row == [user : Users, no : Nat]
 
@@ -45,13 +46,13 @@ RowsOf(u) == {r \in members : r.user = u}
 \* Any matching row: the per-user lock keeps at most one per user.
 FindExisting(u) == IF RowsOf(u) = {} THEN None ELSE CHOOSE r \in RowsOf(u) : TRUE
 
-\* tx.members.findFirst({ orderBy: { member_no: 'desc' } }), members.service.ts:415.
+\* tx.members.findFirst({ orderBy: { member_no: 'desc' } }), members.service.ts:421.
 \* member_no is never NULL here (the code always writes a number), so the
 \* DESC/NULLS FIRST ordering of Postgres does not come into play.
 FindLatest == IF members = {} THEN None
               ELSE CHOOSE r \in members : \A s \in members : s.no <= r.no
 
-\* The nextMemberNo branches, members.service.ts:419-426.
+\* The nextMemberNo branches, members.service.ts:425-432.
 NextNo(ex, la) ==
     IF la = None THEN 1
     ELSE IF ex # None THEN ex.no
@@ -62,6 +63,7 @@ Init ==
     /\ issued = {}
     /\ alive = Users
     /\ lockOf = [u \in Users |-> None]
+    /\ numLock = None
     /\ pc = [a \in Admins |-> "idle"]
     /\ target = [a \in Admins |-> None]
     /\ existed = [a \in Admins |-> None]
@@ -77,37 +79,48 @@ Start(a) ==
         /\ target' = [target EXCEPT ![a] = u]
         /\ pc' = [pc EXCEPT ![a] = "lock"]
     /\ calls' = calls + 1
-    /\ UNCHANGED <<members, issued, alive, lockOf, existed, latest, pending>>
+    /\ UNCHANGED <<numLock, members, issued, alive, lockOf, existed, latest, pending>>
 
 \* lockUser(tx, userId): SELECT ... FOR NO KEY UPDATE, members.service.ts:402.
-\* Waits while another transaction holds the user's row.
+\* Waits while another transaction holds the user's row. A deleted user has
+\* no row to lock: see GiveUp.
 Lock(a) ==
     /\ pc[a] = "lock"
+    /\ target[a] \in alive
     /\ lockOf[target[a]] = None
     /\ lockOf' = [lockOf EXCEPT ![target[a]] = a]
     /\ pc' = [pc EXCEPT ![a] = "existed"]
-    /\ UNCHANGED <<members, issued, alive, target, existed, latest, pending, calls>>
+    /\ UNCHANGED <<numLock, members, issued, alive, target, existed, latest, pending, calls>>
 
 ReadExisting(a) ==
     /\ pc[a] = "existed"
     /\ existed' = [existed EXCEPT ![a] = FindExisting(target[a])]
+    /\ pc' = [pc EXCEPT ![a] = "numlock"]
+    /\ UNCHANGED <<numLock, members, issued, alive, lockOf, target, latest, pending, calls>>
+
+\* pg_advisory_xact_lock(hashtext('members.member_no')), members.service.ts:419.
+\* Waits while another transaction holds it; released at commit.
+NumLock(a) ==
+    /\ pc[a] = "numlock"
+    /\ numLock = None
+    /\ numLock' = a
     /\ pc' = [pc EXCEPT ![a] = "latest"]
-    /\ UNCHANGED <<members, issued, alive, lockOf, target, latest, pending, calls>>
+    /\ UNCHANGED <<members, issued, alive, lockOf, target, existed, latest, pending, calls>>
 
 ReadLatest(a) ==
     /\ pc[a] = "latest"
     /\ latest' = [latest EXCEPT ![a] = FindLatest]
     /\ pc' = [pc EXCEPT ![a] = "write"]
-    /\ UNCHANGED <<members, issued, alive, lockOf, target, existed, pending, calls>>
+    /\ UNCHANGED <<numLock, members, issued, alive, lockOf, target, existed, pending, calls>>
 
-\* tx.members.update (members.service.ts:438) keeps the row and its number.
-\* tx.members.create (members.service.ts:445) adds a row with nextMemberNo.
+\* tx.members.update (members.service.ts:444) keeps the row and its number.
+\* tx.members.create (members.service.ts:451) adds a row with nextMemberNo.
 Write(a) ==
     /\ pc[a] = "write"
     /\ pending' = [pending EXCEPT ![a] =
             [user |-> target[a], no |-> NextNo(existed[a], latest[a])]]
     /\ pc' = [pc EXCEPT ![a] = "commit"]
-    /\ UNCHANGED <<members, issued, alive, lockOf, target, existed, latest, calls>>
+    /\ UNCHANGED <<numLock, members, issued, alive, lockOf, target, existed, latest, calls>>
 
 \* The interactive transaction commits: the row becomes visible and the
 \* users row lock is released.
@@ -119,6 +132,7 @@ Commit(a) ==
                         ELSE members \cup {r}
         /\ issued' = issued \cup {<<r.user, r.no>>}
     /\ lockOf' = [lockOf EXCEPT ![target[a]] = None]
+    /\ numLock' = None
     /\ pc' = [pc EXCEPT ![a] = "idle"]
     /\ pending' = [pending EXCEPT ![a] = None]
     /\ target' = [target EXCEPT ![a] = None]
@@ -136,22 +150,31 @@ Delete(u) ==
     /\ lockOf[u] = None
     /\ alive' = alive \ {u}
     /\ members' = members \ RowsOf(u)
-    /\ UNCHANGED <<issued, lockOf, pc, target, existed, latest, pending, calls>>
+    /\ UNCHANGED <<numLock, issued, lockOf, pc, target, existed, latest, pending, calls>>
 
-\* The issuing transaction's user can be deleted only while it waits for
-\* the lock; it then fails (no users row), modelled as giving up.
+\* The issuing transaction's user can be deleted only before it holds the
+\* user's row (Delete waits for the lock). lockUser then returns no rows and
+\* the code carries on, but addStatusEntry's requests.create fails on the
+\* userId foreign key and the whole transaction rolls back: nothing written.
 GiveUp(a) ==
     /\ pc[a] = "lock"
     /\ target[a] \notin alive
     /\ pc' = [pc EXCEPT ![a] = "idle"]
     /\ target' = [target EXCEPT ![a] = None]
-    /\ UNCHANGED <<members, issued, alive, lockOf, existed, latest, pending, calls>>
+    /\ UNCHANGED <<numLock, members, issued, alive, lockOf, existed, latest, pending, calls>>
+
+\* Every admin is idle: the behaviour may end here. Any other state with no
+\* enabled step is a deadlock, which TLC reports (locks waiting in a cycle).
+Done ==
+    /\ \A a \in Admins : pc[a] = "idle"
+    /\ UNCHANGED vars
 
 Next ==
     \/ \E a \in Admins :
-        Start(a) \/ Lock(a) \/ ReadExisting(a) \/ ReadLatest(a)
+        Start(a) \/ Lock(a) \/ ReadExisting(a) \/ NumLock(a) \/ ReadLatest(a)
         \/ Write(a) \/ Commit(a) \/ GiveUp(a)
     \/ \E u \in Users : Delete(u)
+    \/ Done
 
 Spec == Init /\ [][Next]_vars
 
