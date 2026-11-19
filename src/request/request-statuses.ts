@@ -42,6 +42,11 @@ export const REQUEST_STATUSES: Readonly<Record<number, RequestStatusRule>> = {
   16: {},
 };
 
+// Where choosing the signing method at 7 (POST admins/members) leads: 8 for
+// an electronic signature (the approval date, then E. print at 9), 10 for a
+// manual one (M. print, then the approval date at 11).
+export const SIGNING_METHOD_STATUSES: readonly number[] = [8, 10];
+
 export const USER_SENDS_DOCUMENTS_STATUSES = Object.entries(
   REQUEST_STATUSES,
 ).flatMap(([status, rule]) =>

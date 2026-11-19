@@ -109,7 +109,7 @@ Transitions go through `RequestService.updateStatus(dto, approver)`, which enfor
 - `UserAuthService.createUser` seeds status **0** at registration.
 - `UsersService.validateUser` (admin) flips `is_validate` and writes status **1** inside a transaction.
 - `UsersService.txUploadFileandUpdateRequest` writes status **4** after the admin uploads the request/gov-card/experience PDFs.
-- `MembersService.transactionCreateMember` writes the status carried in `signature_method` (7 → 8/11 branch) and creates the `members` row.
+- `MembersService.transactionCreateMember` runs only at **7** and writes the status carried in `signature_method` (8 for an electronic signature, 10 for a manual one), and creates the `members` row.
 - `MembersService.transactionUpdateStartDate` only advances from **8** or **11** (`status + 1`) and computes `end_date = start_date + 5 years − 1 day`.
 - Admin listing buckets: `ongoing` = 0–14, `activated` = 15, `suspended` = 16.
 

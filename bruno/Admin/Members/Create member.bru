@@ -13,10 +13,10 @@ post {
 body:json {
   {
     "userId": 1,
-    "signature_method": 1
+    "signature_method": 8
   }
 }
 
 docs {
-  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Issues the card; the signature is the admin organization's.
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Issues the card; the signature is the admin organization's. Only at request status 7. `signature_method` is the status the signing method leads to: 8 (electronic signature) or 10 (manual signature); anything else is 400.
 }

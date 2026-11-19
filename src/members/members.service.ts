@@ -26,6 +26,7 @@ import {
   inEffectToday,
   latestCard,
 } from './cards';
+import { SIGNING_METHOD_STATUSES } from 'src/request/request-statuses';
 // import { RequestService } from 'src/request/request.service';
 
 interface OrganizationWithParent {
@@ -371,8 +372,19 @@ export class MembersService {
   async transactionCreateMember(data: MemeberCreateDto, admin: number) {
     try {
       const { signature_method, ...rest } = data;
-      return this.prisma.$transaction(async (tx) => {
+      if (!SIGNING_METHOD_STATUSES.includes(signature_method)) {
+        throw new BadRequestException(
+          `signature_method must be ${SIGNING_METHOD_STATUSES.join(' or ')}`,
+        );
+      }
+      return await this.prisma.$transaction(async (tx) => {
         await lockUser(tx, data.userId);
+        const current = await latestStatusEntry(tx, data.userId);
+        if (current?.request_status !== 7) {
+          throw new BadRequestException(
+            'the signing method can be chosen only at request status 7',
+          );
+        }
         const initPassword = Math.floor(
           10000000 + Math.random() * 90000000,
         ).toString();
@@ -387,6 +399,7 @@ export class MembersService {
           userId: data.userId,
           status: signature_method,
           approver: admin,
+          from: current.request_status,
         });
 
         // A Revert keeps the card record, so passing step 7 again reuses it
@@ -412,6 +425,9 @@ export class MembersService {
         });
       });
     } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
       this.logger.error(err);
       if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');

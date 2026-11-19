@@ -154,6 +154,26 @@ describe('A request for a new card because the card expired (Request Type 2)', (
       },
     );
 
+    it.each([
+      ['a time of day', '2027-03-01T10:00:00Z'],
+      ['a time of day on the day after', '2027-03-02T00:00:00Z'],
+      ['no day', '2027-03'],
+      ['a day that does not exist', '2027-02-30'],
+      ['no date at all', undefined],
+    ])('is refused with 400 when startDate has %s', async (_, startDate) => {
+      const user = await cardHolder();
+      world.setToday('2027-02-15');
+      await walkTo8(user);
+
+      const res = await approve(user, startDate as string);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({
+        message: ['startDate must be a date as YYYY-MM-DD'],
+      });
+      expect((await world.historyOf(user)).at(-1)).toBe(8);
+    });
+
     it("is accepted the day after the Old card's end date, and the card ends 5 years later", async () => {
       const user = await cardHolder();
       world.setToday('2027-02-15');
