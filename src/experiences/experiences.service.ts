@@ -11,25 +11,12 @@ import { PrismaService } from 'prisma/prisma.service';
 import { editPersonalData } from 'src/users/edit-personal-data';
 import { UpdateExpDto } from './update-exp.dto';
 import { ExpCreateDto } from 'src/user-auth/dto/exp-create.dto';
+import { expYears } from './exp-years';
 
 @Injectable()
 export class ExperiencesService {
   logger = new Logger(ExperiencesService.name);
   constructor(private readonly prisma: PrismaService) {}
-
-  private calculateExpYears(lastDate: Date, startDate: Date): number {
-    let yearDiff = lastDate.getFullYear() - startDate.getFullYear();
-
-    if (
-      lastDate.getMonth() < startDate.getMonth() ||
-      (lastDate.getMonth() === startDate.getMonth() &&
-        lastDate.getDate() < startDate.getDate())
-    ) {
-      yearDiff--;
-    }
-
-    return yearDiff;
-  }
 
   async getAllExperience(userId: number) {
     try {
@@ -65,7 +52,7 @@ export class ExperiencesService {
         data: dto.map((i) => ({
           ...i,
           userId,
-          exp_years: this.calculateExpYears(i.exp_ldate, i.exp_fdate),
+          exp_years: expYears(i.exp_fdate, i.exp_ldate),
         })),
       }),
     );

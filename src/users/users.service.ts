@@ -16,7 +16,8 @@ import {
   latestStatusEntry,
   lockUser,
 } from 'src/request/status-history';
-import { editPersonalData } from './edit-personal-data';
+import { editPersonalData, toUserUpdate } from './edit-personal-data';
+import { expYears } from 'src/experiences/exp-years';
 import { REQUEST_TYPES, USER_STARTED_TYPES } from 'src/request/request-types';
 import { FilesService } from 'src/files/files.service';
 import { startNewCard } from 'src/members/cards';
@@ -516,10 +517,10 @@ export class UsersService {
 
   async updateUser(id: number, data: UserUpdateInternalDto) {
     try {
-      return await editPersonalData(this.prisma, id, (tx) =>
+      return await editPersonalData(this.prisma, id, async (tx) =>
         tx.users.update({
           where: { id: id },
-          data: data as Prisma.usersUpdateInput,
+          data: await toUserUpdate(tx, data),
         }),
       );
     } catch (err) {
@@ -688,9 +689,14 @@ export class UsersService {
         await tx.users.update({
           where: { id: userId },
           data: {
-            ...data.user,
+            ...(await toUserUpdate(tx, data.user)),
             experiences: data.experiences && {
-              createMany: { data: data.experiences },
+              createMany: {
+                data: data.experiences.map((exp) => ({
+                  ...exp,
+                  exp_years: expYears(exp.exp_fdate, exp.exp_ldate),
+                })),
+              },
             },
           },
         });

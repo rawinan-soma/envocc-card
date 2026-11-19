@@ -15,6 +15,7 @@ import { MailService } from 'src/mail/mail.service';
 import { randomBytes } from 'crypto';
 import { addStatusEntry } from 'src/request/status-history';
 import { FIRST_CARD } from 'src/request/request-types';
+import { expYears } from 'src/experiences/exp-years';
 
 @Injectable()
 export class UserAuthService {
@@ -23,20 +24,6 @@ export class UserAuthService {
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
   ) {}
-
-  private calculateExpYears(lastDate: Date, startDate: Date): number {
-    let yearDiff = lastDate.getFullYear() - startDate.getFullYear();
-
-    if (
-      lastDate.getMonth() < startDate.getMonth() ||
-      (lastDate.getMonth() === startDate.getMonth() &&
-        lastDate.getDate() < startDate.getDate())
-    ) {
-      yearDiff--;
-    }
-
-    return yearDiff;
-  }
 
   // A newly registered user starts at Request Status 0.
   private registerUser(data: Prisma.usersCreateInput) {
@@ -76,9 +63,7 @@ export class UserAuthService {
       }
 
       dto.experiences.map((item) => {
-        item.exp_years = Number(
-          this.calculateExpYears(item.exp_ldate, item.exp_fdate),
-        );
+        item.exp_years = expYears(item.exp_fdate, item.exp_ldate);
       });
 
       const { positionId, position_lvId, orgId, ...rest } = dto.user;

@@ -588,6 +588,8 @@ Content-Type: application/json
 
 - **When:** only while the user's current request status is **15** (card issued) or **16** (card cancelled), and type 11 only at **16**: see [Change of organization (type 11)](#change-of-organization-type-11). Before, it was accepted at any status.
 - **Body:** `user` (the user's details) and `experiences` (items added to the user's experiences) are both optional. They are saved in the same transaction as the new status: either the request starts and they are saved, or nothing is saved. Before, `user` was required (`400 invalid user input`) and sending `experiences` failed with 500.
+- **`user`** takes the same fields as [`PATCH users/me`](#personal-data-only-at-request-status-0-1-or-6): `user.orgId` moves the user to that organization, and an `orgId` that is not an organization answers `400 organization not found` and starts nothing. A `password` sent is ignored. Before, `orgId` answered 500 and a `password` was saved as sent, unhashed.
+- **`experiences`** items get `exp_years`, the whole years from `exp_fdate` to `exp_ldate`, as when registering or with `POST users/me/experiences`. Before, it was saved empty (`null`).
 - **Response:** `201` with an empty body. The user is now at status 1. The new Status History entry has the `request_type` given and no `approver` (it used to carry the user's own id in that admin field).
 - **Two requests sent at once** start one request. The other answers 403.
 - **Files:** issues #51 and #57. Starting the request deletes the government card and police report sent for the user's earlier request, and the photo too unless `requestType` is 2, so the user sends them again with [`POST users/me/files`](#post-usersmefiles), which then requires both (the photo only when none is stored). A type 2 request keeps the photo, because the old card stays valid until its end date and the online card shows it. The experience form, the experiences and the copy of the old issued card (`envcard`) are kept. At status 12 of the new request, `POST users/me/envcard` replaces that copy with the new card's: the old row and file are deleted. Outside status 12 of a request for a new card, a user who already has a copy still gets `400 user already has file(s)`. The files are deleted only when the request starts: a refused request deletes nothing. They cannot be got back.
@@ -686,6 +688,16 @@ Content-Type: application/json
 { "user": 42, "current_status": 15, "next_status": 16, "request_type": 1, "description": "ย้ายสังกัด" }
 ```
 
+**The new organization.** The user sends their new organization as `user.orgId` in the body. The request then belongs to it: the new organization's admins see the user in `GET admins/users`, and the old organization's admins no longer do.
+
+```http
+POST /envocc-card/api/v2/users/me/card?requestType=11
+Cookie: Authentication_User=<token>
+Content-Type: application/json
+
+{ "user": { "orgId": 27, "positionId": 203 } }
+```
+
 **A new Member Number.** The card issued for a type 11 request has a Member Number no one has held before, including users since deleted. Every other type keeps the number the user had. The number is given when the request starts, on the new card record, so `GET admins/members/:userId` shows it while the request runs. A Revert keeps it. The Old card keeps its old number. The QR code and QR password stay the same, as for every other type.
 
 ### Request Type in the admin user lists
@@ -733,6 +745,8 @@ At any other status, or with no status history, these answer `403` and change no
   "statusCode": 403
 }
 ```
+
+`PATCH users/me` takes the organization as `orgId`, the field registering uses, and saves it as the user's organization. An `orgId` that is not an organization answers `400 organization not found`. Before, sending `orgId` answered 500, so the organization could not be changed. A `password` sent is ignored: the password changes only by a password reset (`POST auth/reset-password`). Before, it was saved as sent, unhashed.
 
 Once a card is issued (15) or cancelled (16), the user changes their details by starting a request for a new card with [`POST users/me/card`](#starting-a-request-for-a-new-card-post-usersmecard), which saves the details in its body.
 

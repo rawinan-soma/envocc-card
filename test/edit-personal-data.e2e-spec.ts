@@ -1,5 +1,6 @@
 import { addStatusEntry, lockUser } from 'src/request/status-history';
 import {
+  ORG,
   CardRequestWorld,
   createCardRequestWorld,
 } from './support/card-request-world';
@@ -30,9 +31,10 @@ describe('Edit personal data (PATCH users/me and users/me/experiences)', () => {
   beforeEach(() => world.start());
   afterEach(() => world.stop());
 
-  const fnameOf = async (userId: number) =>
-    (await world.prisma.users.findUniqueOrThrow({ where: { id: userId } }))
-      .fname_en;
+  const userOf = (userId: number) =>
+    world.prisma.users.findUniqueOrThrow({ where: { id: userId } });
+
+  const fnameOf = async (userId: number) => (await userOf(userId)).fname_en;
 
   const giveExperience = async (userId: number) =>
     (
@@ -71,6 +73,46 @@ describe('Edit personal data (PATCH users/me and users/me/experiences)', () => {
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ fname_en: 'Changed' });
       expect(await fnameOf(user)).toBe('Changed');
+    });
+
+    it('moves the user to another organization with PATCH users/me', async () => {
+      const user = await world.createUser({ history: historyAt(status) });
+
+      const res = await world
+        .asUser(user)
+        .patch('/users/me')
+        .send({ orgId: ORG.OTHER_DEPARTMENT });
+
+      expect(res.status).toBe(200);
+      expect((await userOf(user)).organizationId).toBe(ORG.OTHER_DEPARTMENT);
+    });
+
+    it('refuses an organization that does not exist with 400', async () => {
+      const user = await world.createUser({ history: historyAt(status) });
+
+      const res = await world
+        .asUser(user)
+        .patch('/users/me')
+        .send({ orgId: 999 });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({ message: 'organization not found' });
+      expect((await userOf(user)).organizationId).toBe(ORG.UNIT);
+    });
+
+    it('never changes the password with PATCH users/me', async () => {
+      const user = await world.createUser({ history: historyAt(status) });
+
+      const res = await world
+        .asUser(user)
+        .patch('/users/me')
+        .send({ password: 'NewPassword@123', fname_en: 'Changed' });
+
+      expect(res.status).toBe(200);
+      expect(await userOf(user)).toMatchObject({
+        password: 'x',
+        fname_en: 'Changed',
+      });
     });
 
     it('adds, edits and deletes an experience', async () => {

@@ -1,6 +1,7 @@
 import { existsSync } from 'fs';
 import {
   ADMIN,
+  ORG,
   CardRequestWorld,
   createCardRequestWorld,
   FileKind,
@@ -128,6 +129,30 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
       });
     },
   );
+
+  it('works out the years of each experience sent along', async () => {
+    const user = await world.createUser({ history: ISSUED });
+
+    expect((await startRequest(user, 5)).status).toBe(201);
+
+    expect(
+      await world.prisma.experiences.findMany({ where: { userId: user } }),
+    ).toEqual([expect.objectContaining({ exp_years: 3 })]);
+  });
+
+  it('never saves a password sent along', async () => {
+    const user = await world.createUser({ history: ISSUED });
+
+    const res = await startRequest(user, 5, {
+      user: { password: 'NewPassword@123' },
+    });
+
+    expect(res.status).toBe(201);
+    expect(
+      (await world.prisma.users.findUniqueOrThrow({ where: { id: user } }))
+        .password,
+    ).toBe('x');
+  });
 
   it.each([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])(
     'refuses at status %i with 403, saving nothing',
@@ -299,6 +324,44 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
         request_status: 1,
         request_type: 11,
       });
+    });
+
+    it('moves the user to their new organization, whose admins then see them', async () => {
+      const user = await world.createUser({ history: [...ISSUED, 16] });
+      const ongoing = async (adminId: number) =>
+        (
+          (
+            await world
+              .asAdmin(adminId)
+              .get('/admins/users?status=ongoing&page=1')
+          ).body as { data: { id: number }[] }
+        ).data.map((row) => row.id);
+
+      const res = await startRequest(user, 11, {
+        user: { orgId: ORG.OTHER_DEPARTMENT },
+      });
+
+      expect(res.status).toBe(201);
+      expect(
+        (await world.prisma.users.findUniqueOrThrow({ where: { id: user } }))
+          .organizationId,
+      ).toBe(ORG.OTHER_DEPARTMENT);
+      expect(await ongoing(ADMIN.OTHER_DEPARTMENT)).toEqual([user]);
+      expect(await ongoing(ADMIN.DEPARTMENT)).toEqual([]);
+    });
+
+    it('refuses an organization that does not exist with 400, saving nothing', async () => {
+      const user = await world.createUser({ history: [...ISSUED, 16] });
+
+      const res = await startRequest(user, 11, { user: { orgId: 999 } });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({ message: 'organization not found' });
+      expect(await world.historyOf(user)).toEqual([...ISSUED, 16]);
+      expect(
+        (await world.prisma.users.findUniqueOrThrow({ where: { id: user } }))
+          .organizationId,
+      ).toBe(ORG.UNIT);
     });
 
     it('lets a Ministry admin cancel the card of a user in an organization below theirs, so the user can start it', async () => {

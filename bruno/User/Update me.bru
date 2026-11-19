@@ -18,5 +18,5 @@ body:json {
 }
 
 docs {
-  User login (cookie Authentication_User): run "User auth / Login" first. Any user field but `username`. Only at request status 0, 1 or 6; at any other status, or with no status history, 403 "personal data can be edited only at request status 0, 1 or 6" and nothing changes. After the card is issued, change details with "Card request / New card request".
+  User login (cookie Authentication_User): run "User auth / Login" first. Any user field but `username` and `password` (a `password` sent is ignored; it changes only by a password reset). `orgId` moves the user to that organization; one that does not exist is 400 "organization not found". Only at request status 0, 1 or 6; at any other status, or with no status history, 403 "personal data can be edited only at request status 0, 1 or 6" and nothing changes. After the card is issued, change details with "Card request / New card request".
 }

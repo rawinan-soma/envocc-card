@@ -1,8 +1,13 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
 import { canEditPersonalData } from 'src/request/request-statuses';
 import { latestStatusEntry, lockUser } from 'src/request/status-history';
+import { UserUpdateInternalDto } from './dto/user-update.dto';
 
 // Edit personal data (CONTEXT.md): runs `write` only while the user's Request
 // Status allows it. The check and the write share one transaction under the
@@ -24,3 +29,18 @@ export const editPersonalData = <T>(
     }
     return write(tx);
   });
+
+// The users columns the details a user sends are saved to: `orgId` is the
+// user's organizationId. An organization that does not exist is refused.
+export const toUserUpdate = async (
+  tx: Prisma.TransactionClient,
+  { orgId, ...rest }: UserUpdateInternalDto = {},
+): Promise<Prisma.usersUncheckedUpdateInput> => {
+  if (
+    orgId !== undefined &&
+    !(await tx.organizations.findUnique({ where: { id: orgId } }))
+  ) {
+    throw new BadRequestException('organization not found');
+  }
+  return { ...rest, organizationId: orgId };
+};
