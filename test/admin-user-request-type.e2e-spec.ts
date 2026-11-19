@@ -56,6 +56,16 @@ describe('Admins see and filter users by Request Type', () => {
     return userId;
   };
 
+  // An entry from before Request Types were checked: the foreign key is NOT
+  // VALID in production, so such a type may have no request_types row.
+  const legacyEntry = (userId: number, requestType: number) =>
+    world.prisma.$transaction([
+      world.prisma.$executeRaw`SET LOCAL session_replication_role = replica`,
+      world.prisma
+        .$executeRaw`INSERT INTO requests ("userId", request_status, request_type, date_update)
+        VALUES (${userId}, 4, ${requestType}, ${new Date((later += 60_000))})`,
+    ]);
+
   const list = async (adminId: number, path: string) => {
     const res = await world.asAdmin(adminId).get(path);
     expect(res.status).toBe(200);
@@ -150,6 +160,24 @@ describe('Admins see and filter users by Request Type', () => {
       },
     );
 
+    it('lists a user whose latest entry has a type no Request Type matches, with no type name', async () => {
+      const firstCard = await world.createUser({ history: [0, 1] });
+      const legacy = await world.createUser({ history: [0, 1] });
+      await legacyEntry(legacy, 99);
+
+      const page = await list(adminId, base);
+
+      expect(page.data).toEqual([
+        expect.objectContaining({ id: firstCard, request_type: 1 }),
+        expect.objectContaining({
+          id: legacy,
+          request_status: 4,
+          request_type: 99,
+          request_type_name: null,
+        }),
+      ]);
+    });
+
     it('lists users of every Request Type without the filter', async () => {
       const firstCard = await world.createUser({ history: [0, 1] });
       const lost = await holderWithRequest(LOST, [1]);
@@ -195,6 +223,22 @@ describe('Admins see and filter users by Request Type', () => {
 
     expect(page.data.map((r) => r.id)).toEqual([inScope]);
     expect(page.pageData).toMatchObject({ totalItems: 1 });
+  });
+
+  it('gives no type name in the single-user view for a type no Request Type matches', async () => {
+    const legacy = await world.createUser({ history: [0, 1] });
+    await legacyEntry(legacy, 99);
+
+    const res = await world
+      .asAdmin(ADMIN.UNIT)
+      .get(`/admins/users/${legacy}/requests/form`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      id: legacy,
+      request_type: 99,
+      request_type_name: null,
+    });
   });
 
   it("gives the Request Type of the user's latest entry in the admin's single-user view", async () => {

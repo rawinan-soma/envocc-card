@@ -77,13 +77,15 @@ export class UsersService {
     return { ...parentResult, ...result };
   }
 
-  // requests holds at most the user's latest Status History entry.
-  private latestRequestType(
-    requests: { request_types: { type_id: number; type_name: string } }[],
-  ) {
+  // requests holds at most the user's latest Status History entry. An entry
+  // older than the request_types foreign key may hold a type that is not a
+  // Request Type, which has no name.
+  private latestRequestType(requests: { request_type: number }[]) {
+    const type = requests[0]?.request_type ?? null;
     return {
-      request_type: requests[0]?.request_types.type_id ?? null,
-      request_type_name: requests[0]?.request_types.type_name ?? null,
+      request_type: type,
+      request_type_name:
+        type === null ? null : (REQUEST_TYPES[type]?.name ?? null),
     };
   }
 
@@ -245,7 +247,7 @@ export class UsersService {
             requests: {
               select: {
                 request_status: true,
-                request_types: { select: { type_id: true, type_name: true } },
+                request_type: true,
               },
               orderBy: { date_update: 'desc' },
               take: 1,
@@ -385,7 +387,7 @@ export class UsersService {
             experiences: true,
             requests: {
               select: {
-                request_types: { select: { type_id: true, type_name: true } },
+                request_type: true,
               },
               orderBy: { date_update: 'desc' },
               take: 1,

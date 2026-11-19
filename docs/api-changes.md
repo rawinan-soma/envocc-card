@@ -704,7 +704,7 @@ Content-Type: application/json
 
 Issue #53. Admins see the Request Type of each user's current request, and can filter by it.
 
-- Each row of `GET admins/users` and `GET admins/users/all` has two new fields, `request_type` (1–11) and `request_type_name` (its Thai name), taken from the user's **latest** Status History entry, the same entry `request_status` comes from. Both are `null` for a user with no entries.
+- Each row of `GET admins/users` and `GET admins/users/all` has two new fields, `request_type` (1–11) and `request_type_name` (its Thai name), taken from the user's **latest** Status History entry, the same entry `request_status` comes from. Both are `null` for a user with no entries. An entry written before Request Types were checked may hold a number that is not a Request Type: `request_type` is then that number and `request_type_name` is `null`.
 - `GET admins/users/:userId/requests/form` and `GET users/me/requests/form` return the same two fields.
 - `GET admins/users` and `GET admins/users/all` take an optional `request_type` query parameter. It keeps only users whose latest entry has that Request Type, and combines with `status`, `search_term` and `page`. `pageData` counts the filtered users. An admin still sees only users in their organization and below.
 
