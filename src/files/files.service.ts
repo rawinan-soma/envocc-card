@@ -230,7 +230,7 @@ export class FilesService {
         const current = await latestStatusEntry(tx, userId);
         if (!current || !canReplacePhoto(current.request_status)) {
           throw new ForbiddenException(
-            'photo can be replaced only at request status 1, 2 or 3',
+            'photo can be replaced only at request status 1 or 6',
           );
         }
 

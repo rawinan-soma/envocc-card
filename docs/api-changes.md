@@ -407,7 +407,7 @@ Not a MOPH admin:
 
 `multipart/form-data` with the `photo` field, a JPG or PNG of at most 10 MB. It needs the `Authentication_User` cookie and an approved user. It replaces the user's photo, or creates it when there is none. `POST users/me/photo` still refuses a second photo with `400 user already has file(s)`.
 
-The photo can be replaced only while the user's current request status is **1, 2 or 3**, that is while the photo is being checked (1) or corrected (2), or the documents are still being uploaded (3).
+The photo can be replaced only while the user's current request status is **1 or 6**, that is while it is the user's turn to upload their documents (1) or correct their data (6).
 
 ```http
 PUT /envocc-card/api/v2/users/me/photo
@@ -432,7 +432,7 @@ Content-Type: image/png
 ```json
 403 Forbidden
 {
-  "message": "photo can be replaced only at request status 1, 2 or 3",
+  "message": "photo can be replaced only at request status 1 or 6",
   "error": "Forbidden",
   "statusCode": 403
 }
@@ -447,7 +447,7 @@ An unapproved user gets `403 user not validated`, as on the other card-request r
 | 400 | `photo is required` | The form has no `photo` field. `POST users/me/photo` returns the same instead of a 500. |
 | 400 | `unsupported file type` | The file isn't a `.jpg` or `.png`. |
 | 413 | `File too large` | The file is over 10 MB. |
-| 403 | `photo can be replaced only at request status 1, 2 or 3` | The user's request status isn't 1, 2 or 3, or they have no status history. |
+| 403 | `photo can be replaced only at request status 1 or 6` | The user's request status isn't 1 or 6, or they have no status history. |
 | 403 | `user not validated` | The user isn't approved yet. |
 
 ### `POST users/me/files`
