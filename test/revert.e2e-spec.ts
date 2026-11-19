@@ -156,6 +156,39 @@ describe('Revert (POST admins/users/:userId/requests/revert)', () => {
       },
     );
 
+    it.each([2, 3, 11])(
+      'rejects a request of type %i with 400 and changes nothing',
+      async (requestType) => {
+        const history = [...ISSUED, 1, 4];
+        const user = await world.createUser({ history, requestType });
+        const photo = await world.giveFile(user, 'photo');
+        const validated = await world.prisma.users.findFirstOrThrow({
+          where: { id: user },
+          select: { is_validate: true },
+        });
+
+        const res = await revert(user, {
+          current_status: 4,
+          target_status: 0,
+        });
+
+        expect(res.status).toBe(400);
+        expect(res.body).toMatchObject({
+          message:
+            'only a first-card request (Request Type 1) can be reverted to 0',
+        });
+        expect(await world.historyOf(user)).toEqual(history);
+        expect(
+          await world.prisma.users.findFirstOrThrow({
+            where: { id: user },
+            select: { is_validate: true },
+          }),
+        ).toEqual(validated);
+        expect(await world.filesOf(user, 'photo')).toEqual([{ url: photo }]);
+        expect(existsSync(photo)).toBe(true);
+      },
+    );
+
     it('leaves the user ready to be approved again', async () => {
       const user = await world.createUser({ history: [0, 1, 3, 4] });
       await revert(user, { current_status: 4, target_status: 0 });

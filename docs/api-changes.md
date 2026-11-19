@@ -244,6 +244,7 @@ A revert to 0 has no `delete_files`, because it always deletes everything:
 |---|---|---|
 | 400 | `user's status mismatched` | `current_status` isn't the user's latest status, for example if another admin moved the user first. Reload and retry. |
 | 400 | `cannot revert from 16 to 6` | The move isn't in the table above. |
+| 400 | `only a first-card request (Request Type 1) can be reverted to 0` | The user's request is of types 2–11 (a card holder's new request). Revert it to 1, 6 or 7 instead. |
 | 400 | an array of validation messages | The body is invalid, for example `delete_files` contains `"reqFile"`. |
 | 403 | `only DEPARTMENT or MINISTRY admins can revert` | The admin's organization is a REGION, PROVINCE or UNIT. |
 | 403 | `user is outside your organization` | The user isn't in the admin's organization or one below it. |

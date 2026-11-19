@@ -172,6 +172,14 @@ export class RequestService {
             );
           }
 
+          // A card holder never goes back to unapproved: see
+          // docs/adr/0003-a-request-for-a-new-card-cannot-be-ended-early.md
+          if (revert.target_status === 0 && current.request_type !== 1) {
+            throw new BadRequestException(
+              'only a first-card request (Request Type 1) can be reverted to 0',
+            );
+          }
+
           const filesToDelete: string[] = [];
 
           const target = revert.target_status;
