@@ -511,6 +511,12 @@ The stored `gov_card_files` and `exp_files` rows have no admin, so `GET users/me
 
 ## Other behaviour changes
 
+### `POST users/me/card` only from request status 15 or 16
+
+A user starts a request for a new card (`?requestType=2`…`11`) only while their current request status is **15** (card issued) or **16** (card cancelled). At any other status, or with no status history, it answers `403 a new card can be requested only at request status 15 or 16` and saves nothing: neither the details in the body nor a status. Before, it was accepted at any status and the details were saved even when the request then failed.
+
+On success the request starts at status 1 with the `requestType` given, and its Status History entry has no `approver` (it used to carry the user's own id in that admin field).
+
 ### Uploads with no file answer 400
 
 `POST users/me/photo`, `PUT users/me/photo` and `POST users/me/envcard` used to answer 500 when the form had no file field. They now answer 400 with `photo is required` or `envcard is required`.

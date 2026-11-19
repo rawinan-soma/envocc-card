@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  ForbiddenException,
+  HttpException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -15,6 +17,9 @@ import {
   latestStatusEntry,
   lockUser,
 } from 'src/request/status-history';
+
+// The Request Statuses a user may start a request for a new card from.
+const NEW_CARD_FROM = [15, 16];
 
 interface UsersPageQuery {
   page: number;
@@ -624,70 +629,52 @@ export class UsersService {
     }
   }
 
-  async checkUserExisting(userId: number) {
-    const user = await this.prisma.users.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('user not found');
-    }
-  }
-
-  async updateUserwithExp(userId: number, data: UserUpdateDto) {
-    if (data.user) {
-      if (data.experiences) {
-        const updatedUser = await this.prisma.users.update({
-          where: { id: userId },
-          data: {
-            ...data.user,
-            experiences: { createMany: { data: { ...data.experiences } } },
-          },
-        });
-
-        return updatedUser;
-      }
-
-      if (!data.experiences) {
-        const updateUser = await this.prisma.users.update({
-          where: { id: userId },
-          data: data.user,
-        });
-
-        return updateUser;
-      }
-    }
-  }
-
-  async createRequest(userId: number, requestType: number) {
-    const { entry } = await this.prisma.$transaction((tx) =>
-      addStatusEntry(tx, {
-        userId: userId,
-        status: 1,
-        requestType: requestType,
-        approver: userId,
-      }),
-    );
-    return entry;
-  }
-
+  // A user who holds a card (Request Status 15) or whose card was cancelled
+  // (16) starts a request for a new one (Request Types 2-11): their changed
+  // details are saved and the request starts at 1. See Request Type in
+  // CONTEXT.md and docs/adr/0003-a-request-for-a-new-card-cannot-be-ended-early.md.
   async createNewCardRequest(
     userId: number,
     data: UserUpdateDto,
     requestType: number,
   ) {
-    // 1. update user data
-    // 2. create new experience
-    // 3. create new request
     try {
-      await this.checkUserExisting(userId);
-      const updateUser = await this.updateUserwithExp(userId, data);
-      if (!updateUser) {
-        throw new BadRequestException('invalid user input');
-      }
-      await this.createRequest(userId, requestType);
+      await this.prisma.$transaction(async (tx) => {
+        if ((await lockUser(tx, userId)).length === 0) {
+          throw new NotFoundException('user not found');
+        }
+        const current = await latestStatusEntry(tx, userId);
+        if (!current || !NEW_CARD_FROM.includes(current.request_status)) {
+          throw new ForbiddenException(
+            'a new card can be requested only at request status 15 or 16',
+          );
+        }
+
+        if (!data.user) {
+          throw new BadRequestException('invalid user input');
+        }
+        await tx.users.update({
+          where: { id: userId },
+          data: data.experiences
+            ? {
+                ...data.user,
+                experiences: { createMany: { data: { ...data.experiences } } },
+              }
+            : data.user,
+        });
+
+        await addStatusEntry(tx, {
+          userId,
+          status: 1,
+          requestType,
+          from: current.request_status,
+        });
+      });
     } catch (err) {
-      this.logger.error(err);
-      if (err instanceof BadRequestException) {
+      if (err instanceof HttpException) {
         throw err;
       }
+      this.logger.error(err);
       throw new InternalServerErrorException('failed to create request');
     }
   }

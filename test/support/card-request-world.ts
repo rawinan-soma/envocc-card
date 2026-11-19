@@ -23,6 +23,7 @@ import { AdminUserController } from 'src/users/admin-user.controller';
 import { AdminFileController } from 'src/files/admin-file.controller';
 import { UserFileController } from 'src/files/user-file.controller';
 import { UsersController } from 'src/users/users.controller';
+import { UserCardRequestController } from 'src/users/user-card-request.controller';
 import { UsersService } from 'src/users/users.service';
 import { startApp, testConfig } from './test-app';
 import { createTestDb, TestDb } from './test-db';
@@ -113,6 +114,7 @@ export const createCardRequestWorld = async () => {
         AdminMemberController,
         CommonMembersController,
         UsersController,
+        UserCardRequestController,
         AdminFileController,
         UserFileController,
       ],
