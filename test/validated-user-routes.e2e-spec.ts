@@ -83,7 +83,7 @@ describe('@ValidatedUser() routes', () => {
   let prisma: {
     users: { findUnique: jest.Mock };
     photos: { findFirst: jest.Mock; create: jest.Mock };
-    envocc_card_files: { findFirst: jest.Mock; create: jest.Mock };
+    envocc_card_files: { count: jest.Mock; create: jest.Mock };
     requests: { findFirst: jest.Mock };
     gov_card_files: { count: jest.Mock };
     $queryRaw: jest.Mock;
@@ -110,7 +110,7 @@ describe('@ValidatedUser() routes', () => {
       },
       photos: { findFirst: jest.fn(), create: stubReturningOk() },
       envocc_card_files: {
-        findFirst: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
         create: stubReturningOk(),
       },
       requests: {

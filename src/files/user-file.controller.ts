@@ -64,9 +64,10 @@ export class UserFileController {
     @UploadedFile(fileRequired('envcard')) file: Express.Multer.File,
     @Req() request: RequestwithUserData,
   ) {
-    const dto = fileDto(file, request.user.id);
-
-    const envcard = await this.filesService.createFile('envcard', dto);
+    const envcard = await this.filesService.uploadEnvcard(
+      request.user.id,
+      fileDto(file, request.user.id),
+    );
     return { msg: 'envcard create', id: envcard?.id };
   }
 

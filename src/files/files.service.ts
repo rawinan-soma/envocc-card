@@ -280,6 +280,45 @@ export class FilesService {
     return swapped.photo;
   }
 
+  // The copy of the issued card. At 12 of a new-card request it replaces the
+  // Old card's copy, kept until now; otherwise a second copy is refused.
+  async uploadEnvcard(userId: number, data: FileCreateDto) {
+    let swapped: { envcard: envocc_card_files | null; oldPaths: string[] };
+    try {
+      swapped = await this.prisma.$transaction(async (tx) => {
+        await lockUser(tx, userId);
+        const current = await latestStatusEntry(tx, userId);
+        const replacesOldCopy =
+          current?.request_status === 12 &&
+          isNewCardRequest(current.request_type);
+
+        if (
+          !replacesOldCopy &&
+          (await this.txCountFilesForUser('envcard', userId, tx)) > 0
+        ) {
+          throw new BadRequestException('user already has file(s)');
+        }
+
+        return {
+          oldPaths: replacesOldCopy
+            ? await this.txDeleteFilesForUser(['envcard'], userId, tx)
+            : [],
+          envcard: await this.txUploadFileForUser('envcard', data, tx),
+        };
+      });
+    } catch (err) {
+      await this.deleteFilesFromDisk([data.url]);
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      this.logger.error(err);
+      throw new InternalServerErrorException('something went wrong');
+    }
+
+    await this.deleteFilesFromDisk(swapped.oldPaths);
+    return swapped.envcard;
+  }
+
   // Document upload. Each document replaces the user's existing one(s) of that
   // type. A required type the user already has may be left out. Files the rule
   // does not list are ignored and removed from disk with the rest on failure.

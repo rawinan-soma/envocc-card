@@ -556,4 +556,80 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
       expect(await storedOf(user)).toMatchObject({ photo: [paths.photo] });
     });
   });
+
+  describe('the copy of the issued card (POST users/me/envcard)', () => {
+    // From 1 to 12 by M. print (10) and the approval date (11).
+    const walkToCardCopy = async (userId: number) => {
+      const admin = world.asAdmin(ADMIN.MINISTRY);
+      const update = (current_status: number, next_status: number) =>
+        admin.post('/admins/users/requests/update').send({
+          user: userId,
+          current_status,
+          next_status,
+          request_type: 1,
+          description: '',
+        });
+
+      const steps = [
+        () =>
+          world
+            .asUser(userId)
+            .post('/users/me/files')
+            .attach('govCard', Buffer.from('fake'), 'govCard.pdf')
+            .attach('photo', Buffer.from('fake'), 'me.jpg'),
+        () => update(4, 7),
+        () =>
+          admin.post('/admins/members').send({ userId, signature_method: 10 }),
+        () => update(10, 11),
+        () =>
+          admin
+            .patch(`/admins/members/${userId}/activate`)
+            .send({ startDate: '2027-03-01' }),
+      ];
+      for (const step of steps) {
+        const res = await step();
+        expect([200, 201]).toContain(res.status);
+      }
+      expect((await world.historyOf(userId)).at(-1)).toBe(12);
+    };
+
+    const uploadCardCopy = (userId: number) =>
+      world
+        .asUser(userId)
+        .post('/users/me/envcard')
+        .attach('envcard', Buffer.from('fake'), 'card.pdf');
+
+    it('replaces the copy of the Old card with the one sent at 12', async () => {
+      const user = await world.createUser({ history: [...ISSUED, 16] });
+      await world.giveMember(user, { qrcode: '10001000', is_active: false });
+      const oldCopy = await world.giveFile(user, 'envcard');
+      expect((await startRequest(user, 4, {})).status).toBe(201);
+      await walkToCardCopy(user);
+
+      const res = await uploadCardCopy(user);
+
+      expect(res.status).toBe(201);
+      const stored = await world.filesOf(user, 'envcard');
+      expect(stored).toHaveLength(1);
+      expect(stored[0].url).not.toBe(oldCopy);
+      expect(existsSync(stored[0].url)).toBe(true);
+      expect(existsSync(oldCopy)).toBe(false);
+    });
+
+    it('still refuses a second copy of a first card, keeping the first', async () => {
+      const user = await world.createUser({
+        history: [0, 1, 4, 7, 10, 11, 12],
+      });
+      const firstCopy = await world.giveFile(user, 'envcard');
+
+      const res = await uploadCardCopy(user);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({ message: 'user already has file(s)' });
+      expect(await world.filesOf(user, 'envcard')).toEqual([
+        { url: firstCopy },
+      ]);
+      expect(existsSync(firstCopy)).toBe(true);
+    });
+  });
 });
