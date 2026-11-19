@@ -412,25 +412,6 @@ export class MembersService {
           where: { userId: data.userId },
         });
 
-        // Member Numbers are the highest one + 1, so card creations for
-        // different users must not interleave: otherwise both read the same
-        // highest number. Held until this transaction ends. See
-        // .claude/skills/member-number.
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('members.member_no'))`;
-
-        const latestMember = await tx.members.findFirst({
-          orderBy: { member_no: 'desc' },
-        });
-
-        let nextMemberNo: number;
-        if (!latestMember) {
-          nextMemberNo = 1;
-        } else if (existedMember) {
-          nextMemberNo = existedMember.member_no as number;
-        } else {
-          nextMemberNo = (latestMember.member_no as number) + 1;
-        }
-
         await addStatusEntry(tx, {
           userId: data.userId,
           status: signature_method,
@@ -448,9 +429,11 @@ export class MembersService {
           });
         }
 
+        // member_no is left to its default, nextval of members_member_no_seq:
+        // never shared by concurrent creations, never given out again after
+        // a user is deleted. See .claude/skills/member-number.
         return await tx.members.create({
           data: {
-            member_no: nextMemberNo,
             qrcode: initQRCode,
             qrcode_pass: initPassword,
             ...rest,

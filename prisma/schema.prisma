@@ -293,7 +293,7 @@ model gov_card_files {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model members {
   member_id    Int         @unique @default(autoincrement())
-  member_no    Int?
+  member_no    Int?        @default(autoincrement())
   userId       Int
   start_date   DateTime?   @db.Date
   end_date     DateTime?   @db.Date

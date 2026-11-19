@@ -23,18 +23,36 @@ describe('Step 7: creating the card record (POST admins/members)', () => {
   const membersOf = (userId: number) =>
     world.prisma.members.findMany({ where: { userId } });
 
+  const memberNoOf = async (userId: number) =>
+    (await membersOf(userId)).map((member) => member.member_no)[0];
+
   it('gives a first-time user the next Member Number', async () => {
-    const other = await world.createUser({ history: [0, 1, 3, 4, 7, 8] });
-    await world.giveMember(other, { member_no: 41, qrcode: '00000041' });
-    const user = await world.createUser({ history: [0, 1, 3, 4] });
+    const first = await world.createUser({ history: [0, 1, 4] });
+    const user = await world.createUser({ history: [0, 1, 4] });
+    expect((await passStep7(first)).status).toBe(201);
 
     const res = await passStep7(user);
 
     expect(res.status).toBe(201);
-    expect(await membersOf(user)).toEqual([
-      expect.objectContaining({ member_no: 42 }),
-    ]);
-    expect(await world.historyOf(user)).toEqual([0, 1, 3, 4, 7]);
+    expect(await memberNoOf(user)).toBe((await memberNoOf(first))! + 1);
+    expect(await world.historyOf(user)).toEqual([0, 1, 4, 7]);
+  });
+
+  it("never gives a deleted user's Member Number to anyone else", async () => {
+    const first = await world.createUser({ history: [0, 1, 4] });
+    const deleted = await world.createUser({ history: [0, 1, 4] });
+    const user = await world.createUser({ history: [0, 1, 4] });
+    await passStep7(first);
+    await passStep7(deleted);
+    const deletedNo = await memberNoOf(deleted);
+    expect(
+      (await world.asAdmin(ADMIN.MINISTRY).delete(`/admins/users/${deleted}`))
+        .status,
+    ).toBe(200);
+
+    expect((await passStep7(user)).status).toBe(201);
+
+    expect(await memberNoOf(user)).toBe(deletedNo! + 1);
   });
 
   it('gives different Member Numbers to users whose cards are created at the same time', async () => {
