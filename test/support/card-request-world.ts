@@ -46,9 +46,10 @@ export const ORG = {
 // One admin per organization, with the same id as its organization.
 export const ADMIN = ORG;
 
-export type FileKind = 'photo' | 'govcard' | 'expfile' | 'reqFile';
+export type FileKind = 'photo' | 'govcard' | 'expfile' | 'reqFile' | 'envcard';
 
 const fileTable = {
+  envcard: 'envocc_card_files',
   photo: 'photos',
   govcard: 'gov_card_files',
   expfile: 'exp_files',
@@ -245,6 +246,9 @@ export const createCardRequestWorld = async () => {
     const data = { userId, filename, url };
     const withAdmin = { ...data, adminId: ADMIN.UNIT };
     switch (kind) {
+      case 'envcard':
+        await db.prisma.envocc_card_files.create({ data });
+        break;
       case 'photo':
         await db.prisma.photos.create({ data });
         break;

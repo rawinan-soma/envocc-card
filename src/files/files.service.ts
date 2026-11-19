@@ -17,6 +17,7 @@ import {
   canReplacePhoto,
   USER_SENDS_DOCUMENTS_STATUSES,
 } from 'src/request/request-statuses';
+import { FIRST_CARD, isNewCardRequest } from 'src/request/request-types';
 import {
   envocc_card_files,
   exp_files,
@@ -55,19 +56,24 @@ type DocumentUploadFile = 'govcard' | 'reqFile' | 'expfile' | 'photo';
 
 interface DocumentUploadRule {
   files: readonly DocumentUploadFile[];
-  required: readonly DocumentUploadFile[];
   // Request Statuses the upload may start from; undefined = any.
   from?: readonly number[];
 }
 
 const DOCUMENT_UPLOAD_RULES = {
-  admin: { files: ['govcard', 'reqFile', 'expfile'], required: ['govcard'] },
+  admin: { files: ['govcard', 'reqFile', 'expfile'] },
   user: {
     files: ['govcard', 'expfile', 'photo'],
-    required: ['govcard'],
     from: USER_SENDS_DOCUMENTS_STATUSES,
   },
 } satisfies Record<'admin' | 'user', DocumentUploadRule>;
+
+// The files a request of this Request Type needs, each unless already stored.
+// An uploader is held only to the ones it can send: an admin sends no photo.
+const requiredDocuments = (requestType: number): DocumentUploadFile[] => [
+  'govcard',
+  ...(isNewCardRequest(requestType) ? (['photo'] as const) : []),
+];
 
 export type DocumentUploader = keyof typeof DOCUMENT_UPLOAD_RULES;
 
@@ -283,6 +289,7 @@ export class FilesService {
           }
         }
 
+        const required = requiredDocuments(current?.request_type ?? FIRST_CARD);
         const replaced: string[] = [];
         for (const model of rule.files) {
           const upload = uploads[model];
@@ -292,7 +299,7 @@ export class FilesService {
             );
             await this.txUploadFileForUser(model, upload, tx);
           } else if (
-            rule.required.includes(model) &&
+            required.includes(model) &&
             (await this.txCountFilesForUser(model, userId, tx)) === 0
           ) {
             throw new BadRequestException(`${model} is required`);

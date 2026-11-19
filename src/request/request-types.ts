@@ -5,6 +5,9 @@ interface RequestTypeRule {
   // The Request Statuses a user may start a request of this type from
   // (POST users/me/card). Left out when no user may start it.
   userStartsFrom?: readonly number[];
+  // Starting the request keeps the user's photo: the Old card stays valid
+  // until its end date, and the online card shows that photo.
+  keepsPhoto?: true;
 }
 
 // Registering starts a first-card request; a user cannot pick it.
@@ -14,7 +17,11 @@ const CARD_ISSUED_OR_CANCELLED = [15, 16] as const;
 
 export const REQUEST_TYPES: Readonly<Record<number, RequestTypeRule>> = {
   [FIRST_CARD]: { name: 'ครั้งแรก' },
-  2: { name: 'บัตรหมดอายุ', userStartsFrom: CARD_ISSUED_OR_CANCELLED },
+  2: {
+    name: 'บัตรหมดอายุ',
+    userStartsFrom: CARD_ISSUED_OR_CANCELLED,
+    keepsPhoto: true,
+  },
   3: { name: 'บัตรสูญหาย', userStartsFrom: CARD_ISSUED_OR_CANCELLED },
   4: { name: 'บัตรถูกทำลาย', userStartsFrom: CARD_ISSUED_OR_CANCELLED },
   5: { name: 'เปลี่ยนชื่อตัว', userStartsFrom: CARD_ISSUED_OR_CANCELLED },
@@ -38,3 +45,6 @@ export const REQUEST_TYPES: Readonly<Record<number, RequestTypeRule>> = {
 export const USER_STARTED_TYPES = Object.entries(REQUEST_TYPES).flatMap(
   ([type, rule]) => (rule.userStartsFrom ? [Number(type)] : []),
 );
+
+// A request for a new card: any type but the first card.
+export const isNewCardRequest = (type: number) => type !== FIRST_CARD;

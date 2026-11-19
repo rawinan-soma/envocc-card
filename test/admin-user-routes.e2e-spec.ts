@@ -6,6 +6,7 @@ import type { App } from 'supertest/types';
 import { PrismaService } from 'prisma/prisma.service';
 import { JwtAccessStrategy } from 'src/admin-auth/jwt-access.strategy';
 import { AdminsService } from 'src/admins/admins.service';
+import { FilesService } from 'src/files/files.service';
 import { AdminUserController } from 'src/users/admin-user.controller';
 import { UsersService } from 'src/users/users.service';
 import { startApp, testConfig } from './support/test-app';
@@ -80,6 +81,7 @@ describe('admin user listing routes', () => {
       providers: [
         JwtAccessStrategy,
         UsersService,
+        FilesService,
         { provide: PrismaService, useValue: prisma },
         {
           provide: AdminsService,

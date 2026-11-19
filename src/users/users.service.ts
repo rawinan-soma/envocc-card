@@ -18,6 +18,7 @@ import {
 } from 'src/request/status-history';
 import { editPersonalData } from './edit-personal-data';
 import { REQUEST_TYPES, USER_STARTED_TYPES } from 'src/request/request-types';
+import { FilesService } from 'src/files/files.service';
 
 interface UsersPageQuery {
   page: number;
@@ -35,7 +36,10 @@ interface OrganizationWithParent {
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly filesService: FilesService,
+  ) {}
 
   private async getChildIds(orgId: number): Promise<number[]> {
     const parent = await this.prisma.organizations.findUnique({
@@ -647,21 +651,27 @@ export class UsersService {
 
   // A user who holds a card (Request Status 15) or whose card was cancelled
   // (16) starts a request for a new one (Request Types 2-11): their changed
-  // details are saved and the request starts at 1. See Request Type in
+  // details are saved, the files sent for the earlier request that must be
+  // sent again are deleted, and the request starts at 1. See Request Type in
   // CONTEXT.md and docs/adr/0003-a-request-for-a-new-card-cannot-be-ended-early.md.
   async createNewCardRequest(
     userId: number,
     data: UserUpdateDto,
     requestType: number,
   ) {
-    const startsFrom = REQUEST_TYPES[requestType]?.userStartsFrom;
+    const type = REQUEST_TYPES[requestType];
+    const startsFrom = type?.userStartsFrom;
     if (!startsFrom) {
       throw new BadRequestException(
         `requestType must be one of ${USER_STARTED_TYPES.join(', ')}`,
       );
     }
+    const sentAgain = type.keepsPhoto
+      ? (['govcard'] as const)
+      : (['govcard', 'photo'] as const);
+    let deleted: string[];
     try {
-      await this.prisma.$transaction(async (tx) => {
+      deleted = await this.prisma.$transaction(async (tx) => {
         if ((await lockUser(tx, userId)).length === 0) {
           throw new NotFoundException('user not found');
         }
@@ -688,6 +698,8 @@ export class UsersService {
           requestType,
           from: current.request_status,
         });
+
+        return this.filesService.txDeleteFilesForUser(sentAgain, userId, tx);
       });
     } catch (err) {
       if (err instanceof HttpException) {
@@ -696,5 +708,7 @@ export class UsersService {
       this.logger.error(err);
       throw new InternalServerErrorException('failed to create request');
     }
+
+    await this.filesService.deleteFilesFromDisk(deleted);
   }
 }

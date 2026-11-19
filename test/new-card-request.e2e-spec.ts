@@ -1,7 +1,9 @@
+import { existsSync } from 'fs';
 import {
   ADMIN,
   CardRequestWorld,
   createCardRequestWorld,
+  FileKind,
 } from './support/card-request-world';
 
 const ISSUED = [0, 1, 4, 7, 8, 9, 15];
@@ -250,6 +252,154 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
       start_date: '2027-03-01T00:00:00.000Z',
       end_date: '2032-02-29T00:00:00.000Z',
       user: { fname_th: 'ชื่อใหม่' },
+    });
+  });
+
+  describe('the files sent for the earlier request', () => {
+    const KINDS: FileKind[] = ['photo', 'govcard', 'expfile', 'envcard'];
+
+    // A card holder with every file of their first request and one experience.
+    const cardHolder = async (history = ISSUED) => {
+      const user = await world.createUser({ history });
+      const paths = {} as Record<FileKind, string>;
+      for (const kind of KINDS) {
+        paths[kind] = await world.giveFile(user, kind);
+      }
+      await world.prisma.experiences.create({
+        data: { userId: user, exp_office: 'สำนักงานเดิม' },
+      });
+      return { user, paths };
+    };
+
+    const storedOf = async (user: number) => {
+      const stored: Partial<Record<FileKind, string[]>> = {};
+      for (const kind of KINDS) {
+        stored[kind] = (await world.filesOf(user, kind)).map((f) => f.url);
+      }
+      return stored;
+    };
+
+    const uploadAsUser = (user: number, fields: ('govCard' | 'photo')[]) => {
+      let req = world.asUser(user).post('/users/me/files');
+      for (const field of fields) {
+        req = req.attach(
+          field,
+          Buffer.from('fake'),
+          field === 'photo' ? 'me.jpg' : 'govCard.pdf',
+        );
+      }
+      return req;
+    };
+
+    it.each([3, 4, 5, 6, 7, 8, 9, 10, 11])(
+      'deletes the photo and government card when a type %i request starts, and keeps the rest',
+      async (requestType) => {
+        const { user, paths } = await cardHolder();
+
+        expect((await startRequest(user, requestType, {})).status).toBe(201);
+
+        expect(await storedOf(user)).toEqual({
+          photo: [],
+          govcard: [],
+          expfile: [paths.expfile],
+          envcard: [paths.envcard],
+        });
+        expect(existsSync(paths.photo)).toBe(false);
+        expect(existsSync(paths.govcard)).toBe(false);
+        expect(existsSync(paths.expfile)).toBe(true);
+        expect(existsSync(paths.envcard)).toBe(true);
+        expect(
+          await world.prisma.experiences.findMany({ where: { userId: user } }),
+        ).toEqual([expect.objectContaining({ exp_office: 'สำนักงานเดิม' })]);
+      },
+    );
+
+    it('deletes only the government card when a type 2 request starts, keeping the photo', async () => {
+      const { user, paths } = await cardHolder();
+
+      expect((await startRequest(user, 2, {})).status).toBe(201);
+
+      expect(await storedOf(user)).toEqual({
+        photo: [paths.photo],
+        govcard: [],
+        expfile: [paths.expfile],
+        envcard: [paths.envcard],
+      });
+      expect(existsSync(paths.photo)).toBe(true);
+      expect(existsSync(paths.govcard)).toBe(false);
+    });
+
+    it('deletes the files of a user starting from a cancelled card (16) too', async () => {
+      const { user, paths } = await cardHolder([...ISSUED, 16]);
+
+      expect((await startRequest(user, 4, {})).status).toBe(201);
+
+      expect(await storedOf(user)).toMatchObject({ photo: [], govcard: [] });
+      expect(existsSync(paths.photo)).toBe(false);
+      expect(existsSync(paths.govcard)).toBe(false);
+    });
+
+    it.each([
+      ['at a status it cannot start from', [...ISSUED, 1], 3, 403],
+      ['with a Request Type a user cannot pick', ISSUED, 1, 400],
+    ])('deletes no file when refused %s', async (_, history, type, status) => {
+      const { user, paths } = await cardHolder(history);
+
+      expect((await startRequest(user, type, {})).status).toBe(status);
+
+      expect(await storedOf(user)).toEqual({
+        photo: [paths.photo],
+        govcard: [paths.govcard],
+        expfile: [paths.expfile],
+        envcard: [paths.envcard],
+      });
+      for (const path of Object.values(paths)) {
+        expect(existsSync(path)).toBe(true);
+      }
+    });
+
+    it.each([
+      ['a government card', ['photo'], 'govcard is required'],
+      ['a photo', ['govCard'], 'photo is required'],
+    ] as const)(
+      'refuses Document upload for a type 5 request without %s',
+      async (_, fields, message) => {
+        const { user } = await cardHolder();
+        expect((await startRequest(user, 5, {})).status).toBe(201);
+
+        const res = await uploadAsUser(user, [...fields]);
+
+        expect(res.status).toBe(400);
+        expect(res.body).toMatchObject({ message });
+        expect(await world.historyOf(user)).toEqual([...ISSUED, 1]);
+        expect(await storedOf(user)).toMatchObject({ photo: [], govcard: [] });
+      },
+    );
+
+    it('moves a type 5 request to 4 once a government card and photo are sent', async () => {
+      const { user } = await cardHolder();
+      expect((await startRequest(user, 5, {})).status).toBe(201);
+
+      const res = await uploadAsUser(user, ['govCard', 'photo']);
+
+      expect(res.status).toBe(201);
+      expect(await world.historyOf(user)).toEqual([...ISSUED, 1, 4]);
+      expect(await storedOf(user)).toMatchObject({
+        photo: [expect.any(String)],
+        govcard: [expect.any(String)],
+      });
+    });
+
+    it('moves a type 2 request to 4 with a government card alone, using the kept photo', async () => {
+      const { user, paths } = await cardHolder();
+      expect((await startRequest(user, 2, {})).status).toBe(201);
+
+      expect((await uploadAsUser(user, ['photo'])).status).toBe(400);
+      const res = await uploadAsUser(user, ['govCard']);
+
+      expect(res.status).toBe(201);
+      expect(await world.historyOf(user)).toEqual([...ISSUED, 1, 4]);
+      expect(await storedOf(user)).toMatchObject({ photo: [paths.photo] });
     });
   });
 });

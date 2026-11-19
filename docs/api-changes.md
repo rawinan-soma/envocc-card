@@ -485,7 +485,7 @@ A user sends their own documents (Document upload). `multipart/form-data`, with 
 |---|---|---|
 | `govCard` | yes, unless the user already has one | PDF, at most 10 MB. |
 | `experienceForm` | no | PDF, at most 10 MB. |
-| `photo` | no | JPG or PNG, at most 10 MB. When sent, it replaces the user's current photo. |
+| `photo` | for a request for a new card (Request Types 2–11), unless the user already has one; otherwise no | JPG or PNG, at most 10 MB. When sent, it replaces the user's current photo. |
 
 The upload is allowed only while the user's current request status is **1** (first upload) or **6** (correction after a Revert). On success the user moves to status 4. A document sent again replaces the existing one; a `govCard` or `experienceForm` left out is kept. The old files are deleted from the server after the upload commits, best-effort.
 
@@ -523,6 +523,7 @@ The body of a `201 Created` is empty. At any other status:
 | Status | `message` | When |
 |---|---|---|
 | 400 | `govcard is required` | The user has no stored government card and the form has no `govCard`. |
+| 400 | `photo is required` | The request is for a new card (Request Types 2–11), the user has no stored photo and the form has no `photo`. |
 | 400 | `unsupported file type` | A `govCard` or `experienceForm` isn't a `.pdf`, or the `photo` isn't a `.jpg` or `.png`. |
 | 400 | `Unexpected field - <field>` | The form has a field this route doesn't take, such as `requestFile`. |
 | 413 | `File too large` | A file is over 10 MB. |
@@ -569,6 +570,7 @@ Content-Type: application/json
 - **Body:** `user` (the user's details) and `experiences` (items added to the user's experiences) are both optional. They are saved in the same transaction as the new status: either the request starts and they are saved, or nothing is saved. Before, `user` was required (`400 invalid user input`) and sending `experiences` failed with 500.
 - **Response:** `201` with an empty body. The user is now at status 1. The new Status History entry has the `request_type` given and no `approver` (it used to carry the user's own id in that admin field).
 - **Two requests sent at once** start one request. The other answers 403.
+- **Files:** issue #51. Starting the request deletes the government card sent for the user's earlier request, and the photo too unless `requestType` is 2, so the user sends them again with [`POST users/me/files`](#post-usersmefiles), which then requires both (the photo only when none is stored). A type 2 request keeps the photo, because the old card stays valid until its end date and the online card shows it. The experience form, the experiences and the copy of the old issued card (`envcard`) are kept. The files are deleted only when the request starts: a refused request deletes nothing. They cannot be got back.
 
 **Errors**
 

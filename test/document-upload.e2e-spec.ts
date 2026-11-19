@@ -171,6 +171,7 @@ describe('Document upload by an admin (POST admins/users/:userId/files)', () => 
         history: [0, 1],
         requestType: 2,
       });
+      await world.giveFile(user, 'photo');
 
       const res = await uploadAsUser(user, ['govCard', 'experienceForm']);
 
