@@ -459,7 +459,7 @@ A user uploads their own step 3 documents. `multipart/form-data`, with the `Auth
 | `experienceForm` | no | PDF, at most 10 MB. |
 | `photo` | no | JPG or PNG, at most 10 MB. When sent, it replaces the user's current photo. |
 
-The upload is allowed only while the user's current request status is **1 or 3**. On success the user moves to status 4. A document sent again replaces the existing one; a `govCard` or `experienceForm` left out is kept. The old files are deleted from the server after the upload commits, best-effort.
+The upload is allowed only while the user's current request status is **1** (first upload) or **6** (correction after a Revert). On success the user moves to status 4. A document sent again replaces the existing one; a `govCard` or `experienceForm` left out is kept. The old files are deleted from the server after the upload commits, best-effort.
 
 ```http
 POST /envocc-card/api/v2/users/me/files
@@ -484,7 +484,7 @@ The body of a `201 Created` is empty. At any other status:
 ```json
 403 Forbidden
 {
-  "message": "documents can be uploaded only at request status 1, 3",
+  "message": "documents can be uploaded only at request status 1, 6",
   "error": "Forbidden",
   "statusCode": 403
 }
@@ -498,7 +498,7 @@ The body of a `201 Created` is empty. At any other status:
 | 400 | `unsupported file type` | A `govCard` or `experienceForm` isn't a `.pdf`, or the `photo` isn't a `.jpg` or `.png`. |
 | 400 | `Unexpected field - <field>` | The form has a field this route doesn't take, such as `requestFile`. |
 | 413 | `File too large` | A file is over 10 MB. |
-| 403 | `documents can be uploaded only at request status 1, 3` | The user's request status isn't 1 or 3, or they have no status history. |
+| 403 | `documents can be uploaded only at request status 1, 6` | The user's request status isn't 1 or 6, or they have no status history. |
 | 403 | `user not validated` | The user isn't approved yet. |
 | 401 | `Unauthorized` | No `Authentication_User` cookie, or an admin cookie. |
 

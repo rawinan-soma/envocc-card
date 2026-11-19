@@ -55,7 +55,7 @@ const blockedRoutes: (Route & { validatedStatus: number })[] = [
     upload: envcardUpload,
     validatedStatus: 201,
   },
-  // 400: reaches FilesService, whose stubbed user is at status 3 with no
+  // 400: reaches FilesService, whose stubbed user is at status 1 with no
   // government card stored.
   { method: 'post', path: '/users/me/files', validatedStatus: 400 },
   // 404: reaches FilesService, which finds no stored photo for this user.
@@ -114,7 +114,7 @@ describe('@ValidatedUser() routes', () => {
         create: stubReturningOk(),
       },
       requests: {
-        findFirst: jest.fn().mockResolvedValue({ request_status: 3 }),
+        findFirst: jest.fn().mockResolvedValue({ request_status: 1 }),
       },
       gov_card_files: { count: jest.fn().mockResolvedValue(0) },
       // The user lock's row: the user exists.

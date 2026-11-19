@@ -145,12 +145,12 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
     };
 
     it('stores the government card and experience form and moves them to 4', async () => {
-      const user = await world.createUser({ history: [0, 1, 3] });
+      const user = await world.createUser({ history: [0, 1] });
 
       const res = await uploadAsUser(user, ['govCard', 'experienceForm']);
 
       expect(res.status).toBe(201);
-      expect(await world.historyOf(user)).toEqual([0, 1, 3, 4]);
+      expect(await world.historyOf(user)).toEqual([0, 1, 4]);
       expect(
         await world.prisma.requests.findFirst({
           where: { userId: user, request_status: 4 },
@@ -168,14 +168,14 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
 
     it('keeps the request type of a type 2 request when moving them to 4', async () => {
       const user = await world.createUser({
-        history: [0, 1, 3],
+        history: [0, 1],
         requestType: 2,
       });
 
       const res = await uploadAsUser(user, ['govCard', 'experienceForm']);
 
       expect(res.status).toBe(201);
-      expect(await world.historyOf(user)).toEqual([0, 1, 3, 4]);
+      expect(await world.historyOf(user)).toEqual([0, 1, 4]);
       expect(
         await world.prisma.requests.findFirst({
           where: { userId: user, request_status: 4 },
@@ -194,45 +194,56 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
       expect(await world.filesOf(user, 'expfile')).toHaveLength(1);
     });
 
+    it('accepts a correction upload at request status 6 and moves the user to 4', async () => {
+      const user = await world.createUser({ history: [0, 1, 4, 7, 6] });
+
+      const res = await uploadAsUser(user, ['govCard', 'photo']);
+
+      expect(res.status).toBe(201);
+      expect(await world.historyOf(user)).toEqual([0, 1, 4, 7, 6, 4]);
+      expect(await world.filesOf(user, 'govcard')).toHaveLength(1);
+      expect(await world.filesOf(user, 'photo')).toHaveLength(1);
+    });
+
     it('accepts an upload without an experience form from a user who has none', async () => {
-      const user = await world.createUser({ history: [0, 1, 3] });
+      const user = await world.createUser({ history: [0, 1] });
 
       const res = await uploadAsUser(user, ['govCard']);
 
       expect(res.status).toBe(201);
-      expect(await world.historyOf(user)).toEqual([0, 1, 3, 4]);
+      expect(await world.historyOf(user)).toEqual([0, 1, 4]);
       expect(await world.filesOf(user, 'govcard')).toHaveLength(1);
       expect(await world.filesOf(user, 'expfile')).toEqual([]);
     });
 
     it('requires a government card from a user who has none, storing nothing', async () => {
-      const user = await world.createUser({ history: [0, 1, 3] });
+      const user = await world.createUser({ history: [0, 1] });
 
       const res = await uploadAsUser(user, ['experienceForm']);
 
       expect(res.status).toBe(400);
       expect(res.body).toMatchObject({ message: 'govcard is required' });
-      expect(await world.historyOf(user)).toEqual([0, 1, 3]);
+      expect(await world.historyOf(user)).toEqual([0, 1]);
       expect(await world.filesOf(user, 'expfile')).toEqual([]);
       expect(assets()).toEqual([]);
     });
 
     it('lets a user keep the stored documents and upload only a photo', async () => {
-      const user = await world.createUser({ history: [0, 1, 3, 4, 2, 3] });
+      const user = await world.createUser({ history: [0, 1, 4, 7, 6] });
       const govcard = await world.giveFile(user, 'govcard');
       const expfile = await world.giveFile(user, 'expfile');
 
       const res = await uploadAsUser(user, ['photo']);
 
       expect(res.status).toBe(201);
-      expect(await world.historyOf(user)).toEqual([0, 1, 3, 4, 2, 3, 4]);
+      expect(await world.historyOf(user)).toEqual([0, 1, 4, 7, 6, 4]);
       expect(await world.filesOf(user, 'govcard')).toEqual([{ url: govcard }]);
       expect(await world.filesOf(user, 'expfile')).toEqual([{ url: expfile }]);
       expect(await world.filesOf(user, 'photo')).toHaveLength(1);
     });
 
     it('replaces the stored photo when a new one is sent', async () => {
-      const user = await world.createUser({ history: [0, 1, 3] });
+      const user = await world.createUser({ history: [0, 1] });
       const oldPhoto = await world.giveFile(user, 'photo');
 
       const res = await uploadAsUser(user, [
@@ -249,7 +260,7 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
       expect(existsSync(oldPhoto)).toBe(false);
     });
 
-    it.each([2, 4])(
+    it.each([3, 4, 7])(
       'answers 403 at request status %i, storing nothing',
       async (status) => {
         const user = await world.createUser({ history: [0, 1, status] });
@@ -258,7 +269,7 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
 
         expect(res.status).toBe(403);
         expect(res.body).toMatchObject({
-          message: 'documents can be uploaded only at request status 1, 3',
+          message: 'documents can be uploaded only at request status 1, 6',
         });
         expect(await world.historyOf(user)).toEqual([0, 1, status]);
         expect(await world.filesOf(user, 'govcard')).toEqual([]);
@@ -276,7 +287,7 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
     });
 
     it('rejects a photo that is not an image, storing nothing', async () => {
-      const user = await world.createUser({ history: [0, 1, 3] });
+      const user = await world.createUser({ history: [0, 1] });
 
       const res = await world
         .asUser(user)
@@ -289,7 +300,7 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
     });
 
     it('answers 401 to an admin session on the user route', async () => {
-      const user = await world.createUser({ history: [0, 1, 3] });
+      const user = await world.createUser({ history: [0, 1] });
 
       const res = await world
         .asAdmin(ADMIN.UNIT)
@@ -297,12 +308,12 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
         .attach('govCard', Buffer.from('fake'), 'govCard.pdf');
 
       expect(res.status).toBe(401);
-      expect(await world.historyOf(user)).toEqual([0, 1, 3]);
+      expect(await world.historyOf(user)).toEqual([0, 1]);
       expect(assets()).toEqual([]);
     });
 
     it('answers 401 to a user session on the admin route', async () => {
-      const user = await world.createUser({ history: [0, 1, 3] });
+      const user = await world.createUser({ history: [0, 1] });
 
       const res = await world
         .asUser(user)
@@ -310,7 +321,7 @@ describe('Step 3: uploading documents (POST admins/users/:userId/files)', () => 
         .attach('govCard', Buffer.from('fake'), 'govCard.pdf');
 
       expect(res.status).toBe(401);
-      expect(await world.historyOf(user)).toEqual([0, 1, 3]);
+      expect(await world.historyOf(user)).toEqual([0, 1]);
       expect(assets()).toEqual([]);
     });
   });

@@ -36,7 +36,7 @@ Preconditions:
 
 ## Gotchas
 
-- Run on 2026-11-19 at `439c9b6`: the refusal message read `request status 1, 3`. The code allows statuses `[1, 3]` (`STEP_THREE_RULES` in `src/files/files.service.ts`), but `CONTEXT.md` says 1 or 6 and that status 3 is unused. Until that is fixed, `upload-correction` is expected to **fail** with 403. Report it as a failure. Don't skip it.
+- Before the fix on 2026-11-19, users could upload only at statuses `[1, 3]`, so the correction upload at 6 returned 403. If `upload-correction` fails with `request status 1, 3`, the image is older than that fix. Rebuild it.
 - Field names are camelCase (`govCard`, `experienceForm`), but the read-back route uses `govcard`, `expfile` and `photo`.
 - A refused upload deletes the files it had just written. Check `assets.sh` to prove that, and don't rely on the status code alone.
 - The upload response body is empty on success. Prove the move with the status read.
