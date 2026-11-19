@@ -667,7 +667,7 @@ export class UsersService {
         `requestType must be one of ${USER_STARTED_TYPES.join(', ')}`,
       );
     }
-    const sentAgain = type.keepsPhoto
+    const sentAgain = type.oldCardStaysValid
       ? (['govcard', 'policeReport'] as const)
       : (['govcard', 'policeReport', 'photo'] as const);
     let deleted: string[];

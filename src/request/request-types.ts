@@ -5,14 +5,11 @@ interface RequestTypeRule {
   // The Request Statuses a user may start a request of this type from
   // (POST users/me/card). Left out when no user may start it.
   userStartsFrom?: readonly number[];
-  // Starting the request keeps the user's photo: the Old card stays valid
-  // until its end date, and the online card shows that photo.
-  keepsPhoto?: true;
   // Document upload needs a police report (ใบแจ้งความ).
   needsPoliceReport?: true;
   // The Old card stays valid while the request runs (see Old card in
-  // CONTEXT.md). For every other type it stops being valid when the request
-  // starts.
+  // CONTEXT.md), so starting it keeps the photo the online card shows. For
+  // every other type the Old card stops being valid when the request starts.
   oldCardStaysValid?: true;
   // A user may start the request only from this many days before their card's
   // end date. Left out when the end date does not matter.
@@ -29,7 +26,6 @@ export const REQUEST_TYPES: Readonly<Record<number, RequestTypeRule>> = {
   2: {
     name: 'บัตรหมดอายุ',
     userStartsFrom: CARD_ISSUED_OR_CANCELLED,
-    keepsPhoto: true,
     oldCardStaysValid: true,
     startsDaysBeforeEndDate: 30,
   },
