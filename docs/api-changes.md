@@ -796,11 +796,11 @@ If no user has the id `:userId`, the route answers `404` with `user not found` a
 
 Both routes used to accept any value and write it as it came.
 
-**`POST admins/members`** (step 7, choosing the signing method) is accepted only while the user's request status is **7**, and `signature_method` must be the status the chosen method leads to: **8** for an electronic signature (the approval date, then E. print at 9) or **10** for a manual one (M. print, then the approval date at 11). Before, any number was written as the user's new request status, from any status, so `signature_method: 3` moved a user to the retired status 3.
+**`POST admins/members`** (step 7, choosing the signing method) is accepted only while the user's request status is **7**, and `signature_method` must be the status the chosen method leads to: **8** for an electronic signature (the approval date, then E. print at 9) or **10** or **11** for a manual one (M. print at 10, then the approval date at 11). Before, any number was written as the user's new request status, from any status, so `signature_method: 3` moved a user to the retired status 3.
 
 | Status | `message` | When |
 |---|---|---|
-| 400 | `signature_method must be 8 or 10` | Any other `signature_method`. Nothing is saved. |
+| 400 | `signature_method must be 8 or 10 or 11` | Any other `signature_method`. Nothing is saved. |
 | 400 | `the signing method can be chosen only at request status 7` | The user is at any other status. Nothing is saved. |
 
 **`PATCH admins/members/:userId/activate`** (the Approval date, at 8 or 11) takes `startDate` as a calendar date, `YYYY-MM-DD`, for every Request Type. A time of day (`2027-03-01T10:00:00Z`), a partial date (`2027-03`), a day that does not exist (`2027-02-30`) or no `startDate` answers:

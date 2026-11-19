@@ -364,6 +364,24 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
       ).toBe(ORG.UNIT);
     });
 
+    it('refuses a null organization with 400, saving nothing', async () => {
+      const user = await world.createUser({ history: [...ISSUED, 16] });
+
+      const res = await startRequest(user, 11, { user: { orgId: null } });
+
+      expect(res.status).toBe(400);
+      expect(await world.historyOf(user)).toEqual([...ISSUED, 16]);
+    });
+
+    it('starts the request when user is sent as null', async () => {
+      const user = await world.createUser({ history: [...ISSUED, 16] });
+
+      const res = await startRequest(user, 11, { user: null });
+
+      expect(res.status).toBe(201);
+      expect(await world.historyOf(user)).toEqual([...ISSUED, 16, 1]);
+    });
+
     it('lets a Ministry admin cancel the card of a user in an organization below theirs, so the user can start it', async () => {
       const user = await world.createUser({ history: ISSUED });
       await world.giveMember(user, { qrcode: '12341234' });

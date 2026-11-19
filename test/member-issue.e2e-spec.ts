@@ -45,6 +45,7 @@ describe('Step 7: creating the card record (POST admins/members)', () => {
   it.each([
     ['E. sign', 8],
     ['M. sign', 10],
+    ['M. sign', 11],
   ])(
     'moves a user at 7 on to the first status of %s, %i',
     async (_, signatureMethod) => {
@@ -57,7 +58,7 @@ describe('Step 7: creating the card record (POST admins/members)', () => {
     },
   );
 
-  it.each([3, 7, 9, 11, 15, 16])(
+  it.each([3, 7, 9, 15, 16])(
     'refuses signature_method %i with 400, creating no card record',
     async (signatureMethod) => {
       const user = await world.createUser({ history: AT_7 });
@@ -66,7 +67,7 @@ describe('Step 7: creating the card record (POST admins/members)', () => {
 
       expect(res.status).toBe(400);
       expect(res.body).toMatchObject({
-        message: 'signature_method must be 8 or 10',
+        message: 'signature_method must be 8 or 10 or 11',
       });
       expect(await world.historyOf(user)).toEqual(AT_7);
       expect(await membersOf(user)).toEqual([]);

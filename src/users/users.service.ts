@@ -691,7 +691,7 @@ export class UsersService {
         await tx.users.update({
           where: { id: userId },
           data: {
-            ...(await toUserUpdate(tx, data.user)),
+            ...(await toUserUpdate(tx, data.user ?? {})),
             experiences: data.experiences && {
               createMany: {
                 data: data.experiences.map((exp) => ({

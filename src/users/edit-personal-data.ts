@@ -38,7 +38,8 @@ export const toUserUpdate = async (
 ): Promise<Prisma.usersUncheckedUpdateInput> => {
   if (
     orgId !== undefined &&
-    !(await tx.organizations.findUnique({ where: { id: orgId } }))
+    (orgId === null ||
+      !(await tx.organizations.findUnique({ where: { id: orgId } })))
   ) {
     throw new BadRequestException('organization not found');
   }
