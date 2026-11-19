@@ -38,14 +38,16 @@ import { PrismaService } from 'prisma/prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { FileCreateDto } from './dto/file-create.dto';
 
-type FileModels =
-  | 'envcard'
-  | 'expfile'
-  | 'govcard'
-  // | 'seal'
-  | 'photo'
-  | 'policeReport'
-  | 'reqFile';
+// Every file kind the :file route parameter may name.
+export const FILE_KINDS = [
+  'envcard',
+  'expfile',
+  'govcard',
+  'photo',
+  'policeReport',
+  'reqFile',
+] as const;
+type FileModels = (typeof FILE_KINDS)[number];
 
 export type FileModelMap = {
   envcard: envocc_card_files;

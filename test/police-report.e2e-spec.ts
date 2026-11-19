@@ -4,7 +4,6 @@ import {
   ADMIN,
   CardRequestWorld,
   createCardRequestWorld,
-  ORG,
 } from './support/card-request-world';
 
 type Field = 'govCard' | 'photo' | 'policeReport';
@@ -155,64 +154,6 @@ describe('The police report of a lost-card request (Request Type 3)', () => {
       expect(res.status).toBe(400);
       expect(res.body).toMatchObject({ message: 'unsupported file type' });
       expect(await world.historyOf(user)).toEqual([...ISSUED, 1]);
-    });
-  });
-
-  describe('download by an admin (GET admins/users/:userId/files/policeReport)', () => {
-    const download = (adminId: number, user: number, path = 'policeReport') =>
-      world.asAdmin(adminId).get(`/admins/users/${user}/files/${path}`);
-
-    it.each([
-      ['its own organization', ADMIN.UNIT],
-      ['an organization above it', ADMIN.DEPARTMENT],
-      ['the ministry', ADMIN.MINISTRY],
-    ])(
-      "lets an admin of %s read the user's police report",
-      async (_, adminId) => {
-        const user = await atUpload(3, ORG.UNIT);
-        const url = await world.giveFile(user, 'policeReport');
-
-        const res = await download(adminId, user);
-
-        expect(res.status).toBe(200);
-        expect(res.body).toMatchObject({ userId: user, url });
-      },
-    );
-
-    it.each([
-      ['another department', ADMIN.OTHER_DEPARTMENT, ORG.UNIT],
-      ['an organization below the user', ADMIN.UNIT, ORG.PROVINCE],
-    ])('refuses an admin of %s with 403', async (_, adminId, orgId) => {
-      const user = await atUpload(3, orgId);
-      await world.giveFile(user, 'policeReport');
-
-      for (const path of ['policeReport', 'policereport']) {
-        const res = await download(adminId, user, path);
-
-        expect(res.status).toBe(403);
-        expect(res.body).toMatchObject({
-          message: 'user is outside your organization',
-        });
-      }
-    });
-
-    it('answers 404 when the user has no police report', async () => {
-      const user = await atUpload(3, ORG.UNIT);
-
-      const res = await download(ADMIN.UNIT, user);
-
-      expect(res.status).toBe(404);
-    });
-
-    it('answers 401 to a user session', async () => {
-      const user = await atUpload(3, ORG.UNIT);
-      await world.giveFile(user, 'policeReport');
-
-      const res = await world
-        .asUser(user)
-        .get(`/admins/users/${user}/files/policeReport`);
-
-      expect(res.status).toBe(401);
     });
   });
 

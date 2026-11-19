@@ -20,6 +20,7 @@ import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interfac
 import { getMulterOptions } from 'src/shared/file-multer-options';
 import { PrismaService } from 'prisma/prisma.service';
 import { assertUserInAdminOrg } from 'src/organizations/user-org-scope';
+import { ParseFileKindPipe } from './parse-file-kind.pipe';
 
 @UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
@@ -72,30 +73,24 @@ export class AdminFileController {
     });
   }
 
-  // Declared before users/:userId/files/:file, which would serve it to any
-  // admin: only admins of the user's organization or one above it read it.
-  @Get('users/:userId/files/policeReport')
-  async getPoliceReportHandler(
+  // Admins reach only users in their organization or one below it.
+  @Get('users/:userId/files/:file')
+  async getUsersFilesHandler(
+    @Param('file', ParseFileKindPipe) file: keyof FileModelMap,
     @Param('userId', ParseIntPipe) userId: number,
     @Req() request: RequestwithAdminData,
   ) {
     await assertUserInAdminOrg(this.prisma, request.user.id, userId);
-    return await this.filesService.getFileByUserId('policeReport', userId);
-  }
-
-  @Get('users/:userId/files/:file')
-  async getUsersFilesHandler(
-    @Param('file') file: keyof FileModelMap,
-    @Param('userId', ParseIntPipe) userId: number,
-  ) {
     return await this.filesService.getFileByUserId(file, userId);
   }
 
   @Delete('users/:userId/files/:file')
   async deleteFilesHandler(
-    @Param('file') file: keyof FileModelMap,
+    @Param('file', ParseFileKindPipe) file: keyof FileModelMap,
     @Param('userId', ParseIntPipe) userId: number,
+    @Req() request: RequestwithAdminData,
   ) {
+    await assertUserInAdminOrg(this.prisma, request.user.id, userId);
     return await this.filesService.deleteFileByUserId(file, userId);
   }
 }

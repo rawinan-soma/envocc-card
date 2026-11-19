@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { FileModelMap, FilesService } from './files.service';
 import { fileDto } from './dto/file-create.dto';
+import { ParseFileKindPipe } from './parse-file-kind.pipe';
 import {
   FileFieldsInterceptor,
   FileInterceptor,
@@ -117,7 +118,7 @@ export class UserFileController {
 
   @Get('me/files/:file')
   async getUsersFilesHandler(
-    @Param('file') file: keyof FileModelMap,
+    @Param('file', ParseFileKindPipe) file: keyof FileModelMap,
     @Req() request: RequestwithUserData,
   ) {
     return await this.filesService.getFileByUserId(file, request.user.id);

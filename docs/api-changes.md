@@ -17,13 +17,13 @@ Changes to the EnvOcc Card API since `b5a3abd` (agent skills setup), up to `ef03
   5. [Admin file routes need an admin login](#5-admin-file-routes-need-an-admin-login)
   6. [The admin document upload moved to `POST admins/users/:userId/files`](#6-the-admin-document-upload-moved-to-post-adminsusersuseridfiles)
   7. [Request Statuses 2, 3 and 5 are retired](#7-request-statuses-2-3-and-5-are-retired)
+  8. [Admin file routes are limited to the admin's organization](#8-admin-file-routes-are-limited-to-the-admins-organization)
 - [New endpoints](#new-endpoints)
   - [`POST admins/users/:userId/requests/revert`](#post-adminsusersuseridrequestsrevert)
   - [`GET admins/users/all`](#get-adminsusersall)
   - [`GET admins/users/:userId/requests/form`](#get-adminsusersuseridrequestsform)
   - [`GET admins/users/:userId/requests/exp`](#get-adminsusersuseridrequestsexp)
   - [`GET admins/files/envcard`](#get-adminsfilesenvcard)
-  - [`GET admins/users/:userId/files/policeReport`](#get-adminsusersuseridfilespolicereport)
   - [`PUT users/me/photo`](#put-usersmephoto)
   - [`POST users/me/files`](#post-usersmefiles)
 - [Other behaviour changes](#other-behaviour-changes)
@@ -195,6 +195,23 @@ Issue #48. The Request Status steps were redrawn: the user sends their documents
 - **Users at 2, 3 or 5** when this ships are moved by the database migration: 2 → 6, 3 → 1, 5 → 4. Each gets a new Status History entry with the same `request_type`, no `approver`, and the description `ย้ายอัตโนมัติ: เลิกใช้สถานะ 2` (or 3, or 5). Their earlier entries are kept.
 
 ---
+
+### 8. Admin file routes are limited to the admin's organization
+
+`GET` and `DELETE admins/users/:userId/files/:file` now work only for users in the admin's own organization or one below it, for every file kind. Before, any admin could read or delete any user's files.
+
+`:file` is one of `envcard`, `expfile`, `govcard`, `photo`, `policeReport` (new, issue #57) or `reqFile`, spelled exactly so. `policeReport` is the police report (ใบแจ้งความ) of a lost-card request (Request Type 3); its `adminId` is the admin who uploaded it, or `null` when the user sent it. `GET users/me/files/:file` takes the same kinds.
+
+| Status | `message` | When |
+|---|---|---|
+| 403 | `user is outside your organization` | The user is not in the admin's organization or one below it. |
+| 404 | `no file kind <file>` | `:file` is not one of the kinds above. Before, this answered 500. `GET users/me/files/:file` answers the same. |
+| 404 | `user not found` | No user has the id `:userId`. |
+
+```json
+403 Forbidden
+{ "message": "user is outside your organization", "error": "Forbidden", "statusCode": 403 }
+```
 
 ## New endpoints
 
@@ -430,41 +447,6 @@ Not a MOPH admin:
 403 Forbidden
 { "message": "admin is not from MOPH", "error": "Forbidden", "statusCode": 403 }
 ```
-
-### `GET admins/users/:userId/files/policeReport`
-
-Issue #57. Lets an admin read the police report (ใบแจ้งความ) a user sent for a lost-card request (Request Type 3). The response is the stored file row, like `GET admins/users/:userId/files/govcard`.
-
-**Who can call it:** any admin (admin cookie required), but only for users in the admin's own organization or one below it. Unlike the other files under `GET admins/users/:userId/files/:file`, an admin of another organization gets 403.
-
-```http
-GET /envocc-card/api/v2/admins/users/42/files/policeReport
-Cookie: Authentication_Admin=<token>
-```
-
-```json
-200 OK
-{
-  "id": 3,
-  "adminId": null,
-  "filename": "policeReport-1763550000000-123456789.pdf",
-  "url": "assets/policeReport-1763550000000-123456789.pdf",
-  "create_date": "2026-11-19T08:20:00.000Z",
-  "userId": 42
-}
-```
-
-`adminId` is the admin who uploaded it for the user, or `null` when the user sent it. The user reads their own with `GET users/me/files/policeReport`.
-
-**Errors**
-
-| Status | `message` | When |
-|---|---|---|
-| 403 | `user is outside your organization` | The user is not in the admin's organization or one below it. |
-| 404 | `user not found` | No user has the id `:userId`. |
-| 404 | `file(s) not found` | The user has no police report. |
-| 400 | `Validation failed (numeric string is expected)` | `:userId` is not an integer. |
-| 401 | `Unauthorized` | No `Authentication_Admin` cookie, or a user cookie. |
 
 ### `PUT users/me/photo`
 
