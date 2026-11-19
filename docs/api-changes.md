@@ -286,6 +286,7 @@ Issue #6. Lists users at **every** status, across **all** organizations.
 |---|---|---|---|
 | `page` | integer ≥ 1 | `1` | 10 users per page. |
 | `search_term` | string | | Matches first name, last name or organization name (Thai). |
+| `request_type` | integer 1–11 | | Keeps users whose latest Status History entry has this Request Type. See [Request Type in the admin user lists](#request-type-in-the-admin-user-lists). |
 
 The response shape matches `GET admins/users`, with one added field, `username`. There's no `status` filter and no organization limit.
 
@@ -311,6 +312,8 @@ Cookie: Authentication_Admin=<token>
       "start_date": "2026-03-01T00:00:00.000Z",
       "end_date": "2031-02-28T00:00:00.000Z",
       "request_status": 9,
+      "request_type": 3,
+      "request_type_name": "บัตรสูญหาย",
       "position": "นักวิชาการสาธารณสุข",
       "position_lv": "ชำนาญการ",
       "unit": "สำนักงานป้องกันควบคุมโรคที่ 1 เชียงใหม่",
@@ -326,6 +329,8 @@ Cookie: Authentication_Admin=<token>
       "lname_th": "รักงาน",
       "members": [],
       "request_status": null,
+      "request_type": null,
+      "request_type_name": null,
       "position": "พยาบาลวิชาชีพ",
       "position_lv": "ปฏิบัติการ",
       "unit": "โรงพยาบาลตัวอย่าง",
@@ -576,6 +581,32 @@ Content-Type: application/json
 Once started, the request walks the same statuses to 15 as a first-card request, and every Status History entry it adds carries its `request_type`, whichever route writes it. Before, the entries written by `POST admins/members` (signing method) and `PATCH admins/members/:userId/activate` (approval date) always had `request_type` 1.
 
 The user keeps their Member Number and QR code: step 7 reuses their card record. `PATCH admins/members/:userId/activate` now also sets the card active (`is_active: true`), so a request started from a cancelled card (16) ends with an active card, which `GET users/me/envcard/qrcode` returns again.
+
+### Request Type in the admin user lists
+
+Issue #53. Admins see the Request Type of each user's current request, and can filter by it.
+
+- Each row of `GET admins/users` and `GET admins/users/all` has two new fields, `request_type` (1–11) and `request_type_name` (its Thai name), taken from the user's **latest** Status History entry, the same entry `request_status` comes from. Both are `null` for a user with no entries.
+- `GET admins/users/:userId/requests/form` and `GET users/me/requests/form` return the same two fields.
+- `GET admins/users` and `GET admins/users/all` take an optional `request_type` query parameter. It keeps only users whose latest entry has that Request Type, and combines with `status`, `search_term` and `page`. `pageData` counts the filtered users. An admin still sees only users in their organization and below.
+
+```http
+GET /envocc-card/api/v2/admins/users?status=ongoing&request_type=3&page=1
+Cookie: Authentication_Admin=<token>
+```
+
+A `request_type` that isn't a Request Type (for example `99`, `0` or `lost`) answers `400`:
+
+```json
+400 Bad Request
+{
+  "message": ["request_type must be one of the following values: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11"],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+Without `request_type`, both lists answer as before, apart from the two new fields.
 
 ### Personal data only at request status 0, 1 or 6
 

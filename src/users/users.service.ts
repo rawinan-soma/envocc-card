@@ -22,6 +22,7 @@ import { REQUEST_TYPES, USER_STARTED_TYPES } from 'src/request/request-types';
 interface UsersPageQuery {
   page: number;
   search_term?: string;
+  request_type?: number;
 }
 
 interface OrganizationWithParent {
@@ -68,6 +69,16 @@ export class UsersService {
 
     const parentResult = this.pickLevelForRequestForm(org.parent, levels);
     return { ...parentResult, ...result };
+  }
+
+  // requests holds at most the user's latest Status History entry.
+  private latestRequestType(
+    requests: { request_types: { type_id: number; type_name: string } }[],
+  ) {
+    return {
+      request_type: requests[0]?.request_types.type_id ?? null,
+      request_type_name: requests[0]?.request_types.type_name ?? null,
+    };
   }
 
   async getUserById(id: number) {
@@ -127,6 +138,7 @@ export class UsersService {
     return await this.getUsersPage({
       page: queryData.page,
       search_term: queryData.search_term,
+      request_type: queryData.request_type,
       statuses,
       orgId: queryData.orgId,
     });
@@ -137,8 +149,9 @@ export class UsersService {
     return await this.getUsersPage({ ...queryData, includeUsername: true });
   }
 
-  // statuses filters on each user's latest request; orgId limits the result
-  // to that organization and its descendants. Omit either to skip it.
+  // statuses and request_type filter on each user's latest Status History
+  // entry; orgId limits the result to that organization and its descendants.
+  // Omit any of them to skip it.
   private async getUsersPage(
     queryData: UsersPageQuery & {
       statuses?: number[];
@@ -147,7 +160,7 @@ export class UsersService {
     },
   ) {
     try {
-      const { statuses, orgId } = queryData;
+      const { statuses, request_type, orgId } = queryData;
 
       const where: Prisma.usersWhereInput = {
         OR: [
@@ -156,8 +169,17 @@ export class UsersService {
           { organization: { name_th: { contains: queryData.search_term } } },
         ],
       };
+      // Narrows to users with any matching entry; only their latest entry
+      // counts, so the rows are filtered again below.
+      const anyEntry: Prisma.requestsWhereInput = {};
       if (statuses) {
-        where.requests = { some: { request_status: { in: statuses } } };
+        anyEntry.request_status = { in: statuses };
+      }
+      if (request_type !== undefined) {
+        anyEntry.request_type = request_type;
+      }
+      if (statuses || request_type !== undefined) {
+        where.requests = { some: anyEntry };
       }
       if (orgId !== undefined) {
         where.organizationId = { in: await this.getChildIds(orgId) };
@@ -217,6 +239,7 @@ export class UsersService {
             requests: {
               select: {
                 request_status: true,
+                request_types: { select: { type_id: true, type_name: true } },
               },
               orderBy: { date_update: 'desc' },
               take: 1,
@@ -241,6 +264,7 @@ export class UsersService {
           start_date: user.members[0]?.start_date,
           end_date: user.members[0]?.end_date,
           request_status: user.requests[0]?.request_status ?? null,
+          ...this.latestRequestType(user.requests),
           position: user.position?.position_name,
           position_lv: user.position_lv?.position_lv_name,
           unit:
@@ -253,12 +277,13 @@ export class UsersService {
         };
       });
 
-      const filteredData = statuses
-        ? data.filter(
-            (d) =>
-              d.request_status !== null && statuses.includes(d.request_status),
-          )
-        : data;
+      const filteredData = data.filter(
+        (d) =>
+          (!statuses ||
+            (d.request_status !== null &&
+              statuses.includes(d.request_status))) &&
+          (request_type === undefined || d.request_type === request_type),
+      );
 
       const totalItems = filteredData.length;
       const totalPages = Math.ceil(totalItems / limit);
@@ -352,6 +377,13 @@ export class UsersService {
               },
             },
             experiences: true,
+            requests: {
+              select: {
+                request_types: { select: { type_id: true, type_name: true } },
+              },
+              orderBy: { date_update: 'desc' },
+              take: 1,
+            },
           },
           omit: {
             password: true,
@@ -406,6 +438,8 @@ export class UsersService {
 
       const data = {
         ...user,
+        requests: undefined,
+        ...this.latestRequestType(user.requests),
         position: undefined,
         position_lv: undefined,
         position_name_th: user?.position?.position_name,

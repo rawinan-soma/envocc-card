@@ -36,7 +36,10 @@ const userRow = (id: number, statuses: number[], orgId = ADMIN_ORG_ID) => ({
   lname_th: `สกุล${id}`,
   organization: org(orgId, `หน่วย${orgId}`),
   members: [],
-  requests: statuses.map((request_status) => ({ request_status })),
+  requests: statuses.map((request_status) => ({
+    request_status,
+    request_types: { type_id: 1, type_name: 'ครั้งแรก' },
+  })),
   position: { position_name: 'นักวิชาการ' },
   position_lv: { position_lv_name: 'ปฏิบัติการ' },
 });

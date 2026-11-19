@@ -38,11 +38,12 @@ export class AdminUserController {
   async getAllUsersUnfilteredHandler(
     @Query() queryParams: GetUsersPageQueryDto,
   ) {
-    const { page, search_term } = queryParams;
+    const { page, search_term, request_type } = queryParams;
 
     return await this.usersService.getAllUsersUnfiltered({
       page: page as number,
-      search_term: search_term,
+      search_term,
+      request_type,
     });
   }
 
@@ -52,14 +53,15 @@ export class AdminUserController {
     @Query() queryParams: GetAllUserQueryDto,
   ) {
     const admin = await this.adminsService.getAdminById(request.user.id);
-    const { page, status, search_term } = queryParams;
+    const { page, status, search_term, request_type } = queryParams;
 
     return await this.usersService.getAllUsers({
       adminId: admin.id,
       orgId: admin.organization.id,
       page: page as number,
       status: status as string,
-      search_term: search_term,
+      search_term,
+      request_type,
     });
   }
 
