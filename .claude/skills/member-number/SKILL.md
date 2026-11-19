@@ -14,19 +14,19 @@ Tests miss this. It breaks only when two admins issue cards at the same moment, 
 
 ## Status at the sync commit
 
-Run on 2026-11-19 at `bc0c1cc`.
+Run on 2026-11-19 at `b8768cf`. Every config also checks for deadlock: a state where some admin is mid-transaction and nothing can move.
 
 | Config | Scope | Result |
 |---|---|---|
-| `MemberNumberSerial` | 1 admin, 3 users, ≤5 issues, no deletes | PASS (703 states) |
-| `MemberNumber` | 2 admins issuing at once, 3 users, ≤4 issues, deletes allowed | **VIOLATED `UniqueMemberNo`** (known finding 1) |
+| `MemberNumberSerial` | 1 admin, 3 users, ≤5 issues, no deletes | PASS (832 states) |
+| `MemberNumber` | 2 admins issuing at once, 3 users, ≤4 issues, deletes allowed | PASS (18,212 states) |
 | `MemberNumberReuse` | 1 admin, deletes allowed | **VIOLATED `NeverReused`** (known finding 2, policy open) |
 
-**Finding 1, duplicate numbers.** Admin A issues a card for user u1 and admin B for user u3 at the same time. Each locks only its own user row (`lockUser`). Each reads the highest `member_no` before the other commits. Both compute `latest + 1` (or 1 on an empty table), and both commit the same number. Nothing stops it: `member_no` has no unique constraint, and Postgres runs at READ COMMITTED. A live run reproduced it: 10 pairs of concurrent `POST admins/members` gave 9 duplicated numbers (20 cards, 11 distinct numbers).
+**Finding 1, duplicate numbers (fixed in `b8768cf`).** Admin A issued a card for user u1 and admin B for user u3 at the same time. Each locked only its own user row (`lockUser`), and each read the highest `member_no` before the other committed. Both saved the same number. A live run reproduced it: 10 pairs of concurrent `POST admins/members` gave 9 duplicated numbers. The fix takes `pg_advisory_xact_lock(hashtext('members.member_no'))` before reading the highest number, so card creations run one at a time. After the fix, the same live run gave 20 cards with 20 distinct numbers. `member_no` still has no unique constraint, so the advisory lock is the only guard. Any new writer of `member_no` must take the same lock. The e2e test `gives different Member Numbers to users whose cards are created at the same time` (`test/member-issue.e2e-spec.ts`) guards it too.
 
 **Finding 2, reuse after delete.** `DELETE admins/users/:id` cascades to the user's `members` row. When the deleted user held the highest number, the next card issued gets that number again. A live run gave the deleted user's 11 to a new user. CONTEXT.md does not say whether a deleted user's number may be reused. Ask before treating this as a bug.
 
-Until these are fixed, `check.sh` exits 1. A change is fine when the results match the table above. Anything new (a different invariant, a new config failing, or the serial config failing) is a regression or a modeling error. See "Reading a result".
+Until finding 2 is settled, `check.sh all` exits 1. A change is fine when the results match the table above. Anything new (a different invariant, a new config failing, or the serial config failing) is a regression or a modeling error. See "Reading a result".
 
 ## Run it
 
@@ -48,16 +48,17 @@ Coverage record. The model mirrors these, and nothing else:
 | Model part (`spec/MemberNumber.tla`) | Code |
 |---|---|
 | `Start` | `AdminMemberController.createMemberHandler`, `src/members/admin-member.controller.ts` (POST admins/members: no status or org check) |
-| `Lock` | `lockUser` in `src/request/status-history.ts` (SELECT ... FOR NO KEY UPDATE on the user's row), called at the top of `transactionCreateMember` |
+| `Lock`, `GiveUp` | `lockUser` in `src/request/status-history.ts` (SELECT ... FOR NO KEY UPDATE on the user's row), called at the top of `transactionCreateMember`. For a deleted user it returns no rows, and the transaction later fails on the `userId` foreign key |
+| `NumLock` | `pg_advisory_xact_lock(hashtext('members.member_no'))` in `transactionCreateMember`, held until commit |
 | `ReadExisting`, `ReadLatest`, `NextNo`, `Write`, `Commit` | `MembersService.transactionCreateMember`, `src/members/members.service.ts` (`existedMember`, `latestMember`, `nextMemberNo`, `members.update` / `members.create`, end of `$transaction`) |
 | `Delete` | `UsersService.deleteUserById`, `src/users/users.service.ts`, plus `onDelete: Cascade` on `members.user` in `prisma/schema.prisma` |
 | READ COMMITTED reads | no `isolationLevel` passed to any `$transaction` (`grep -rn isolationLevel src` is empty) |
 | `member_no` not unique | `model members` in `prisma/schema.prisma` |
 
-Sync commit: **`bc0c1cc`**. List the changes since then:
+Sync commit: **`b8768cf`**. List the changes since then:
 
 ```bash
-git diff bc0c1cc -- src/members/members.service.ts src/members/admin-member.controller.ts \
+git diff b8768cf -- src/members/members.service.ts src/members/admin-member.controller.ts \
   src/request/status-history.ts src/users/users.service.ts prisma/schema.prisma prisma/migrations
 ```
 
@@ -68,13 +69,14 @@ If none of the changes touch the code in the coverage table, the model still hol
 Each model action is one Prisma statement. Keep it that way. When the code changes:
 
 1. Mirror the change in `spec/MemberNumber.tla` at the action named in the coverage table, and update the code pointer in its comment. A new statement becomes a new `pc` step. Don't merge it into an existing step, or you hide interleavings.
-2. A fix changes the model too. With a database lock or `LOCK TABLE`, the step that takes it waits like `Lock` does. A unique constraint on `member_no` turns a duplicate `Commit` into a failed transaction (model it as an abort that writes nothing). A sequence (`nextval`) makes `ReadLatest`, `NextNo` and `Write` one atomic step.
-3. Run `check.sh all`. After a fix for finding 1, `MemberNumber` must pass. Keep the scope (2 admins, 3 users, 4 issues) as it is, and never shrink it to get a pass.
+2. A design change changes the model too. Removing or moving the advisory lock changes or removes `NumLock`. A unique constraint on `member_no` turns a duplicate `Commit` into a failed transaction (model it as an abort that writes nothing). A sequence (`nextval`) makes `ReadLatest`, `NextNo` and `Write` one atomic step, and would also settle finding 2.
+3. Run `check.sh all`. `MemberNumber` must keep passing. Keep the scope (2 admins, 3 users, 4 issues) as it is, and never shrink it to get a pass.
 4. When the model describes the code at the new commit, update the status table and move the sync commit forward to that commit. Do it only after reading the diff and confirming the model matches. A green run alone doesn't prove the model matches the code.
 
 ## Reading a result
 
-- **Violation in `MemberNumber` or `MemberNumberReuse` matching the known findings:** expected until those are fixed.
+- **`NeverReused` violated in `MemberNumberReuse`:** known finding 2, expected until its policy is settled.
+- **`Deadlock reached`:** some admin waits on a lock forever. Check the lock order: every path here takes the user row first, then the advisory lock.
 - **Any other violation:** turn the trace into code steps with `/statechart`. Then check each step against the code it points to. If a step can't happen in the code (wrong lock, wrong order, a read that would see a row it can't see), the model is wrong, so fix the model. If every step can happen, it's a real bug. Report the trace in the code's words, and don't weaken the invariant.
 - **`MemberNumberSerial` fails:** the allocation rule itself broke, with no concurrency involved, for example the `existedMember` branch was removed and a re-issue gets a new number (`KeepsMemberNo`).
 - **To confirm a finding against the real app**, use the `verify` skill. Register two admins and users, then send two `POST admins/members` calls (`{"userId":N,"signature_method":8}`) at the same moment as different actors (`&` + `wait`). Then run `db.sh 'select member_no, count(*) from members group by 1 having count(*) > 1'`.
