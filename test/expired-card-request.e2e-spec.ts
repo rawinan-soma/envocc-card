@@ -23,8 +23,6 @@ describe('A request for a new card because the card expired (Request Type 2)', (
 
   const admin = () => world.asAdmin(ADMIN.MINISTRY);
 
-  // Holds a card from 2 Mar 2022 to 1 Mar 2027, with the photo a type 2
-  // request keeps.
   const cardHolder = async () => {
     const user = await world.createUser({ history: ISSUED });
     await world.giveFile(user, 'photo');

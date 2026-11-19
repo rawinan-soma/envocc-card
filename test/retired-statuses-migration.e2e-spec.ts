@@ -32,7 +32,6 @@ describe('Migration: moving users off Request Statuses 2, 3 and 5', () => {
       orderBy: [{ date_update: 'asc' }, { id: 'asc' }],
     });
 
-  // Every entry signed by an admin, so the migrated entry's lack of one shows.
   const createUser = async (history: number[], requestType = 1) => {
     const user = await world.createUser({ history, requestType });
     await world.prisma.requests.updateMany({

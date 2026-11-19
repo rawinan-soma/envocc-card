@@ -163,9 +163,6 @@ export class RequestService {
             );
           }
 
-          // The card being issued keeps its Member Number and QR code; its
-          // dates are set again at the approval date. An Old card keeps its
-          // own dates.
           if (target === 1 || target === 6 || target === 7) {
             const card = await latestCard(tx, userId);
             if (card) {

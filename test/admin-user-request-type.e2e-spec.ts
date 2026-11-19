@@ -35,8 +35,6 @@ describe('Admins see and filter users by Request Type', () => {
 
   let later = Date.parse('2026-06-01T00:00:00Z');
 
-  // A card holder who has started a request for a new card of `type` and
-  // moved through `statuses` of it.
   const holderWithRequest = async (
     type: number,
     statuses: number[],
@@ -56,8 +54,6 @@ describe('Admins see and filter users by Request Type', () => {
     return userId;
   };
 
-  // An entry from before Request Types were checked: the foreign key is NOT
-  // VALID in production, so such a type may have no request_types row.
   const legacyEntry = (userId: number, requestType: number) =>
     world.prisma.$transaction([
       world.prisma.$executeRaw`SET LOCAL session_replication_role = replica`,

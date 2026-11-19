@@ -4,7 +4,6 @@ import { IsOptional, ValidateNested } from 'class-validator';
 import { UserCreateDto } from 'src/user-auth/dto/user-create.dto';
 import { UserExpCreateDto } from 'src/user-auth/dto/user-exp-create.dto';
 
-// The password is changed only by a password reset.
 export class UserUpdateInternalDto extends PartialType(
   OmitType(UserCreateDto, ['username', 'password'] as const),
 ) {}

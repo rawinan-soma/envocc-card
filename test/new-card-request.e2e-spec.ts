@@ -58,9 +58,6 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
     experiences: await world.prisma.experiences.count({ where: { userId } }),
   });
 
-  // The rest of the request, from 1 to 15, by the routes the user and admins
-  // use: Document upload, the check, the signing method, the approval date and
-  // the print.
   const walkToIssued = async (userId: number) => {
     const admin = world.asAdmin(ADMIN.MINISTRY);
     const update = (current_status: number, next_status: number) =>
@@ -162,7 +159,6 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
         status,
       ];
       const user = await world.createUser({ history });
-      // Approved even at 0, so the refusal shown is this route's own.
       await world.prisma.users.update({
         where: { id: user },
         data: { is_validate: true },
@@ -407,7 +403,6 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
       expect((await startRequest(user, 11)).status).toBe(201);
     });
 
-    // Every card given here takes its number from the sequence, as in the app.
     const numbersInUse = async () => {
       const other = await world.createUser({ history: ISSUED });
       await world.giveMember(other, { qrcode: '20002000' });
@@ -488,7 +483,6 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
       'envcard',
     ];
 
-    // A card holder with every file of their first request and one experience.
     const cardHolder = async (history = ISSUED) => {
       const user = await world.createUser({ history });
       const paths = {} as Record<FileKind, string>;
@@ -639,7 +633,6 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
   });
 
   describe('the copy of the issued card (POST users/me/envcard)', () => {
-    // From 1 to 12 by M. print (10) and the approval date (11).
     const walkToCardCopy = async (userId: number) => {
       const admin = world.asAdmin(ADMIN.MINISTRY);
       const update = (current_status: number, next_status: number) =>

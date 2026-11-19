@@ -14,8 +14,6 @@ const registered = Object.entries(REQUEST_TYPES).map(([type, { name }]) => ({
   type_name: name,
 }));
 
-// The numbers in the first sentence under **Request Type** in CONTEXT.md:
-// "first card (1), expired (2), …".
 const documented = () => {
   const context = read('CONTEXT.md');
   const section = context.slice(context.indexOf('**Request Type**'));

@@ -3,16 +3,9 @@ import { Prisma } from '@prisma/client';
 import { addDays, clock, isoDate } from 'src/common/clock';
 import { REQUEST_TYPES } from 'src/request/request-types';
 
-// A user's cards are their members rows, one per card, and a new card keeps
-// the QR code of the one before it, and its Member Number unless the Request
-// Type gives a new one. The latest row is the card of the user's current
-// request: being issued while the request runs, the card in hand once it
-// reaches 15. An earlier row stays as the Old card, with its own dates, so a
-// type 2 Old card is still shown until its end date.
 export const latestCard = (db: Prisma.TransactionClient, userId: number) =>
   db.members.findFirst({ where: { userId }, orderBy: { member_id: 'desc' } });
 
-// The card in effect today: valid, and today between its start and end dates.
 export const inEffectToday = (): Prisma.membersWhereInput => {
   const today = clock.today();
   return {
@@ -22,11 +15,6 @@ export const inEffectToday = (): Prisma.membersWhereInput => {
   };
 };
 
-// What starting a request for a new card from Request Status `from` does to
-// the user's cards: the Old card stops being valid unless the type keeps it
-// and the card was issued (15), not cancelled (16), and the new card is added,
-// not valid until the request reaches 15. Call it inside the transaction that
-// adds the request's first status entry, under lockUser.
 export const startNewCard = async (
   tx: Prisma.TransactionClient,
   userId: number,
@@ -95,8 +83,6 @@ export const assertApprovalDate = async (
   }
 };
 
-// Whether a user's card verifies at their current Request Status: once the
-// card is issued (15), and while a request runs whose Old card stays valid.
 export const cardVerifiesAt = ({
   request_status,
   request_type,
@@ -108,8 +94,6 @@ export const cardVerifiesAt = ({
   (request_status !== 16 &&
     REQUEST_TYPES[request_type]?.oldCardStaysValid === true);
 
-// The new card becomes valid when its request reaches 15 (card request
-// succeeded), whether forward from the last step or by a Revert from 16.
 export const issueCard = async (
   tx: Prisma.TransactionClient,
   userId: number,

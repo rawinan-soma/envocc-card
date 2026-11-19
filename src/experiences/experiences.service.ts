@@ -45,7 +45,6 @@ export class ExperiencesService {
     );
   }
 
-  // Always adds to `userId`: a userId sent in an item never picks the owner.
   async addExperinces(userId: number, dto: ExpCreateDto[]) {
     return this.editOwnExperiences(userId, (tx) =>
       tx.experiences.createMany({

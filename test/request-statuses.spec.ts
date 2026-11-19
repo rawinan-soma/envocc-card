@@ -8,7 +8,6 @@ const seeded = JSON.parse(
   readFileSync(join(root, 'prisma/data/request_statuses.json'), 'utf8'),
 ) as { status_id: number; status_name: string }[];
 
-// The Status column of the table under **Request Status** in CONTEXT.md.
 const documentedInUse = () => {
   const context = readFileSync(join(root, 'CONTEXT.md'), 'utf8');
   const section = context.slice(context.indexOf('**Request Status**'));

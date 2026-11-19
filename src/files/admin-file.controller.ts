@@ -39,9 +39,6 @@ export class AdminFileController {
     return await this.filesService.listEnvcardFiles(userId);
   }
 
-  // Document upload on behalf of a user in the admin's organization or one
-  // below it. No status gate: an admin may attach documents at any Request
-  // Status.
   @Post('users/:userId/files')
   @UseInterceptors(
     FileFieldsInterceptor(
@@ -78,7 +75,6 @@ export class AdminFileController {
     );
   }
 
-  // Admins reach only users in their organization or one below it.
   @Get('users/:userId/files/:file')
   async getUsersFilesHandler(
     @Param('file', ParseFileKindPipe) file: keyof FileModelMap,

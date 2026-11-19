@@ -1,16 +1,9 @@
 // Every Request Status (see the table under Request Status in CONTEXT.md) and
 // the moves into it that are not ordinary forward steps.
 interface RequestStatusRule {
-  // No longer used. Kept so old Status History entries still resolve; no one
-  // can be moved here.
   retired?: true;
-  // The user's turn to send their documents and photo: Document upload starts
-  // here, and Replace photo is allowed.
   userSendsDocuments?: true;
-  // A user may Edit personal data here: before an admin has checked it.
   userEditsPersonalData?: true;
-  // A Revert target, reachable by a Revert from these statuses (inclusive;
-  // see Revert in CONTEXT.md). Moving back to it by any other route is refused.
   revertFrom?: readonly [number, number];
 }
 
@@ -42,10 +35,6 @@ export const REQUEST_STATUSES: Readonly<Record<number, RequestStatusRule>> = {
   16: {},
 };
 
-// Where choosing the signing method at 7 (POST admins/members) may lead: 8 for
-// an electronic signature (the approval date, then E. print at 9), 10 or 11 for
-// a manual one. 11 is kept because project.md describes the branch as 7 → 8/11
-// and the frontend's value could not be checked.
 export const SIGNING_METHOD_STATUSES: readonly number[] = [8, 10, 11];
 
 export const USER_SENDS_DOCUMENTS_STATUSES = Object.entries(
@@ -65,8 +54,6 @@ export const isRevert = (from: number, target: number) => {
   return range !== undefined && from >= range[0] && from <= range[1];
 };
 
-// Why an admin's status update from `from` to `to` is refused, or undefined
-// when it is allowed.
 export const adminUpdateRefusal = (from: number, to: number) => {
   const rule = REQUEST_STATUSES[to];
   if (!rule || rule.retired) {

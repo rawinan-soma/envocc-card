@@ -33,7 +33,6 @@ export const assertUserInOrg = async (
   }
 };
 
-// The same check, for the organization of the admin with id adminId.
 export const assertUserInAdminOrg = async (
   db: Prisma.TransactionClient | PrismaService,
   adminId: number,

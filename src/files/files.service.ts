@@ -39,7 +39,6 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { FileCreateDto } from './dto/file-create.dto';
 import { assertUserInAdminOrg } from 'src/organizations/user-org-scope';
 
-// Every file kind the :file route parameter may name.
 export const FILE_KINDS = [
   'envcard',
   'expfile',
@@ -83,8 +82,6 @@ const DOCUMENT_UPLOAD_RULES = {
   },
 } satisfies Record<'admin' | 'user', DocumentUploadRule>;
 
-// The files a request of this Request Type needs, each unless already stored.
-// An uploader is held only to the ones it can send: an admin sends no photo.
 const requiredDocuments = (requestType: number): DocumentUploadFile[] => [
   'govcard',
   ...(isNewCardRequest(requestType) ? (['photo'] as const) : []),
@@ -93,7 +90,6 @@ const requiredDocuments = (requestType: number): DocumentUploadFile[] => [
     : []),
 ];
 
-// An admin uploads only for users in their organization or one below it.
 export type DocumentUploader =
   | { role: 'user' }
   | { role: 'admin'; adminId: number };
@@ -284,8 +280,6 @@ export class FilesService {
     return swapped.photo;
   }
 
-  // The copy of the issued card. At 12 of a new-card request it replaces the
-  // Old card's copy, kept until now; otherwise a second copy is refused.
   async uploadEnvcard(userId: number, data: FileCreateDto) {
     let swapped: { envcard: envocc_card_files | null; oldPaths: string[] };
     try {
@@ -323,9 +317,6 @@ export class FilesService {
     return swapped.envcard;
   }
 
-  // Document upload. Each document replaces the user's existing one(s) of that
-  // type. A required type the user already has may be left out. Files the rule
-  // does not list are ignored and removed from disk with the rest on failure.
   async uploadDocuments(
     uploader: DocumentUploader,
     userId: number,

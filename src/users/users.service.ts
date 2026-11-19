@@ -77,9 +77,6 @@ export class UsersService {
     return { ...parentResult, ...result };
   }
 
-  // requests holds at most the user's latest Status History entry. An entry
-  // older than the request_types foreign key may hold a type that is not a
-  // Request Type, which has no name.
   private latestRequestType(requests: { request_type: number }[]) {
     const type = requests[0]?.request_type ?? null;
     return {
@@ -157,9 +154,6 @@ export class UsersService {
     return await this.getUsersPage({ ...queryData, includeUsername: true });
   }
 
-  // statuses and request_type filter on each user's latest Status History
-  // entry; orgId limits the result to that organization and its descendants.
-  // Omit any of them to skip it.
   private async getUsersPage(
     queryData: UsersPageQuery & {
       statuses?: number[];
@@ -653,11 +647,6 @@ export class UsersService {
     }
   }
 
-  // A user who holds a card (Request Status 15) or whose card was cancelled
-  // (16) starts a request for a new one (Request Types 2-11): their changed
-  // details are saved, the files sent for the earlier request that must be
-  // sent again are deleted, and the request starts at 1. See Request Type in
-  // CONTEXT.md and docs/adr/0003-a-request-for-a-new-card-cannot-be-ended-early.md.
   async createNewCardRequest(
     userId: number,
     data: UserUpdateDto,

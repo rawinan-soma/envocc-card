@@ -126,8 +126,6 @@ export class MembersService {
     }
   }
 
-  // The online card: the card in effect today. Also shown to whoever verifies a
-  // QR code.
   getMember(user_id: number) {
     return this.findCard({
       where: { userId: user_id, ...inEffectToday() },
@@ -135,8 +133,6 @@ export class MembersService {
     });
   }
 
-  // For admins: the user's latest card, valid or not, such as the one being
-  // issued and printed.
   getLatestCard(user_id: number) {
     return this.findCard({
       where: { userId: user_id },
@@ -180,8 +176,6 @@ export class MembersService {
           throw new NotFoundException('member not found');
         }
 
-        // A type 2 Old card may still be valid next to the new card, which is
-        // not yet valid itself.
         const { count } = await tx.members.updateMany({
           where: { userId: user_id, is_active: true },
           data: { is_active: false },

@@ -274,7 +274,6 @@ model gov_card_files {
   // @@index([user])
 }
 
-// The police report (ใบแจ้งความ) a lost-card request (Request Type 3) needs.
 model police_report_files {
   id          Int       @id @default(autoincrement())
   adminId     Int?

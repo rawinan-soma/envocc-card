@@ -114,7 +114,6 @@ export const createCardRequestWorld = async () => {
   let app: INestApplication<App>;
   let workDir: string;
   let userCount = 0;
-  // "Today" for every date rule, inside the giveMember card's default dates.
   let today: Date;
 
   const start = async () => {
@@ -288,8 +287,6 @@ export const createCardRequestWorld = async () => {
 
   const giveMember = async (
     userId: number,
-    // Left out, member_no comes from the sequence, as for a card an admin
-    // issues.
     data: {
       member_no?: number;
       qrcode: string;

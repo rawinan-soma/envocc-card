@@ -42,7 +42,6 @@ describe('The police report of a lost-card request (Request Type 3)', () => {
       fields,
     );
 
-  // A user at 1 of a request of `requestType`, with a photo stored.
   const atUpload = async (requestType: number, orgId?: number) => {
     const user = await world.createUser({
       orgId,

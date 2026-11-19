@@ -38,7 +38,6 @@ describe('admin file routes', () => {
           organization: { level: 'MINISTRY' },
         }),
       },
-      // In the admin's own organization, so the scope check passes.
       users: {
         findUnique: jest.fn().mockResolvedValue({ organizationId: ORG_ID }),
       },

@@ -4,9 +4,6 @@ import { FIRST_CARD } from './request-types';
 export interface NewStatusEntry {
   userId: number;
   status: number;
-  // Given only for the first entry of a request: registering, or starting a
-  // request for a new card. Every other entry carries the Request Type of the
-  // user's current request.
   requestType?: number;
   approver?: number;
   description?: string;
