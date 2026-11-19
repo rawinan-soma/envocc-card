@@ -27,7 +27,7 @@ const PHOTO_UPLOAD = FileInterceptor(
   getMulterOptions(['.jpg', '.png'], 10 * 1024 * 1024),
 );
 
-const STEP_THREE_UPLOAD = FileFieldsInterceptor(
+const DOCUMENT_UPLOAD = FileFieldsInterceptor(
   [
     { name: 'govCard', maxCount: 1 },
     { name: 'experienceForm', maxCount: 1 },
@@ -93,7 +93,7 @@ export class UserFileController {
 
   // Document upload: needs the user to be at Request Status 1 or 6.
   @Post('me/files')
-  @UseInterceptors(STEP_THREE_UPLOAD)
+  @UseInterceptors(DOCUMENT_UPLOAD)
   async uploadFilesHandler(
     @UploadedFiles()
     files: {
@@ -104,7 +104,7 @@ export class UserFileController {
     @Req() request: RequestwithUserData,
   ) {
     const userId = request.user.id;
-    return await this.filesService.uploadStepThree('user', userId, {
+    return await this.filesService.uploadDocuments('user', userId, {
       govcard: fileDto(files?.govCard?.[0], userId),
       expfile: fileDto(files?.experienceForm?.[0], userId),
       photo: fileDto(files?.photo?.[0], userId),

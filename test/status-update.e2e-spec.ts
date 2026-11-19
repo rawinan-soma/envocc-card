@@ -25,7 +25,7 @@ describe('Status updates outside Revert', () => {
       });
 
     const historyEndingAt = (status: number) =>
-      [0, 1, 3, 4, 7, 8, 9, 10, 11, 12, 13, 15, 16].filter((s) => s < status);
+      [0, 1, 4, 7, 8, 9, 10, 11, 12, 13, 15, 16].filter((s) => s < status);
 
     it.each([
       [13, 1],
@@ -50,10 +50,31 @@ describe('Status updates outside Revert', () => {
     );
 
     it.each([
-      [4, 3],
-      [6, 7],
-      [3, 4],
+      [1, 2],
+      [1, 3],
+      [4, 5],
+      [4, 17],
+    ])(
+      'rejects %i → %i with 400: that Request Status is not in use',
+      async (from, to) => {
+        const history = [...historyEndingAt(from), from];
+        const user = await world.createUser({ history });
+
+        const res = await update(user, from, to);
+
+        expect(res.status).toBe(400);
+        expect(res.body).toMatchObject({
+          message: `request status ${to} is not in use`,
+        });
+        expect(await world.historyOf(user)).toEqual(history);
+      },
+    );
+
+    it.each([
+      [1, 4],
       [4, 6],
+      [6, 7],
+      [4, 7],
       [13, 15],
       [15, 16],
     ])('accepts %i → %i', async (from, to) => {
@@ -69,14 +90,14 @@ describe('Status updates outside Revert', () => {
 
   describe('DELETE admins/users/requests/:id', () => {
     it('no longer exists, and leaves the Status History alone', async () => {
-      const user = await world.createUser({ history: [0, 1, 3, 4] });
+      const user = await world.createUser({ history: [0, 1, 4] });
 
       const res = await world
         .asAdmin(ADMIN.MINISTRY)
         .delete(`/admins/users/requests/${user}`);
 
       expect(res.status).toBe(404);
-      expect(await world.historyOf(user)).toEqual([0, 1, 3, 4]);
+      expect(await world.historyOf(user)).toEqual([0, 1, 4]);
     });
   });
 });

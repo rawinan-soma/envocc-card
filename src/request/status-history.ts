@@ -11,13 +11,6 @@ export interface NewStatusEntry {
   from?: number | null;
 }
 
-// A user may replace their photo only while it is their turn to upload (1) or
-// correct their data (6). See Replace photo in CONTEXT.md.
-export const PHOTO_REPLACEABLE_STATUSES: readonly number[] = [1, 6];
-
-export const canReplacePhoto = (status: number) =>
-  PHOTO_REPLACEABLE_STATUSES.includes(status);
-
 // Serializes every writer of a user's card request (Status History, uploaded
 // files) by holding the user's row until the transaction ends. Call it first:
 // before any read the write depends on, and before touching other tables, so

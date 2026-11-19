@@ -10,10 +10,13 @@ import {
 import { promises as fs } from 'fs';
 import {
   addStatusEntry,
-  canReplacePhoto,
   latestStatusEntry,
   lockUser,
 } from 'src/request/status-history';
+import {
+  canReplacePhoto,
+  USER_SENDS_DOCUMENTS_STATUSES,
+} from 'src/request/request-statuses';
 import {
   envocc_card_files,
   exp_files,
@@ -48,25 +51,25 @@ export type FileModelMap = {
   // member: members;
 };
 
-type StepThreeFile = 'govcard' | 'reqFile' | 'expfile' | 'photo';
+type DocumentUploadFile = 'govcard' | 'reqFile' | 'expfile' | 'photo';
 
-interface StepThreeRule {
-  files: readonly StepThreeFile[];
-  required: readonly StepThreeFile[];
+interface DocumentUploadRule {
+  files: readonly DocumentUploadFile[];
+  required: readonly DocumentUploadFile[];
   // Request Statuses the upload may start from; undefined = any.
   from?: readonly number[];
 }
 
-const STEP_THREE_RULES = {
+const DOCUMENT_UPLOAD_RULES = {
   admin: { files: ['govcard', 'reqFile', 'expfile'], required: ['govcard'] },
   user: {
     files: ['govcard', 'expfile', 'photo'],
     required: ['govcard'],
-    from: [1, 6],
+    from: USER_SENDS_DOCUMENTS_STATUSES,
   },
-} satisfies Record<'admin' | 'user', StepThreeRule>;
+} satisfies Record<'admin' | 'user', DocumentUploadRule>;
 
-export type StepThreeUploader = keyof typeof STEP_THREE_RULES;
+export type DocumentUploader = keyof typeof DOCUMENT_UPLOAD_RULES;
 
 @Injectable()
 export class FilesService {
@@ -253,15 +256,15 @@ export class FilesService {
     return swapped.photo;
   }
 
-  // Step 3. Each document replaces the user's existing one(s) of that type.
-  // A required type the user already has may be left out. Files the rule does
-  // not list are ignored and removed from disk with the rest on failure.
-  async uploadStepThree(
-    uploader: StepThreeUploader,
+  // Document upload. Each document replaces the user's existing one(s) of that
+  // type. A required type the user already has may be left out. Files the rule
+  // does not list are ignored and removed from disk with the rest on failure.
+  async uploadDocuments(
+    uploader: DocumentUploader,
     userId: number,
-    uploads: Partial<Record<StepThreeFile, FileCreateDto>>,
+    uploads: Partial<Record<DocumentUploadFile, FileCreateDto>>,
   ) {
-    const rule: StepThreeRule = STEP_THREE_RULES[uploader];
+    const rule: DocumentUploadRule = DOCUMENT_UPLOAD_RULES[uploader];
     const uploaded = Object.values(uploads).flatMap((dto) =>
       dto ? [dto.url] : [],
     );

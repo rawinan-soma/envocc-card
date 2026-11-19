@@ -16,26 +16,9 @@ import { RevertStatusDto } from './dto/revert-status.dto';
 import { FilesService } from 'src/files/files.service';
 import { assertUserInOrg } from 'src/organizations/user-org-scope';
 import { addStatusEntry, latestStatusEntry, lockUser } from './status-history';
-
-// The only moves that are Reverts: each target and the statuses it can be
-// reached from (see Revert in CONTEXT.md).
-const REVERT_RULES: { target: number; from: [number, number] }[] = [
-  { target: 0, from: [1, 6] },
-  { target: 1, from: [2, 14] },
-  { target: 6, from: [7, 14] },
-  { target: 7, from: [8, 14] },
-  { target: 15, from: [16, 16] },
-];
-
-const REVERT_TARGETS = new Set(REVERT_RULES.map((rule) => rule.target));
+import { adminUpdateRefusal, isRevert } from './request-statuses';
 
 const REVERT_TO_0_FILES = ['photo', 'govcard', 'expfile', 'reqFile'] as const;
-
-const isRevert = (from: number, target: number) =>
-  REVERT_RULES.some(
-    (rule) =>
-      rule.target === target && from >= rule.from[0] && from <= rule.from[1],
-  );
 
 @Injectable()
 export class RequestService {
@@ -60,28 +43,16 @@ export class RequestService {
       return await this.prisma.$transaction(async (tx) => {
         await lockUser(tx, updated.user);
         const current = await latestStatusEntry(tx, updated.user);
-        const mismatchedStatus =
-          current?.request_status !== updated.current_status;
-        const sameStatus = current?.request_status === updated.next_status;
-
-        if (mismatchedStatus) {
+        if (current?.request_status !== updated.current_status) {
           throw new BadRequestException(`user's status mismatched`);
         }
 
-        if (sameStatus) {
-          throw new BadRequestException(`user's already in this status`);
-        }
-
-        // Going back to a Revert target must go through the Revert, so its
-        // rules and clean-up can't be bypassed.
-        const backwardToRevertTarget =
-          REVERT_TARGETS.has(updated.next_status) &&
-          updated.next_status < current.request_status;
-
-        if (backwardToRevertTarget) {
-          throw new BadRequestException(
-            `moving back to ${updated.next_status} is a revert: use POST admins/users/:userId/requests/revert`,
-          );
+        const refusal = adminUpdateRefusal(
+          current.request_status,
+          updated.next_status,
+        );
+        if (refusal) {
+          throw new BadRequestException(refusal);
         }
 
         const { entry } = await addStatusEntry(tx, {

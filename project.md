@@ -87,11 +87,11 @@ A large block of legacy models is commented out rather than deleted: `access_lev
 | ID | Meaning |
 |---|---|
 | 0 | ตรวจสอบ Register (registration awaiting admin validation) |
-| 1 | ตรวจสอบรูปถ่าย |
-| 2 | แก้ไขรูปถ่าย |
-| 3 | อัปโหลดเอกสาร |
-| 4 | ตรวจสอบเอกสาร |
-| 5 | Admin หน่วยงานแก้ไขเอกสาร |
+| 1 | อัปโหลดเอกสารและรูปถ่าย (user sends documents and photo) |
+| 2 | แก้ไขรูปถ่าย (เลิกใช้), retired |
+| 3 | อัปโหลดเอกสาร (เลิกใช้), retired |
+| 4 | ตรวจสอบเอกสารและรูปถ่าย (admin checks documents and photo) |
+| 5 | Admin หน่วยงานแก้ไขเอกสาร (เลิกใช้), retired |
 | 6 | User แก้ไขข้อมูล |
 | 7 | เลือกวิธีลงนาม (choose signing method) |
 | 8 | เลือกวันที่อนุมัติ |
@@ -104,7 +104,7 @@ A large block of legacy models is commented out rather than deleted: `access_lev
 | **15** | **ยื่นขอมีบัตรสำเร็จ** (issued — the only state where a QR can be generated) |
 | **16** | **บัตรถูกยกเลิก** (cancelled) |
 
-Transitions go through `RequestService.updateStatus(dto, approver)`, which enforces optimistic consistency: the caller must send `current_status` matching the latest row, and `next_status` must differ. Notable hard-coded jumps elsewhere:
+Transitions go through `RequestService.updateStatus(dto, approver)`, which enforces optimistic consistency: the caller must send `current_status` matching the latest row, and `next_status` must differ and be a status in use (not 2, 3 or 5; see `src/request/request-statuses.ts`). Notable hard-coded jumps elsewhere:
 
 - `UserAuthService.createUser` seeds status **0** at registration.
 - `UsersService.validateUser` (admin) flips `is_validate` and writes status **1** inside a transaction.
@@ -184,7 +184,7 @@ Public: `GET public/organizations?q`, `GET public/organizations/:id` (flattens t
 No `orgId` → all non-executive positions. With `orgId` → that org's single executive position.
 
 ### `FilesModule`
-User: `POST users/me/envcard` (.pdf), `POST users/me/photo` (.jpg/.png), `PUT users/me/photo`, `POST users/me/files` (step 3: govCard + experienceForm PDFs, optional photo; only at request status 3; moves the user to 4), `GET users/me/files/:file`. Admin: `POST admins/users/:userId/files` (the same step 3 upload on the user's behalf: requestFile/govCard/experienceForm, only govCard required, no status gate), `GET|DELETE admins/users/:userId/files/:file`.
+User: `POST users/me/envcard` (.pdf), `POST users/me/photo` (.jpg/.png), `PUT users/me/photo`, `POST users/me/files` (Document upload: govCard PDF, optional experienceForm PDF and photo; only at request status 1 or 6; moves the user to 4), `GET users/me/files/:file`. Admin: `POST admins/users/:userId/files` (the same Document upload on the user's behalf: requestFile/govCard/experienceForm, only govCard required, no status gate), `GET|DELETE admins/users/:userId/files/:file`.
 
 ### `SealsModule` / `SignaturesModule` (JWT admin)
 `POST admins/seals` (.png), `GET admins/seals`; `POST admins/signatures` (.png + signer name/position), `GET admins/signatures`. Both use a transaction that creates the new asset then re-points the admin's org **and its direct children** at it.

@@ -17,5 +17,5 @@ body:multipart-form {
 }
 
 docs {
-  User login (cookie Authentication_User): run "User auth / Login" first. Approved users only (otherwise 403 user not validated), and only while the request status is 3 (otherwise 403 "documents can be uploaded only at request status 3"). Moves the user to status 4. `govCard` and `experienceForm` are PDFs of at most 10 MB, each required unless the user already has one (400 "govcard is required" / "expfile is required"). `photo` is an optional JPG or PNG that replaces the current photo.
+  User login (cookie Authentication_User): run "User auth / Login" first. Approved users only (otherwise 403 user not validated). Document upload: allowed only while the request status is 1 (first upload) or 6 (correction after a failed check), otherwise 403 "documents can be uploaded only at request status 1, 6". On success the user moves to status 4. `govCard` is a PDF of at most 10 MB, required unless the user already has one (400 "govcard is required"); `experienceForm` is an optional PDF of at most 10 MB. `photo` is an optional JPG or PNG that replaces the current photo.
 }

@@ -143,12 +143,14 @@ describe('Replace photo (PUT users/me/photo)', () => {
     });
   });
 
-  it.each([
-    ['status 2', [0, 1, 2], REPLACE_REFUSED],
-    ['status 3', [0, 1, 3], REPLACE_REFUSED],
-    ['status 4', [0, 1, 4], REPLACE_REFUSED],
-    ['status 7', [0, 1, 4, 7], REPLACE_REFUSED],
-    ['status 15', [0, 1, 15], REPLACE_REFUSED],
+  it.each<[string, number[], string]>([
+    ...[2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].map(
+      (status): [string, number[], string] => [
+        `status ${status}`,
+        [0, 1, status],
+        REPLACE_REFUSED,
+      ],
+    ),
     ['unapproved', [0], 'user not validated'],
   ])(
     'refuses at %s and leaves the old photo untouched',

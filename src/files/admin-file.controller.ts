@@ -33,7 +33,7 @@ export class AdminFileController {
     return await this.filesService.listEnvcardFiles(userId);
   }
 
-  // Step 3 upload on behalf of a user. No status gate: an admin may attach
+  // Document upload on behalf of a user. No status gate: an admin may attach
   // documents at any Request Status.
   @Post('users/:userId/files')
   @UseInterceptors(
@@ -57,7 +57,7 @@ export class AdminFileController {
     @Req() request: RequestwithAdminData,
   ) {
     const adminId = request.user.id;
-    return await this.filesService.uploadStepThree('admin', userId, {
+    return await this.filesService.uploadDocuments('admin', userId, {
       govcard: fileDto(files?.govCard?.[0], userId, adminId),
       reqFile: fileDto(files?.requestFile?.[0], userId, adminId),
       expfile: fileDto(files?.experienceForm?.[0], userId, adminId),

@@ -16,6 +16,7 @@ Changes to the EnvOcc Card API since `b5a3abd` (agent skills setup), up to `ef03
   4. [Unapproved users can log in; card-request routes need approval](#4-unapproved-users-can-log-in-card-request-routes-need-approval)
   5. [Admin file routes need an admin login](#5-admin-file-routes-need-an-admin-login)
   6. [The admin document upload moved to `POST admins/users/:userId/files`](#6-the-admin-document-upload-moved-to-post-adminsusersuseridfiles)
+  7. [Request Statuses 2, 3 and 5 are retired](#7-request-statuses-2-3-and-5-are-retired)
 - [New endpoints](#new-endpoints)
   - [`POST admins/users/:userId/requests/revert`](#post-adminsusersuseridrequestsrevert)
   - [`GET admins/users/all`](#get-adminsusersall)
@@ -171,7 +172,26 @@ Without the cookie:
 
 ### 6. The admin document upload moved to `POST admins/users/:userId/files`
 
-`POST users/me/files` used to be the admin's upload, with the target user in a `user` field. That route now belongs to the user (see [`POST users/me/files`](#post-usersmefiles)), and an admin cookie on it answers `401`. Admins upload on behalf of a user at `POST admins/users/:userId/files`, with the user's id in the path and no `user` field. The other fields and rules are unchanged; see [Step 3 upload](#step-3-upload-the-request-file-is-optional).
+`POST users/me/files` used to be the admin's upload, with the target user in a `user` field. That route now belongs to the user (see [`POST users/me/files`](#post-usersmefiles)), and an admin cookie on it answers `401`. Admins upload on behalf of a user at `POST admins/users/:userId/files`, with the user's id in the path and no `user` field. The other fields and rules are unchanged; see [Document upload by an admin](#document-upload-by-an-admin-the-request-file-is-optional).
+
+### 7. Request Statuses 2, 3 and 5 are retired
+
+Issue #48. The Request Status steps were redrawn: the user sends their documents and photo together at **1**, the admin checks both at **4**, and when the check fails the admin moves the user to **6**, where the user corrects their data, photo and documents and sends them again. Statuses 2 (correct photo), 3 (upload documents) and 5 (unit admin corrects documents) are no longer used.
+
+- **`POST admins/users/requests/update`** refuses a `next_status` of 2, 3 or 5, and any number outside 0–16. The admin moves a user from 4 to 6 with this route when the check fails.
+
+  ```json
+  400 Bad Request
+  {
+    "message": "request status 3 is not in use",
+    "error": "Bad Request",
+    "statusCode": 400
+  }
+  ```
+
+- **Document upload** by the user ([`POST users/me/files`](#post-usersmefiles)) starts from 1 or 6, no longer from 3. [`PUT users/me/photo`](#put-usersmephoto) works at 1 or 6, no longer at 2 or 3.
+- **Status names** (`request_statuses.status_name`) changed: 1 is `อัปโหลดเอกสารและรูปถ่าย`, 4 is `ตรวจสอบเอกสารและรูปถ่าย`, and 2, 3 and 5 end in `(เลิกใช้)`. They stay in the table, so older Status History entries still resolve. Older entries at 1 show the new name.
+- **Users at 2, 3 or 5** when this ships are moved by the database migration: 2 → 6, 3 → 1, 5 → 4. Each gets a new Status History entry with the same `request_type`, no `approver`, and the description `ย้ายอัตโนมัติ: เลิกใช้สถานะ 2` (or 3, or 5). Their earlier entries are kept.
 
 ---
 
@@ -452,7 +472,7 @@ An unapproved user gets `403 user not validated`, as on the other card-request r
 
 ### `POST users/me/files`
 
-A user uploads their own step 3 documents. `multipart/form-data`, with the `Authentication_User` cookie and an approved user. The user is taken from the cookie.
+A user sends their own documents (Document upload). `multipart/form-data`, with the `Authentication_User` cookie and an approved user. The user is taken from the cookie.
 
 | Field | Required | Notes |
 |---|---|---|
@@ -521,7 +541,7 @@ On success the request starts at status 1 with the `requestType` given, and its 
 
 `POST users/me/photo`, `PUT users/me/photo` and `POST users/me/envcard` used to answer 500 when the form had no file field. They now answer 400 with `photo is required` or `envcard is required`.
 
-### Step 3 upload: the request file is optional
+### Document upload by an admin: the request file is optional
 
 Issue #11. `POST admins/users/:userId/files` takes `multipart/form-data` and requires the admin cookie. `:userId` is the target user's id. It has no status gate: an admin may upload at any request status.
 
