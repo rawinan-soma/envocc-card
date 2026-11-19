@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  HttpException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -19,6 +20,7 @@ import {
   latestStatusEntry,
   lockUser,
 } from 'src/request/status-history';
+import { cardVerifiesAt } from './cards';
 // import { RequestService } from 'src/request/request.service';
 
 interface OrganizationWithParent {
@@ -27,6 +29,58 @@ interface OrganizationWithParent {
   level: OrgLevel;
   parent?: OrganizationWithParent | null;
 }
+
+const CARD_SELECT = Prisma.validator<Prisma.membersSelect>()({
+  qrcode: true,
+  is_active: true,
+  member_no: true,
+  start_date: true,
+  end_date: true,
+  user: {
+    select: {
+      cid: true,
+      pname_th: true,
+      pname_other_th: true,
+      fname_th: true,
+      lname_th: true,
+      pname_en: true,
+      pname_other_en: true,
+      fname_en: true,
+      lname_en: true,
+      blood: true,
+      position: true,
+      positionId: true,
+      position_lv: true,
+      photos: {
+        select: {
+          url: true,
+        },
+      },
+      organizationId: true,
+      organization: {
+        include: {
+          seal: true,
+          signature: true,
+          parent: {
+            include: {
+              seal: true,
+              signature: true,
+              parent: {
+                include: {
+                  parent: {
+                    include: {
+                      parent: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+});
 
 @Injectable()
 export class MembersService {
@@ -66,111 +120,36 @@ export class MembersService {
     }
   }
 
-  async getMember(user_id: number) {
+  // The online card: the card valid today. Also shown to whoever verifies a
+  // QR code.
+  getMember(user_id: number) {
+    return this.findCard({
+      where: { userId: user_id, is_active: true },
+      orderBy: { end_date: 'desc' },
+    });
+  }
+
+  // For admins: the user's latest card, valid or not, such as the one being
+  // issued and printed.
+  getLatestCard(user_id: number) {
+    return this.findCard({
+      where: { userId: user_id },
+      orderBy: { member_id: 'desc' },
+    });
+  }
+
+  private async findCard(
+    args: Pick<Prisma.membersFindFirstArgs, 'where' | 'orderBy'>,
+  ) {
     try {
-      const member = await this.prisma.members.findFirst(
-        Prisma.validator<Prisma.membersFindFirstArgs>()({
-          where: { userId: user_id, is_active: true },
-          orderBy: { end_date: 'desc' },
-          select: {
-            qrcode: true,
-            member_no: true,
-            start_date: true,
-            end_date: true,
-            user: {
-              select: {
-                cid: true,
-                pname_th: true,
-                pname_other_th: true,
-                fname_th: true,
-                lname_th: true,
-                pname_en: true,
-                pname_other_en: true,
-                fname_en: true,
-                lname_en: true,
-                blood: true,
-                position: true,
-                positionId: true,
-                position_lv: true,
-                photos: {
-                  select: {
-                    url: true,
-                  },
-                },
-                organizationId: true,
-                organization: {
-                  include: {
-                    seal: true,
-                    signature: true,
-                    parent: {
-                      include: {
-                        seal: true,
-                        signature: true,
-                        parent: {
-                          include: {
-                            parent: {
-                              include: {
-                                parent: true,
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        }),
-      );
+      const member = await this.prisma.members.findFirst({
+        ...args,
+        select: CARD_SELECT,
+      });
 
       if (!member) {
         throw new NotFoundException('not found member');
       }
-
-      // const flatOrg = this.pickLevelForRequestForm(member?.user.organization);
-      // const organization = await this.prisma.organizations.findFirst({
-      //   where: {
-      //     id: member.user.organizationId,
-      //   },
-      //   include: { signature: true, seal: true },
-      // });
-
-      // const department = await this.prisma.organizations.findFirst({
-      //   where: { name_th: flatOrg?.DEPARTMENT },
-      // });
-
-      // const data = {
-      //   qrcode: member.qrcode,
-      //   cid: member.user.cid,
-      //   pname_th: member.user.pname_th,
-      //   pname_other_th: member.user.pname_other_th,
-      //   fname_th: member.user.fname_th,
-      //   lname_th: member.user.lname_th,
-      //   pname_en: member.user.pname_en,
-      //   pname_other_en: member.user.pname_other_en,
-      //   fname_en: member.user.fname_en,
-      //   lname_en: member.user.lname_en,
-      //   blood: member.user.blood,
-      //   position_id: member.user.position?.position_id,
-      //   position: member.user.position?.position_name,
-      //   position_lv: member.user.position_lv?.position_lv_name,
-      //   photo: member.user.photos[0].url,
-      //   seal: organization?.seal.url,
-      //   department: flatOrg?.DEPARTMENT,
-      //   department_en: department?.name_eng,
-      //   province_org: flatOrg?.PROVINCE,
-      //   member_no: member.member_no,
-      //   start_date: member.start_date,
-      //   end_date: member.end_date,
-      //   organization_id: member.user.organizationId,
-      //   signature_name: organization?.signature.sign_person_name,
-      //   signature_lname: organization?.signature.sign_person_lname,
-      //   signature_pname: organization?.signature.sign_person_pname,
-      //   signature_file: organization?.signature.url,
-      //   signature_position: organization?.signature.sign_person_position,
-      // };
 
       return member;
     } catch (error: any) {
@@ -260,23 +239,22 @@ export class MembersService {
   async getMemberByQrcode(qrcode_no: string) {
     try {
       const member = await this.prisma.members.findFirst({
-        where: {
-          qrcode: qrcode_no,
-        },
+        where: { qrcode: qrcode_no, is_active: true },
         orderBy: { member_no: 'desc' },
       });
 
-      const status = await this.prisma.requests.findFirst({
-        where: { userId: member?.userId },
-        orderBy: { date_update: 'desc' },
-      });
-      if (status?.request_status !== 15) {
+      const current =
+        member && (await latestStatusEntry(this.prisma, member.userId));
+      if (!current || !cardVerifiesAt(current)) {
         throw new BadRequestException('cannot generate qr code');
       }
 
       return member;
     } catch (error) {
-      console.log(error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error(error);
       throw new InternalServerErrorException('something went wrong');
     }
   }
@@ -366,10 +344,9 @@ export class MembersService {
         endDate.setFullYear(startDate.getFullYear() + 5);
         endDate.setDate(endDate.getDate() - 1);
 
-        // Active again for a request started from a cancelled card (16).
         await tx.members.update({
           where: { member_id: targetMember.member_id },
-          data: { start_date: startDate, end_date: endDate, is_active: true },
+          data: { start_date: startDate, end_date: endDate },
         });
 
         const current = await latestStatusEntry(tx, user);

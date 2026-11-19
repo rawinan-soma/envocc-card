@@ -602,7 +602,29 @@ Content-Type: application/json
 
 Once started, the request walks the same statuses to 15 as a first-card request, and every Status History entry it adds carries its `request_type`, whichever route writes it. Before, the entries written by `POST admins/members` (signing method) and `PATCH admins/members/:userId/activate` (approval date) always had `request_type` 1.
 
-The user keeps their Member Number and QR code: step 7 reuses their card record. `PATCH admins/members/:userId/activate` now also sets the card active (`is_active: true`), so a request started from a cancelled card (16) ends with an active card, which `GET users/me/envcard/qrcode` returns again.
+The user keeps their Member Number and QR code: step 7 reuses their card record.
+
+### The Old card while a request for a new card runs
+
+Issue #55. The card a user holds when they start a request for a new card is the **Old card**.
+
+| Request Type | The Old card while the request runs |
+|---|---|
+| 2 (expired) | Stays valid. |
+| 3–11 | Stops being valid as soon as `POST users/me/card` succeeds (type 11 starts from a cancelled card, so it already was not). |
+
+"Not valid" means:
+
+- `GET common/qrcode?qrcode_number=` answers `400` with `cannot generate qr code`.
+- `GET users/me/envcard/qrcode` and `GET common/members/:userId` answer `404` with `not found member`.
+
+When starting the request is refused, nothing changes and the Old card stays valid.
+
+The new card becomes valid when the request reaches **15**, by `POST admins/users/requests/update` or by a Revert from 16. Before, `PATCH admins/members/:userId/activate` (the approval date, at 8 or 11) set the card active. It now only sets the dates, so no card shows between the approval date and 15.
+
+`GET admins/members/:userId` now returns the user's latest card whether it is valid or not, so admins can print the card being issued. Its body has a new field, `is_active`: `true` once the card is valid. Before, it answered `404` for a card that was not active. The online card routes return `is_active` too.
+
+`GET common/qrcode` accepts a QR code while its holder's request status is 15, or while a type 2 request runs (1–14). Before, it accepted only 15. It now also refuses a card set inactive (`PATCH admins/members/:userId/deactivate`), and answers `400` instead of `500` when it refuses.
 
 ### Request Type in the admin user lists
 

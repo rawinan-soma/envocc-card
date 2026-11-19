@@ -10,6 +10,10 @@ interface RequestTypeRule {
   keepsPhoto?: true;
   // Document upload needs a police report (ใบแจ้งความ).
   needsPoliceReport?: true;
+  // The Old card stays valid while the request runs (see Old card in
+  // CONTEXT.md). For every other type it stops being valid when the request
+  // starts.
+  oldCardStaysValid?: true;
 }
 
 // Registering starts a first-card request; a user cannot pick it.
@@ -23,6 +27,7 @@ export const REQUEST_TYPES: Readonly<Record<number, RequestTypeRule>> = {
     name: 'บัตรหมดอายุ',
     userStartsFrom: CARD_ISSUED_OR_CANCELLED,
     keepsPhoto: true,
+    oldCardStaysValid: true,
   },
   3: {
     name: 'บัตรสูญหาย',

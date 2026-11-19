@@ -17,6 +17,7 @@ import { assertUserInOrg } from 'src/organizations/user-org-scope';
 import { addStatusEntry, latestStatusEntry, lockUser } from './status-history';
 import { adminUpdateRefusal, isRevert } from './request-statuses';
 import { FIRST_CARD } from './request-types';
+import { issueCard } from 'src/members/cards';
 
 const REVERT_TO_0_FILES = [
   'photo',
@@ -59,6 +60,10 @@ export class RequestService {
         );
         if (refusal) {
           throw new BadRequestException(refusal);
+        }
+
+        if (updated.next_status === 15) {
+          await issueCard(tx, updated.user);
         }
 
         const { entry } = await addStatusEntry(tx, {
@@ -168,10 +173,7 @@ export class RequestService {
           }
 
           if (target === 15) {
-            await tx.members.updateMany({
-              where: { userId: userId },
-              data: { is_active: true },
-            });
+            await issueCard(tx, userId);
           }
 
           const { entry } = await addStatusEntry(tx, {

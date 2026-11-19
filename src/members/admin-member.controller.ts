@@ -25,7 +25,7 @@ export class AdminMemberController {
 
   @Get('members/:userId')
   async getMemberByIdHandler(@Param('userId', ParseIntPipe) userId: number) {
-    return this.membersService.getMember(userId);
+    return this.membersService.getLatestCard(userId);
   }
 
   @Post('members')

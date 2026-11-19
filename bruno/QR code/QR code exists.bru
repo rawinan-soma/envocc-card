@@ -15,5 +15,5 @@ params:query {
 }
 
 docs {
-  No login.
+  No login. Answers 400 `cannot generate qr code` unless the card is valid: its holder's request status is 15, or a request of type 2 (expired card) is running, whose Old card stays valid. A request of types 3-11 stops the Old card being valid as soon as it starts.
 }

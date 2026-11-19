@@ -19,6 +19,7 @@ import {
 import { editPersonalData } from './edit-personal-data';
 import { REQUEST_TYPES, USER_STARTED_TYPES } from 'src/request/request-types';
 import { FilesService } from 'src/files/files.service';
+import { startNewCard } from 'src/members/cards';
 
 interface UsersPageQuery {
   page: number;
@@ -681,6 +682,8 @@ export class UsersService {
             `a new card can be requested only at request status ${startsFrom.join(' or ')}`,
           );
         }
+
+        await startNewCard(tx, userId, requestType);
 
         await tx.users.update({
           where: { id: userId },
