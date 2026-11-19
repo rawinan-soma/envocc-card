@@ -14,6 +14,7 @@ import { Prisma } from '@prisma/client';
 import { MailService } from 'src/mail/mail.service';
 import { randomBytes } from 'crypto';
 import { addStatusEntry } from 'src/request/status-history';
+import { FIRST_CARD } from 'src/request/request-types';
 
 @Injectable()
 export class UserAuthService {
@@ -44,7 +45,7 @@ export class UserAuthService {
       await addStatusEntry(tx, {
         userId: user.id,
         status: 0,
-        requestType: 1,
+        requestType: FIRST_CARD,
         from: null,
       });
       return user;

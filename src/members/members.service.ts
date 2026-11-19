@@ -366,9 +366,10 @@ export class MembersService {
         endDate.setFullYear(startDate.getFullYear() + 5);
         endDate.setDate(endDate.getDate() - 1);
 
+        // Active again for a request started from a cancelled card (16).
         await tx.members.update({
           where: { member_id: targetMember.member_id },
-          data: { start_date: startDate, end_date: endDate },
+          data: { start_date: startDate, end_date: endDate, is_active: true },
         });
 
         const current = await latestStatusEntry(tx, user);
@@ -380,9 +381,7 @@ export class MembersService {
           const { entry } = await addStatusEntry(tx, {
             userId: user,
             status: current.request_status + 1,
-            requestType: 1,
             approver: approver,
-            from: current.request_status,
           });
           return entry;
         } else {
@@ -415,7 +414,6 @@ export class MembersService {
         await addStatusEntry(tx, {
           userId: data.userId,
           status: signature_method,
-          requestType: 1,
           approver: admin,
         });
 

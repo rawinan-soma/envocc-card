@@ -11,12 +11,12 @@ import { OrgLevel, Prisma } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
 import { StatusCreateDto } from './dto/status-create.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { RequestCreateDto } from './dto/request-create.dto';
 import { RevertStatusDto } from './dto/revert-status.dto';
 import { FilesService } from 'src/files/files.service';
 import { assertUserInOrg } from 'src/organizations/user-org-scope';
 import { addStatusEntry, latestStatusEntry, lockUser } from './status-history';
 import { adminUpdateRefusal, isRevert } from './request-statuses';
+import { FIRST_CARD } from './request-types';
 
 const REVERT_TO_0_FILES = ['photo', 'govcard', 'expfile', 'reqFile'] as const;
 
@@ -58,10 +58,8 @@ export class RequestService {
         const { entry } = await addStatusEntry(tx, {
           userId: updated.user,
           status: updated.next_status,
-          requestType: current.request_type,
           approver: approver,
           description: updated.description,
-          from: current.request_status,
         });
         return entry;
       });
@@ -94,36 +92,6 @@ export class RequestService {
     }
   }
 
-  async createNewRequest(data: RequestCreateDto) {
-    try {
-      await this.prisma.$transaction(async (tx) => {
-        await lockUser(tx, data.userId);
-        const user = await latestStatusEntry(tx, data.userId);
-        if (user) {
-          throw new BadRequestException(
-            'user already has new card request, please ensure the card from user',
-          );
-        }
-
-        await addStatusEntry(tx, {
-          userId: data.userId,
-          status: 1,
-          requestType: data.request_type,
-          from: null,
-        });
-      });
-    } catch (err: any) {
-      this.logger.error(err);
-      if (err instanceof BadRequestException) {
-        throw err;
-      } else if (err instanceof PrismaClientKnownRequestError) {
-        throw new BadRequestException('bad request by user');
-      } else {
-        throw new InternalServerErrorException('something went wrong');
-      }
-    }
-  }
-
   async revertStatus(userId: number, revert: RevertStatusDto, adminId: number) {
     try {
       const { entry, filesToDelete } = await this.prisma.$transaction(
@@ -145,7 +113,10 @@ export class RequestService {
 
           // A card holder never goes back to unapproved: see
           // docs/adr/0003-a-request-for-a-new-card-cannot-be-ended-early.md
-          if (revert.target_status === 0 && current.request_type !== 1) {
+          if (
+            revert.target_status === 0 &&
+            current.request_type !== FIRST_CARD
+          ) {
             throw new BadRequestException(
               'only a first-card request (Request Type 1) can be reverted to 0',
             );
@@ -200,10 +171,8 @@ export class RequestService {
           const { entry } = await addStatusEntry(tx, {
             userId: userId,
             status: revert.target_status,
-            requestType: current.request_type,
             approver: adminId,
             description: revert.description,
-            from: current.request_status,
           });
 
           return { entry, filesToDelete };

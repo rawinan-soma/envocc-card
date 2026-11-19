@@ -15,9 +15,11 @@ import { ExperiencesService } from 'src/experiences/experiences.service';
 import { FilesService } from 'src/files/files.service';
 import { AdminMemberController } from 'src/members/admin-member.controller';
 import { CommonMembersController } from 'src/members/common-members.controller';
+import { UserMemberController } from 'src/members/user-member.controller';
 import { MembersService } from 'src/members/members.service';
 import { AdminRequestController } from 'src/request/admin-request.controller';
 import { RequestService } from 'src/request/request.service';
+import { REQUEST_TYPES } from 'src/request/request-types';
 import { JwtAccessStrategy as UserJwtAccessStrategy } from 'src/user-auth/jwt-access.strategy';
 import { AdminUserController } from 'src/users/admin-user.controller';
 import { AdminFileController } from 'src/files/admin-file.controller';
@@ -58,6 +60,12 @@ const seedWorld = async (prisma: PrismaClient) => {
     data: Array.from({ length: 17 }, (_, i) => ({
       status_id: i,
       status_name: `status ${i}`,
+    })),
+  });
+  await prisma.request_types.createMany({
+    data: Object.entries(REQUEST_TYPES).map(([type, { name }]) => ({
+      type_id: Number(type),
+      type_name: name,
     })),
   });
   await prisma.position_lvs.create({ data: { position_lv_id: 1 } });
@@ -113,6 +121,7 @@ export const createCardRequestWorld = async () => {
         AdminUserController,
         AdminMemberController,
         CommonMembersController,
+        UserMemberController,
         UsersController,
         UserCardRequestController,
         AdminFileController,

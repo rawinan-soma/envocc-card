@@ -11,16 +11,13 @@ import { OrgLevel, organizations, Prisma } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
 import { UserUpdateDto, UserUpdateInternalDto } from './dto/user-update.dto';
-import { StatusCreateDto } from 'src/request/dto/status-create.dto';
 import {
   addStatusEntry,
   latestStatusEntry,
   lockUser,
 } from 'src/request/status-history';
 import { editPersonalData } from './edit-personal-data';
-
-// The Request Statuses a user may start a request for a new card from.
-const NEW_CARD_FROM = [15, 16];
+import { REQUEST_TYPES, USER_STARTED_TYPES } from 'src/request/request-types';
 
 interface UsersPageQuery {
   page: number;
@@ -558,17 +555,9 @@ export class UsersService {
           throw new BadRequestException('user cannot re-activated');
         }
 
-        const data: StatusCreateDto = {
-          user: id,
-          next_status: 1,
-          request_type: 1,
-          current_status: 0,
-        };
-
         const { entry } = await addStatusEntry(tx, {
-          userId: data.user,
-          status: data.next_status,
-          requestType: data.request_type,
+          userId: id,
+          status: 1,
           approver: approver,
           from: currentStatus.request_status,
         });
@@ -631,29 +620,32 @@ export class UsersService {
     data: UserUpdateDto,
     requestType: number,
   ) {
+    const startsFrom = REQUEST_TYPES[requestType]?.userStartsFrom;
+    if (!startsFrom) {
+      throw new BadRequestException(
+        `requestType must be one of ${USER_STARTED_TYPES.join(', ')}`,
+      );
+    }
     try {
       await this.prisma.$transaction(async (tx) => {
         if ((await lockUser(tx, userId)).length === 0) {
           throw new NotFoundException('user not found');
         }
         const current = await latestStatusEntry(tx, userId);
-        if (!current || !NEW_CARD_FROM.includes(current.request_status)) {
+        if (!current || !startsFrom.includes(current.request_status)) {
           throw new ForbiddenException(
-            'a new card can be requested only at request status 15 or 16',
+            `a new card can be requested only at request status ${startsFrom.join(' or ')}`,
           );
         }
 
-        if (!data.user) {
-          throw new BadRequestException('invalid user input');
-        }
         await tx.users.update({
           where: { id: userId },
-          data: data.experiences
-            ? {
-                ...data.user,
-                experiences: { createMany: { data: { ...data.experiences } } },
-              }
-            : data.user,
+          data: {
+            ...data.user,
+            experiences: data.experiences && {
+              createMany: { data: data.experiences },
+            },
+          },
         });
 
         await addStatusEntry(tx, {

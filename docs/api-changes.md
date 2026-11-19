@@ -531,11 +531,49 @@ The stored `gov_card_files` and `exp_files` rows have no admin, so `GET users/me
 
 ## Other behaviour changes
 
-### `POST users/me/card` only from request status 15 or 16
+### Starting a request for a new card (`POST users/me/card`)
 
-A user starts a request for a new card (`?requestType=2`…`11`) only while their current request status is **15** (card issued) or **16** (card cancelled). At any other status, or with no status history, it answers `403 a new card can be requested only at request status 15 or 16` and saves nothing: neither the details in the body nor a status. Before, it was accepted at any status and the details were saved even when the request then failed.
+Issue #50. A card holder starts a request for a new card and gives the reason, the **Request Type**, as `?requestType=`:
 
-On success the request starts at status 1 with the `requestType` given, and its Status History entry has no `approver` (it used to carry the user's own id in that admin field).
+| `requestType` | Reason |
+|---|---|
+| 2 | บัตรหมดอายุ (card expired) |
+| 3 | บัตรสูญหาย (card lost) |
+| 4 | บัตรถูกทำลาย (card destroyed) |
+| 5 | เปลี่ยนชื่อตัว (first name changed) |
+| 6 | เปลี่ยนชื่อสกุล (last name changed) |
+| 7 | เปลี่ยนชื่อตัวและชื่อสกุล (first and last name changed) |
+| 8 | เปลี่ยนคำนำหน้าชื่อตัว (name title changed) |
+| 9 | เลื่อนยศหรือชั้นหรือระดับ (rank or level promoted) |
+| 10 | เปลี่ยนตำแหน่ง (position changed) |
+| 11 | ย้ายสังกัด (organization changed) |
+
+Type 1 (ครั้งแรก, first card) comes only from registering. The names are in a new `request_types` table (`type_id`, `type_name`), and `requests.request_type` refers to it.
+
+```http
+POST /envocc-card/api/v2/users/me/card?requestType=9
+Cookie: Authentication_User=<token>
+Content-Type: application/json
+
+{ "user": { "position_lvId": 3 } }
+```
+
+- **When:** only while the user's current request status is **15** (card issued) or **16** (card cancelled). Before, it was accepted at any status.
+- **Body:** `user` (the user's details) and `experiences` (items added to the user's experiences) are both optional. They are saved in the same transaction as the new status: either the request starts and they are saved, or nothing is saved. Before, `user` was required (`400 invalid user input`) and sending `experiences` failed with 500.
+- **Response:** `201` with an empty body. The user is now at status 1. The new Status History entry has the `request_type` given and no `approver` (it used to carry the user's own id in that admin field).
+- **Two requests sent at once** start one request. The other answers 403.
+
+**Errors**
+
+| Status | `message` | When |
+|---|---|---|
+| 400 | `requestType must be one of 2, 3, 4, 5, 6, 7, 8, 9, 10, 11` | `requestType` is 1, or not a Request Type (0, 12, …). |
+| 400 | `Validation failed (numeric string is expected)` | `requestType` is missing or not a number. |
+| 403 | `a new card can be requested only at request status 15 or 16` | The user is at any other status, or has no status history. |
+
+Once started, the request walks the same statuses to 15 as a first-card request, and every Status History entry it adds carries its `request_type`, whichever route writes it. Before, the entries written by `POST admins/members` (signing method) and `PATCH admins/members/:userId/activate` (approval date) always had `request_type` 1.
+
+The user keeps their Member Number and QR code: step 7 reuses their card record. `PATCH admins/members/:userId/activate` now also sets the card active (`is_active: true`), so a request started from a cancelled card (16) ends with an active card, which `GET users/me/envcard/qrcode` returns again.
 
 ### Personal data only at request status 0, 1 or 6
 
@@ -557,7 +595,7 @@ At any other status, or with no status history, these answer `403` and change no
 }
 ```
 
-Once a card is issued (15) or cancelled (16), the user changes their details by starting a request for a new card with [`POST users/me/card`](#post-usersmecard-only-from-request-status-15-or-16), which saves the details in its body.
+Once a card is issued (15) or cancelled (16), the user changes their details by starting a request for a new card with [`POST users/me/card`](#starting-a-request-for-a-new-card-post-usersmecard), which saves the details in its body.
 
 Reading stays open at every status: `GET users/me`, `GET users/me/experiences`, `GET users/me/requests/form` and `GET users/me/requests/exp`.
 

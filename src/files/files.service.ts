@@ -299,12 +299,7 @@ export class FilesService {
           }
         }
 
-        await addStatusEntry(tx, {
-          userId,
-          status: 4,
-          requestType: current?.request_type ?? 1,
-          from: current?.request_status ?? null,
-        });
+        await addStatusEntry(tx, { userId, status: 4 });
 
         return replaced;
       });

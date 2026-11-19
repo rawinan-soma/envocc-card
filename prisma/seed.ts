@@ -27,6 +27,7 @@ async function main() {
     positions: readJson('position.json'),
     positionLvls: readJson('position_lvls.json'),
     requestStatuses: readJson('request_statuses.json'),
+    requestTypes: readJson('request_types.json'),
     admins: readJson('admins.json'),
   };
 
@@ -86,6 +87,11 @@ async function main() {
     console.log('Upserting request statuses...');
     for (const item of data.requestStatuses) {
       await tx.request_statuses.upsert({ where: { status_id: item.status_id }, update: item, create: item });
+    }
+
+    console.log('Upserting request types...');
+    for (const item of data.requestTypes) {
+      await tx.request_types.upsert({ where: { type_id: item.type_id }, update: item, create: item });
     }
 
     console.log('Upserting admins...');

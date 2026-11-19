@@ -1,9 +1,13 @@
 import { Prisma } from '@prisma/client';
+import { FIRST_CARD } from './request-types';
 
 export interface NewStatusEntry {
   userId: number;
   status: number;
-  requestType: number;
+  // Given only for the first entry of a request: registering, or starting a
+  // request for a new card. Every other entry carries the Request Type of the
+  // user's current request.
+  requestType?: number;
   approver?: number;
   description?: string;
   // The Request Status being left: null for a user's first entry. Looked up
@@ -40,9 +44,12 @@ export const addStatusEntry = async (
   { userId, status, requestType, approver, description, from }: NewStatusEntry,
 ) => {
   await lockUser(db, userId);
-  if (from === undefined) {
+  if (from === undefined || requestType === undefined) {
     const current = await latestStatusEntry(db, userId);
-    from = current?.request_status ?? null;
+    if (from === undefined) {
+      from = current?.request_status ?? null;
+    }
+    requestType ??= current?.request_type ?? FIRST_CARD;
   }
 
   const entry = await db.requests.create({
