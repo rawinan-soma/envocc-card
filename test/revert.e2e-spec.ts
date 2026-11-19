@@ -297,6 +297,42 @@ describe('Revert (POST admins/users/:userId/requests/revert)', () => {
     );
   });
 
+  describe('a request for a new card (types 2–11)', () => {
+    const moves = [
+      [4, 1, [1, 4]],
+      [7, 6, [1, 4, 7]],
+      [8, 7, [1, 4, 7, 8]],
+    ] as const;
+
+    it.each(
+      [2, 3, 11].flatMap((requestType) =>
+        moves.map(([from, target, request]) => ({
+          from,
+          target,
+          requestType,
+          history: [...ISSUED, ...request],
+        })),
+      ),
+    )(
+      'Reverts $from → $target on a type $requestType request, and the entry carries that type',
+      async ({ from, target, requestType, history }) => {
+        const user = await world.createUser({ history, requestType });
+
+        const res = await revert(user, {
+          current_status: from,
+          target_status: target,
+        });
+
+        expect(res.status).toBe(201);
+        expect(res.body).toMatchObject({
+          request_status: target,
+          request_type: requestType,
+        });
+        expect(await world.historyOf(user)).toEqual([...history, target]);
+      },
+    );
+  });
+
   describe('when a step fails', () => {
     // Makes the database reject the Revert's new Status History entry, the
     // last step, after everything else in the Revert has run.

@@ -207,13 +207,15 @@ Issue #7. Sends a user's card request back to an earlier Request Status.
 
 | Target | From | Effect |
 |---|---|---|
-| **0** | 1–6 | A full restart. It deletes the user's whole status history and every uploaded file (photo, government card, experience form, request file), and marks the user unapproved again. Only one status-0 entry is left. See `docs/adr/0001-revert-to-0-deletes-status-history.md`. |
+| **0** | 1–6 | Only for a first-card request (Request Type 1). A full restart. It deletes the user's whole status history and every uploaded file (photo, government card, experience form, request file), and marks the user unapproved again. Only one status-0 entry is left. See `docs/adr/0001-revert-to-0-deletes-status-history.md`. |
 | **1** | 2–14 | Deletes the files listed in `delete_files`. Clears the card's start and end dates. |
 | **6** | 7–14 | Deletes the files listed in `delete_files`. Clears the card's start and end dates. |
 | **7** | 8–14 | Clears the card's start and end dates. |
 | **15** | 16 | Reactivates the card. |
 
-Every Revert except a revert to 0 adds a new status-history entry. The user keeps their Member Number and QR code.
+Every Revert except a revert to 0 adds a new status-history entry, with the `request_type` of the user's current request. The user keeps their Member Number and QR code.
+
+A request for a new card (Request Types 2–11) cannot be Reverted to 0, because the user already holds a card (`docs/adr/0003-a-request-for-a-new-card-cannot-be-ended-early.md`). When something is wrong with it, Revert it to 1, 6 or 7 and it carries on.
 
 **Request**
 
