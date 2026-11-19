@@ -17,7 +17,7 @@ import type { RequestwithUserData } from 'src/user-auth/request-user-interface';
 import { UserUpdateInternalDto } from './dto/user-update.dto';
 import { UpdateExpDto } from 'src/experiences/update-exp.dto';
 import { ExperiencesService } from 'src/experiences/experiences.service';
-import { SepExpCreateDto } from 'src/experiences/create-exp.dto';
+import { ExpCreateDto } from 'src/user-auth/dto/exp-create.dto';
 
 // @UseGuards(JwtAccessGuardUser)
 @Controller('users')
@@ -109,10 +109,11 @@ export class UsersController {
   @UseGuards(JwtAccessGuardUser)
   @Patch('me/experiences/:expId')
   async editExperienceHandler(
+    @Req() request: RequestwithUserData,
     @Body() dto: UpdateExpDto,
     @Param('expId', ParseIntPipe) expId: number,
   ) {
-    return this.expService.editExperience(expId, dto);
+    return this.expService.editExperience(request.user.id, expId, dto);
   }
 
   @UseGuards(JwtAccessGuardUser)
@@ -125,15 +126,19 @@ export class UsersController {
   @UseGuards(JwtAccessGuardUser)
   @Post('me/experiences')
   async addExperienceHandler(
-    @Body(new ParseArrayPipe({ items: SepExpCreateDto }))
-    dto: SepExpCreateDto[],
+    @Req() request: RequestwithUserData,
+    @Body(new ParseArrayPipe({ items: ExpCreateDto }))
+    dto: ExpCreateDto[],
   ) {
-    return this.expService.addExperinces(dto);
+    return this.expService.addExperinces(request.user.id, dto);
   }
 
   @UseGuards(JwtAccessGuardUser)
   @Delete('me/experiences/:expId')
-  async deleteExperienceHandler(@Param('expId', ParseIntPipe) expId: number) {
-    return this.expService.deleteExperience(expId);
+  async deleteExperienceHandler(
+    @Req() request: RequestwithUserData,
+    @Param('expId', ParseIntPipe) expId: number,
+  ) {
+    return this.expService.deleteExperience(request.user.id, expId);
   }
 }

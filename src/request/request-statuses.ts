@@ -7,19 +7,29 @@ interface RequestStatusRule {
   // The user's turn to send their documents and photo: Document upload starts
   // here, and Replace photo is allowed.
   userSendsDocuments?: true;
+  // A user may Edit personal data here: before an admin has checked it.
+  userEditsPersonalData?: true;
   // A Revert target, reachable by a Revert from these statuses (inclusive;
   // see Revert in CONTEXT.md). Moving back to it by any other route is refused.
   revertFrom?: readonly [number, number];
 }
 
 export const REQUEST_STATUSES: Readonly<Record<number, RequestStatusRule>> = {
-  0: { revertFrom: [1, 6] },
-  1: { userSendsDocuments: true, revertFrom: [2, 14] },
+  0: { userEditsPersonalData: true, revertFrom: [1, 6] },
+  1: {
+    userSendsDocuments: true,
+    userEditsPersonalData: true,
+    revertFrom: [2, 14],
+  },
   2: { retired: true },
   3: { retired: true },
   4: {},
   5: { retired: true },
-  6: { userSendsDocuments: true, revertFrom: [7, 14] },
+  6: {
+    userSendsDocuments: true,
+    userEditsPersonalData: true,
+    revertFrom: [7, 14],
+  },
   7: { revertFrom: [8, 14] },
   8: {},
   9: {},
@@ -40,6 +50,9 @@ export const USER_SENDS_DOCUMENTS_STATUSES = Object.entries(
 
 export const canReplacePhoto = (status: number) =>
   USER_SENDS_DOCUMENTS_STATUSES.includes(status);
+
+export const canEditPersonalData = (status: number) =>
+  REQUEST_STATUSES[status]?.userEditsPersonalData === true;
 
 export const isRevert = (from: number, target: number) => {
   const range = REQUEST_STATUSES[target]?.revertFrom;

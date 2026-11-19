@@ -1,12 +1,16 @@
 import {
+  HttpException,
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
+import { editPersonalData } from 'src/users/edit-personal-data';
 import { UpdateExpDto } from './update-exp.dto';
-import { SepExpCreateDto } from './create-exp.dto';
+import { ExpCreateDto } from 'src/user-auth/dto/exp-create.dto';
 
 @Injectable()
 export class ExperiencesService {
@@ -45,36 +49,52 @@ export class ExperiencesService {
     }
   }
 
-  async editExperience(expId: number, dto: UpdateExpDto) {
-    try {
-      return await this.prisma.experiences.update({
-        where: { exp_id: expId },
+  async editExperience(userId: number, expId: number, dto: UpdateExpDto) {
+    return this.editOwnExperiences(userId, (tx) =>
+      tx.experiences.update({
+        where: { exp_id: expId, userId },
         data: dto,
-      });
-    } catch (err) {
-      this.logger.error(err);
-      return new InternalServerErrorException('unexpected error');
-    }
+      }),
+    );
   }
 
-  async addExperinces(dto: SepExpCreateDto[]) {
-    try {
-      dto.map((i) => {
-        i.exp_years = Number(this.calculateExpYears(i.exp_ldate, i.exp_fdate));
-      });
-      return await this.prisma.experiences.createMany({ data: dto });
-    } catch (err) {
-      this.logger.error(err);
-      return new InternalServerErrorException('unexpected error');
-    }
+  // Always adds to `userId`: a userId sent in an item never picks the owner.
+  async addExperinces(userId: number, dto: ExpCreateDto[]) {
+    return this.editOwnExperiences(userId, (tx) =>
+      tx.experiences.createMany({
+        data: dto.map((i) => ({
+          ...i,
+          userId,
+          exp_years: this.calculateExpYears(i.exp_ldate, i.exp_fdate),
+        })),
+      }),
+    );
   }
 
-  async deleteExperience(expId: number) {
+  async deleteExperience(userId: number, expId: number) {
+    return this.editOwnExperiences(userId, (tx) =>
+      tx.experiences.delete({ where: { exp_id: expId, userId } }),
+    );
+  }
+
+  private async editOwnExperiences<T>(
+    userId: number,
+    write: (tx: Prisma.TransactionClient) => Promise<T>,
+  ) {
     try {
-      return await this.prisma.experiences.delete({ where: { exp_id: expId } });
+      return await editPersonalData(this.prisma, userId, write);
     } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      if (
+        err instanceof PrismaClientKnownRequestError &&
+        err.code === 'P2025'
+      ) {
+        throw new NotFoundException('experience not found');
+      }
       this.logger.error(err);
-      return new InternalServerErrorException('unexpected error');
+      throw new InternalServerErrorException('unexpected error');
     }
   }
 }

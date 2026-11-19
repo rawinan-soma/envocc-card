@@ -17,6 +17,7 @@ import {
   latestStatusEntry,
   lockUser,
 } from 'src/request/status-history';
+import { editPersonalData } from './edit-personal-data';
 
 // The Request Statuses a user may start a request for a new card from.
 const NEW_CARD_FROM = [15, 16];
@@ -479,26 +480,18 @@ export class UsersService {
 
   async updateUser(id: number, data: UserUpdateInternalDto) {
     try {
-      const user = await this.prisma.users.findUnique({ where: { id: id } });
-
-      if (!user) {
-        throw new NotFoundException('user not found');
-      }
-
-      // const filteredData = Object.fromEntries(
-      //   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      //   Object.entries(data).filter(([_, value]) => value !== undefined),
-      // );
-
-      return await this.prisma.users.update({
-        where: { id: id },
-        data: data as Prisma.usersUpdateInput,
-      });
+      return await editPersonalData(this.prisma, id, (tx) =>
+        tx.users.update({
+          where: { id: id },
+          data: data as Prisma.usersUpdateInput,
+        }),
+      );
     } catch (err) {
-      this.logger.error(err);
-      if (err instanceof NotFoundException) {
+      if (err instanceof HttpException) {
         throw err;
-      } else if (err instanceof PrismaClientKnownRequestError) {
+      }
+      this.logger.error(err);
+      if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');

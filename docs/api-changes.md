@@ -146,7 +146,7 @@ Cookie: Authentication_User=<token>
 { "message": "user not validated", "error": "Forbidden", "statusCode": 403 }
 ```
 
-These stay open to any logged-in user: `GET users/me`, `PATCH users/me`, `GET users/me/requests/form`, `GET users/me/requests/exp`, and `GET`/`POST`/`PATCH`/`DELETE users/me/experiences…`.
+These stay open to any logged-in user: `GET users/me`, `PATCH users/me`, `GET users/me/requests/form`, `GET users/me/requests/exp`, and `GET`/`POST`/`PATCH`/`DELETE users/me/experiences…`. The routes that change data among them also depend on the request status; see [Personal data only at request status 0, 1 or 6](#personal-data-only-at-request-status-0-1-or-6).
 
 `GET users/me/requests/form` is the only route that returns the user's full profile, so an unapproved user can read what they edit with `PATCH users/me` (issue #17). Its response includes `is_validate`.
 
@@ -536,6 +536,36 @@ The stored `gov_card_files` and `exp_files` rows have no admin, so `GET users/me
 A user starts a request for a new card (`?requestType=2`…`11`) only while their current request status is **15** (card issued) or **16** (card cancelled). At any other status, or with no status history, it answers `403 a new card can be requested only at request status 15 or 16` and saves nothing: neither the details in the body nor a status. Before, it was accepted at any status and the details were saved even when the request then failed.
 
 On success the request starts at status 1 with the `requestType` given, and its Status History entry has no `approver` (it used to carry the user's own id in that admin field).
+
+### Personal data only at request status 0, 1 or 6
+
+Issue #49. A user changes their own details only while their current request status is **0** (registered), **1** (document upload) or **6** (data correction). This covers:
+
+- `PATCH users/me`
+- `POST users/me/experiences`
+- `PATCH users/me/experiences/:expId`
+- `DELETE users/me/experiences/:expId`
+
+At any other status, or with no status history, these answer `403` and change nothing. Before, they were accepted at any status, so a card holder at 15 could change the name on their card.
+
+```json
+403 Forbidden
+{
+  "message": "personal data can be edited only at request status 0, 1 or 6",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+Once a card is issued (15) or cancelled (16), the user changes their details by starting a request for a new card with [`POST users/me/card`](#post-usersmecard-only-from-request-status-15-or-16), which saves the details in its body.
+
+Reading stays open at every status: `GET users/me`, `GET users/me/experiences`, `GET users/me/requests/form` and `GET users/me/requests/exp`.
+
+The experience routes also changed in these ways:
+
+- `POST users/me/experiences` adds every item to the logged-in user. The `userId` field is no longer needed, and a `userId` that is sent is ignored.
+- `PATCH` and `DELETE users/me/experiences/:expId` work only on the logged-in user's own experiences. Another user's `expId`, or one that does not exist, answers `404 experience not found`.
+- A failure in these three routes now answers with its error status. Before, the error body came back with `200` or `201`.
 
 ### Uploads with no file answer 400
 
