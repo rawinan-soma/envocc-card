@@ -22,14 +22,16 @@ export const inEffectToday = (): Prisma.membersWhereInput => {
   };
 };
 
-// What starting a request for a new card does to the user's cards: the Old
-// card stops being valid unless the type keeps it, and the new card is added,
+// What starting a request for a new card from Request Status `from` does to
+// the user's cards: the Old card stops being valid unless the type keeps it
+// and the card was issued (15), not cancelled (16), and the new card is added,
 // not valid until the request reaches 15. Call it inside the transaction that
 // adds the request's first status entry, under lockUser.
 export const startNewCard = async (
   tx: Prisma.TransactionClient,
   userId: number,
   requestType: number,
+  from: number,
 ) => {
   const rule = REQUEST_TYPES[requestType];
   const oldCard = await latestCard(tx, userId);
@@ -47,7 +49,7 @@ export const startNewCard = async (
     }
   }
 
-  if (!rule.oldCardStaysValid) {
+  if (!(rule.oldCardStaysValid && from === 15)) {
     await tx.members.updateMany({
       where: { userId },
       data: { is_active: false },

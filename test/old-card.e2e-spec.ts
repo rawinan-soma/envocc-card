@@ -118,6 +118,49 @@ describe('The Old card while a request for a new card runs', () => {
     await expectValid(user);
   });
 
+  it('stops being valid when an admin deactivates it while a request of type 2 runs', async () => {
+    const user = await cardHolder();
+    world.setToday('2031-01-15');
+    expect((await startRequest(user, 2)).status).toBe(201);
+
+    const res = await world
+      .asAdmin(ADMIN.MINISTRY)
+      .patch(`/admins/members/${user}/deactivate`);
+
+    expect(res.status).toBe(200);
+    await expectNotValid(user);
+    expect(
+      await world.prisma.members.count({
+        where: { userId: user, is_active: true },
+      }),
+    ).toBe(0);
+  });
+
+  it('refuses to deactivate a user none of whose cards is valid', async () => {
+    const user = await cardHolder();
+    expect((await startRequest(user, 4)).status).toBe(201);
+
+    const res = await world
+      .asAdmin(ADMIN.MINISTRY)
+      .patch(`/admins/members/${user}/deactivate`);
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ message: 'member already inactivated' });
+  });
+
+  it.each([2, 3])(
+    'stays not valid when a request of type %i starts from a cancelled card (16)',
+    async (requestType) => {
+      const user = await world.createUser({ history: [...ISSUED, 16] });
+      await world.giveMember(user, { member_no: 5, qrcode: QRCODE });
+      world.setToday('2031-01-15');
+
+      expect((await startRequest(user, requestType)).status).toBe(201);
+
+      await expectNotValid(user);
+    },
+  );
+
   it('is replaced by the new card, valid once the request reaches 15', async () => {
     const user = await cardHolder();
     expect((await startRequest(user, 4)).status).toBe(201);

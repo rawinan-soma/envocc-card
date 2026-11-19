@@ -171,22 +171,25 @@ export class MembersService {
 
   async deactivateMember(user_id: number) {
     try {
-      const selectedMember = await latestCard(this.prisma, user_id);
+      return await this.prisma.$transaction(async (tx) => {
+        await lockUser(tx, user_id);
+        const selectedMember = await latestCard(tx, user_id);
 
-      if (!selectedMember) {
-        throw new NotFoundException('member not found');
-      }
+        if (!selectedMember) {
+          throw new NotFoundException('member not found');
+        }
 
-      if (!selectedMember.is_active) {
-        throw new BadRequestException('member already inactivated');
-      }
-
-      // A type 2 Old card may still be valid next to the new card.
-      await this.prisma.members.updateMany({
-        where: { userId: user_id, is_active: true },
-        data: { is_active: false },
+        // A type 2 Old card may still be valid next to the new card, which is
+        // not yet valid itself.
+        const { count } = await tx.members.updateMany({
+          where: { userId: user_id, is_active: true },
+          data: { is_active: false },
+        });
+        if (count === 0) {
+          throw new BadRequestException('member already inactivated');
+        }
+        return { ...selectedMember, is_active: false };
       });
-      return { ...selectedMember, is_active: false };
     } catch (error: any) {
       this.logger.error(error);
       if (

@@ -683,7 +683,7 @@ export class UsersService {
           );
         }
 
-        await startNewCard(tx, userId, requestType);
+        await startNewCard(tx, userId, requestType, current.request_status);
 
         await tx.users.update({
           where: { id: userId },

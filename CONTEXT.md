@@ -43,7 +43,7 @@ Why a user is asking for a card: first card (1), expired (2), lost (3), destroye
 _Avoid_: status (สถานะ), reason
 
 **Old card**:
-The card a user already holds when they start a request of types 2–11. For type 2 it stays valid until its end date. For every other type it stops being valid as soon as the request starts (for type 11 it was already cancelled).
+The card a user already holds when they start a request of types 2–11. For type 2 started while the card is issued (15) it stays valid until its end date. For every other type, and for any request started from a cancelled card (16), it stops being valid as soon as the request starts (for type 11 it was already cancelled).
 
 **Approval date**:
 The date an admin picks at Request Status 8 or 11. The card is valid from it for 5 years, whatever the Request Type. For a type 2 request whose Old card has not yet expired, it must be no earlier than the day after the Old card's end date, so the two cards never overlap.

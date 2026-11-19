@@ -611,8 +611,10 @@ Issue #55. The card a user holds when they start a request for a new card is the
 
 | Request Type | The Old card while the request runs |
 |---|---|
-| 2 (expired) | Stays valid. |
+| 2 (expired) | Stays valid when the request starts from **15**. Started from **16** (card cancelled), it stays not valid, as for every type. |
 | 3–11 | Stops being valid as soon as `POST users/me/card` succeeds (type 11 starts from a cancelled card, so it already was not). |
+
+Starting any request from **16** sets every card of the user not valid, whatever its type, even when the admin who cancelled it did not call `PATCH admins/members/:userId/deactivate`.
 
 "Not valid" means:
 
@@ -621,11 +623,11 @@ Issue #55. The card a user holds when they start a request for a new card is the
 
 When starting the request is refused, nothing changes and the Old card stays valid.
 
-The new card becomes valid when the request reaches **15**, by `POST admins/users/requests/update` or by a Revert from 16. Before, `PATCH admins/members/:userId/activate` (the approval date, at 8 or 11) set the card active. It now only sets the dates, so no card shows between the approval date and 15.
+The new card becomes valid when the request reaches **15**, by `POST admins/users/requests/update` or by a Revert from 16. Before, `PATCH admins/members/:userId/activate` (the approval date, at 8 or 11) set the card active. It now only sets the dates. So for a request for a new card (types 2–11), the new card does not show between the approval date and 15. A first card (type 1) is still created valid at step 7 (`POST admins/members`): from its approval date the online card routes return it, and `GET common/qrcode` accepts it only from 15.
 
 `GET admins/members/:userId` now returns the user's latest card whether it is valid or not, so admins can print the card being issued. Its body has a new field, `is_active`: `true` once the card is valid. Before, it answered `404` for a card that was not active. The online card routes return `is_active` too.
 
-`GET common/qrcode` accepts a QR code while its holder's request status is 15, or while a type 2 request runs (1–14). Before, it accepted only 15. It now also refuses a card set inactive (`PATCH admins/members/:userId/deactivate`), and answers `400` instead of `500` when it refuses.
+`GET common/qrcode` accepts a QR code while its holder's request status is 15, or while a type 2 request started from 15 runs (1–14). Before, it accepted only 15. It now also refuses a card set inactive (`PATCH admins/members/:userId/deactivate`), and answers `400` instead of `500` when it refuses.
 
 ### Expired-card request (type 2): start window and Approval date
 
@@ -657,7 +659,7 @@ Example: the card ends on 1 Mar 2027. The request may start from 30 Jan 2027. Th
 
 **The card in effect today.** `GET users/me/envcard/qrcode`, `GET common/members/:userId` and `GET common/qrcode` return the card in effect today: valid, with `start_date` ≤ today ≤ `end_date`. Until 1 Mar 2027 in the example they return the Old card, and from 2 Mar 2027 the new one. Before, they returned the active card with the latest end date, whatever today was. A card past its end date, or with a `start_date` still to come, is no longer returned (`404` or `400` as above).
 
-**One card record per card.** Each request for a new card adds a card record (a `members` row) with the same Member Number (a new one for type 11), QR code and QR password as the one before it, so the Old card keeps its own dates. `GET admins/members/:userId` returns the latest record. A Revert to 1, 6 or 7 clears the dates of the latest record only, and a Revert from 16 to 15 sets only the latest record active. `PATCH users/me/members/qrcode` sets the password on the latest record, which `POST common/qrcode/validate` checks. `PATCH admins/members/:userId/deactivate` sets every record of the user inactive.
+**One card record per card.** Each request for a new card adds a card record (a `members` row) with the same Member Number (a new one for type 11), QR code and QR password as the one before it, so the Old card keeps its own dates. `GET admins/members/:userId` returns the latest record. A Revert to 1, 6 or 7 clears the dates of the latest record only, and a Revert from 16 to 15 sets only the latest record active. `PATCH users/me/members/qrcode` sets the password on the latest record, which `POST common/qrcode/validate` checks. `PATCH admins/members/:userId/deactivate` sets every record of the user inactive, so during a type 2 request it stops the Old card too. It answers `400 member already inactivated` only when no record is valid. Before, during a type 2 request it answered that `400` and left the Old card valid.
 
 ### Change of organization (type 11)
 
