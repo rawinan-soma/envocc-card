@@ -667,8 +667,8 @@ export class UsersService {
       );
     }
     const sentAgain = type.keepsPhoto
-      ? (['govcard'] as const)
-      : (['govcard', 'photo'] as const);
+      ? (['govcard', 'policeReport'] as const)
+      : (['govcard', 'policeReport', 'photo'] as const);
     let deleted: string[];
     try {
       deleted = await this.prisma.$transaction(async (tx) => {

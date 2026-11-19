@@ -77,7 +77,8 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
           .asUser(userId)
           .post('/users/me/files')
           .attach('govCard', Buffer.from('fake'), 'govCard.pdf')
-          .attach('photo', Buffer.from('fake'), 'me.jpg'),
+          .attach('photo', Buffer.from('fake'), 'me.jpg')
+          .attach('policeReport', Buffer.from('fake'), 'policeReport.pdf'),
       () => update(4, 7),
       () => admin.post('/admins/members').send({ userId, signature_method: 8 }),
       () =>
@@ -256,7 +257,13 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
   });
 
   describe('the files sent for the earlier request', () => {
-    const KINDS: FileKind[] = ['photo', 'govcard', 'expfile', 'envcard'];
+    const KINDS: FileKind[] = [
+      'photo',
+      'govcard',
+      'policeReport',
+      'expfile',
+      'envcard',
+    ];
 
     // A card holder with every file of their first request and one experience.
     const cardHolder = async (history = ISSUED) => {
@@ -292,7 +299,7 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
     };
 
     it.each([3, 4, 5, 6, 7, 8, 9, 10, 11])(
-      'deletes the photo and government card when a type %i request starts, and keeps the rest',
+      'deletes the photo, government card and police report when a type %i request starts, and keeps the rest',
       async (requestType) => {
         const { user, paths } = await cardHolder();
 
@@ -301,11 +308,13 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
         expect(await storedOf(user)).toEqual({
           photo: [],
           govcard: [],
+          policeReport: [],
           expfile: [paths.expfile],
           envcard: [paths.envcard],
         });
         expect(existsSync(paths.photo)).toBe(false);
         expect(existsSync(paths.govcard)).toBe(false);
+        expect(existsSync(paths.policeReport)).toBe(false);
         expect(existsSync(paths.expfile)).toBe(true);
         expect(existsSync(paths.envcard)).toBe(true);
         expect(
@@ -314,7 +323,7 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
       },
     );
 
-    it('deletes only the government card when a type 2 request starts, keeping the photo', async () => {
+    it('deletes the government card and police report when a type 2 request starts, keeping the photo', async () => {
       const { user, paths } = await cardHolder();
 
       expect((await startRequest(user, 2, {})).status).toBe(201);
@@ -322,11 +331,13 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
       expect(await storedOf(user)).toEqual({
         photo: [paths.photo],
         govcard: [],
+        policeReport: [],
         expfile: [paths.expfile],
         envcard: [paths.envcard],
       });
       expect(existsSync(paths.photo)).toBe(true);
       expect(existsSync(paths.govcard)).toBe(false);
+      expect(existsSync(paths.policeReport)).toBe(false);
     });
 
     it('deletes the files of a user starting from a cancelled card (16) too', async () => {
@@ -350,6 +361,7 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
       expect(await storedOf(user)).toEqual({
         photo: [paths.photo],
         govcard: [paths.govcard],
+        policeReport: [paths.policeReport],
         expfile: [paths.expfile],
         envcard: [paths.envcard],
       });

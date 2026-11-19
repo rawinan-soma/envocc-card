@@ -46,7 +46,13 @@ export const ORG = {
 // One admin per organization, with the same id as its organization.
 export const ADMIN = ORG;
 
-export type FileKind = 'photo' | 'govcard' | 'expfile' | 'reqFile' | 'envcard';
+export type FileKind =
+  | 'photo'
+  | 'govcard'
+  | 'expfile'
+  | 'reqFile'
+  | 'envcard'
+  | 'policeReport';
 
 const fileTable = {
   envcard: 'envocc_card_files',
@@ -54,6 +60,7 @@ const fileTable = {
   govcard: 'gov_card_files',
   expfile: 'exp_files',
   reqFile: 'request_files',
+  policeReport: 'police_report_files',
 } as const;
 
 const seedWorld = async (prisma: PrismaClient) => {
@@ -260,6 +267,9 @@ export const createCardRequestWorld = async () => {
         break;
       case 'reqFile':
         await db.prisma.request_files.create({ data: withAdmin });
+        break;
+      case 'policeReport':
+        await db.prisma.police_report_files.create({ data: withAdmin });
         break;
     }
     return url;

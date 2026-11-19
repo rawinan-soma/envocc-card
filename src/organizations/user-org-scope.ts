@@ -32,3 +32,19 @@ export const assertUserInOrg = async (
     throw new ForbiddenException('user is outside your organization');
   }
 };
+
+// The same check, for the organization of the admin with id adminId.
+export const assertUserInAdminOrg = async (
+  db: Prisma.TransactionClient | PrismaService,
+  adminId: number,
+  userId: number,
+) => {
+  const admin = await db.admins.findUnique({
+    where: { id: adminId },
+    select: { organizationId: true },
+  });
+  if (!admin) {
+    throw new ForbiddenException('admin not found');
+  }
+  await assertUserInOrg(db, admin.organizationId, userId);
+};

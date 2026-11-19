@@ -14,8 +14,9 @@ body:multipart-form {
   govCard: @file()
   experienceForm: @file()
   photo: @file()
+  policeReport: @file()
 }
 
 docs {
-  User login (cookie Authentication_User): run "User auth / Login" first. Approved users only (otherwise 403 user not validated). Document upload: allowed only while the request status is 1 (first upload) or 6 (correction after a failed check), otherwise 403 "documents can be uploaded only at request status 1, 6". On success the user moves to status 4. `govCard` is a PDF of at most 10 MB, required unless the user already has one (400 "govcard is required"); `experienceForm` is an optional PDF of at most 10 MB. `photo` is a JPG or PNG that replaces the current photo; it is optional, except for a request for a new card (Request Types 2-11) when the user has no stored photo (400 "photo is required").
+  User login (cookie Authentication_User): run "User auth / Login" first. Approved users only (otherwise 403 user not validated). Document upload: allowed only while the request status is 1 (first upload) or 6 (correction after a failed check), otherwise 403 "documents can be uploaded only at request status 1, 6". On success the user moves to status 4. `govCard` is a PDF of at most 10 MB, required unless the user already has one (400 "govcard is required"); `experienceForm` is an optional PDF of at most 10 MB. `photo` is a JPG or PNG that replaces the current photo; it is optional, except for a request for a new card (Request Types 2-11) when the user has no stored photo (400 "photo is required"). `policeReport` is a PDF of at most 10 MB, the police report a lost-card request (Request Type 3) needs unless one is stored (400 "policeReport is required"); other types may leave it out.
 }

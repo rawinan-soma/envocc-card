@@ -18,11 +18,16 @@ import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 import { MophAdminGuard } from 'src/admin-auth/ministry-admin.guard';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
 import { getMulterOptions } from 'src/shared/file-multer-options';
+import { PrismaService } from 'prisma/prisma.service';
+import { assertUserInAdminOrg } from 'src/organizations/user-org-scope';
 
 @UseGuards(JwtAccessGuardAdmin)
 @Controller('admins')
 export class AdminFileController {
-  constructor(private readonly filesService: FilesService) {}
+  constructor(
+    private readonly filesService: FilesService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   // Lists envcard files across every user, so only MOPH admins may call it.
   @Get('files/envcard')
@@ -42,6 +47,7 @@ export class AdminFileController {
         { name: 'requestFile', maxCount: 1 },
         { name: 'govCard', maxCount: 1 },
         { name: 'experienceForm', maxCount: 1 },
+        { name: 'policeReport', maxCount: 1 },
       ],
       getMulterOptions(['.pdf'], 10 * 1024 * 1024),
     ),
@@ -52,6 +58,7 @@ export class AdminFileController {
       requestFile?: Express.Multer.File[];
       govCard?: Express.Multer.File[];
       experienceForm?: Express.Multer.File[];
+      policeReport?: Express.Multer.File[];
     },
     @Param('userId', ParseIntPipe) userId: number,
     @Req() request: RequestwithAdminData,
@@ -61,7 +68,19 @@ export class AdminFileController {
       govcard: fileDto(files?.govCard?.[0], userId, adminId),
       reqFile: fileDto(files?.requestFile?.[0], userId, adminId),
       expfile: fileDto(files?.experienceForm?.[0], userId, adminId),
+      policeReport: fileDto(files?.policeReport?.[0], userId, adminId),
     });
+  }
+
+  // Declared before users/:userId/files/:file, which would serve it to any
+  // admin: only admins of the user's organization or one above it read it.
+  @Get('users/:userId/files/policeReport')
+  async getPoliceReportHandler(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Req() request: RequestwithAdminData,
+  ) {
+    await assertUserInAdminOrg(this.prisma, request.user.id, userId);
+    return await this.filesService.getFileByUserId('policeReport', userId);
   }
 
   @Get('users/:userId/files/:file')

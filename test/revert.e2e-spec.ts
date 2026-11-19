@@ -113,9 +113,9 @@ describe('Revert (POST admins/users/:userId/requests/revert)', () => {
         const history = [0, 1, 3, 4, 5, 6].filter((s) => s < from);
         const user = await world.createUser({ history: [...history, from] });
         const files = await Promise.all(
-          (['photo', 'govcard', 'expfile', 'reqFile'] as const).map((kind) =>
-            world.giveFile(user, kind),
-          ),
+          (
+            ['photo', 'govcard', 'expfile', 'reqFile', 'policeReport'] as const
+          ).map((kind) => world.giveFile(user, kind)),
         );
         await world.prisma.experiences.create({
           data: { userId: user, exp_office: 'hospital' },
@@ -147,6 +147,7 @@ describe('Revert (POST admins/users/:userId/requests/revert)', () => {
           'govcard',
           'expfile',
           'reqFile',
+          'policeReport',
         ] as const) {
           expect(await world.filesOf(user, kind)).toEqual([]);
         }

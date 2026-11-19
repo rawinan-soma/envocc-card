@@ -17,12 +17,17 @@ import {
   canReplacePhoto,
   USER_SENDS_DOCUMENTS_STATUSES,
 } from 'src/request/request-statuses';
-import { FIRST_CARD, isNewCardRequest } from 'src/request/request-types';
+import {
+  FIRST_CARD,
+  isNewCardRequest,
+  REQUEST_TYPES,
+} from 'src/request/request-types';
 import {
   envocc_card_files,
   exp_files,
   gov_card_files,
   photos,
+  police_report_files,
   // seals,
   Prisma,
   request_files,
@@ -39,6 +44,7 @@ type FileModels =
   | 'govcard'
   // | 'seal'
   | 'photo'
+  | 'policeReport'
   | 'reqFile';
 
 export type FileModelMap = {
@@ -47,12 +53,18 @@ export type FileModelMap = {
   govcard: gov_card_files;
   // seal: seals;
   photo: photos;
+  policeReport: police_report_files;
   reqFile: request_files;
 
   // member: members;
 };
 
-type DocumentUploadFile = 'govcard' | 'reqFile' | 'expfile' | 'photo';
+type DocumentUploadFile =
+  | 'govcard'
+  | 'reqFile'
+  | 'expfile'
+  | 'photo'
+  | 'policeReport';
 
 interface DocumentUploadRule {
   files: readonly DocumentUploadFile[];
@@ -61,9 +73,9 @@ interface DocumentUploadRule {
 }
 
 const DOCUMENT_UPLOAD_RULES = {
-  admin: { files: ['govcard', 'reqFile', 'expfile'] },
+  admin: { files: ['govcard', 'reqFile', 'expfile', 'policeReport'] },
   user: {
-    files: ['govcard', 'expfile', 'photo'],
+    files: ['govcard', 'expfile', 'photo', 'policeReport'],
     from: USER_SENDS_DOCUMENTS_STATUSES,
   },
 } satisfies Record<'admin' | 'user', DocumentUploadRule>;
@@ -73,6 +85,9 @@ const DOCUMENT_UPLOAD_RULES = {
 const requiredDocuments = (requestType: number): DocumentUploadFile[] => [
   'govcard',
   ...(isNewCardRequest(requestType) ? (['photo'] as const) : []),
+  ...(REQUEST_TYPES[requestType]?.needsPoliceReport
+    ? (['policeReport'] as const)
+    : []),
 ];
 
 export type DocumentUploader = keyof typeof DOCUMENT_UPLOAD_RULES;
@@ -90,6 +105,7 @@ export class FilesService {
       govcard: this.prisma.gov_card_files,
       // seal: this.prisma.seals,
       photo: this.prisma.photos,
+      policeReport: this.prisma.police_report_files,
       reqFile: this.prisma.request_files,
 
       // member: this.prisma.members
@@ -329,6 +345,7 @@ export class FilesService {
       govcard: tx.gov_card_files,
       // seal: tx.seals,
       photo: tx.photos,
+      policeReport: tx.police_report_files,
       reqFile: tx.request_files,
     } satisfies Record<FileModels, any>;
   }

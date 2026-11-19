@@ -18,7 +18,13 @@ import { addStatusEntry, latestStatusEntry, lockUser } from './status-history';
 import { adminUpdateRefusal, isRevert } from './request-statuses';
 import { FIRST_CARD } from './request-types';
 
-const REVERT_TO_0_FILES = ['photo', 'govcard', 'expfile', 'reqFile'] as const;
+const REVERT_TO_0_FILES = [
+  'photo',
+  'govcard',
+  'expfile',
+  'reqFile',
+  'policeReport',
+] as const;
 
 @Injectable()
 export class RequestService {

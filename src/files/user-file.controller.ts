@@ -32,12 +32,14 @@ const DOCUMENT_UPLOAD = FileFieldsInterceptor(
     { name: 'govCard', maxCount: 1 },
     { name: 'experienceForm', maxCount: 1 },
     { name: 'photo', maxCount: 1 },
+    { name: 'policeReport', maxCount: 1 },
   ],
   getMulterOptions(
     {
       govCard: ['.pdf'],
       experienceForm: ['.pdf'],
       photo: ['.jpg', '.png'],
+      policeReport: ['.pdf'],
     },
     10 * 1024 * 1024,
   ),
@@ -100,6 +102,7 @@ export class UserFileController {
       govCard?: Express.Multer.File[];
       experienceForm?: Express.Multer.File[];
       photo?: Express.Multer.File[];
+      policeReport?: Express.Multer.File[];
     },
     @Req() request: RequestwithUserData,
   ) {
@@ -108,6 +111,7 @@ export class UserFileController {
       govcard: fileDto(files?.govCard?.[0], userId),
       expfile: fileDto(files?.experienceForm?.[0], userId),
       photo: fileDto(files?.photo?.[0], userId),
+      policeReport: fileDto(files?.policeReport?.[0], userId),
     });
   }
 
