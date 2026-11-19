@@ -34,6 +34,7 @@ History. Both findings were reproduced in the live app and fixed:
 Limits of the fix:
 
 - `member_no` has no unique constraint. Only rows that take the default are guarded, so any code or import that writes `member_no` explicitly must also run `setval('members_member_no_seq', <max>+1, false)`, or the sequence will later hand out a number that row already holds.
+- `startNewCard` (`src/members/cards.ts`, starting a request for a new card) writes `member_no` explicitly: it adds a card record that copies the user's own number from their latest record. The number came from the sequence, or predates it, so it is below the sequence and held only by that user. The model does not cover this path; it still treats one record per user.
 - The migration starts the sequence after the highest number present when it runs. Numbers of users deleted before that are unknown, and each can still be given out once.
 
 ## Run it

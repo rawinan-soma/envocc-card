@@ -30,6 +30,7 @@ import { UsersService } from 'src/users/users.service';
 import { startApp, testConfig } from './test-app';
 import { createTestDb, TestDb } from './test-db';
 import { OrgFixture, seedOrganizations } from './org-fixtures';
+import { clock } from 'src/common/clock';
 
 const ACCESS_SECRET = 'test-access-secret';
 
@@ -113,11 +114,15 @@ export const createCardRequestWorld = async () => {
   let app: INestApplication<App>;
   let workDir: string;
   let userCount = 0;
+  // "Today" for every date rule, inside the giveMember card's default dates.
+  let today: Date;
 
   const start = async () => {
     workDir = mkdtempSync(join(tmpdir(), 'card-request-'));
     mkdirSync(join(workDir, 'assets'));
     jest.spyOn(process, 'cwd').mockReturnValue(workDir);
+    today = new Date('2026-06-01');
+    jest.spyOn(clock, 'today').mockImplementation(() => today);
 
     await db.reset();
     await seedWorld(db.prisma);
@@ -301,6 +306,10 @@ export const createCardRequestWorld = async () => {
       },
     });
 
+  const setToday = (date: string) => {
+    today = new Date(date);
+  };
+
   const historyOf = async (userId: number) =>
     (
       await db.prisma.requests.findMany({
@@ -322,6 +331,7 @@ export const createCardRequestWorld = async () => {
     filesOf,
     giveMember,
     historyOf,
+    setToday,
     workDir: () => workDir,
   };
 };

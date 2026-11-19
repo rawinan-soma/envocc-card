@@ -196,7 +196,7 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
     expect((await detailsOf(user)).experiences).toBe(1);
   });
 
-  it('carries type 3 on every entry from 1 to 15, and keeps the Member Number', async () => {
+  it('carries type 3 on every entry from 1 to 15, and keeps the Member Number and QR code', async () => {
     const user = await world.createUser({ history: ISSUED });
     await world.giveMember(user, { member_no: 5, qrcode: '55556666' });
 
@@ -218,8 +218,18 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
       ...[1, 4, 7, 8, 9, 15].map(() => 3),
     ]);
     expect(
-      await world.prisma.members.findMany({ where: { userId: user } }),
-    ).toEqual([expect.objectContaining({ member_no: 5, qrcode: '55556666' })]);
+      await world.prisma.members.findMany({
+        where: { userId: user },
+        orderBy: { member_id: 'asc' },
+      }),
+    ).toEqual([
+      expect.objectContaining({ member_no: 5, qrcode: '55556666' }),
+      expect.objectContaining({
+        member_no: 5,
+        qrcode: '55556666',
+        start_date: new Date('2027-03-01'),
+      }),
+    ]);
   });
 
   it('leaves a card cancelled at 16 active again, as the online card, once the request reaches 15', async () => {
@@ -234,6 +244,7 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
 
     expect((await startRequest(user, 4)).status).toBe(201);
     await walkToIssued(user);
+    world.setToday('2027-03-01');
 
     expect(await world.historyOf(user)).toEqual([
       ...ISSUED,

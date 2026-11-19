@@ -14,6 +14,9 @@ interface RequestTypeRule {
   // CONTEXT.md). For every other type it stops being valid when the request
   // starts.
   oldCardStaysValid?: true;
+  // A user may start the request only from this many days before their card's
+  // end date. Left out when the end date does not matter.
+  startsDaysBeforeEndDate?: number;
 }
 
 // Registering starts a first-card request; a user cannot pick it.
@@ -28,6 +31,7 @@ export const REQUEST_TYPES: Readonly<Record<number, RequestTypeRule>> = {
     userStartsFrom: CARD_ISSUED_OR_CANCELLED,
     keepsPhoto: true,
     oldCardStaysValid: true,
+    startsDaysBeforeEndDate: 30,
   },
   3: {
     name: 'บัตรสูญหาย',

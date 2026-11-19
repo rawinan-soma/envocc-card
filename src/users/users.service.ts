@@ -239,7 +239,7 @@ export class UsersService {
             },
             members: {
               select: { start_date: true, end_date: true },
-              orderBy: { end_date: 'desc' },
+              orderBy: { end_date: { sort: 'desc', nulls: 'last' } },
             },
             requests: {
               select: {

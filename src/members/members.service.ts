@@ -20,7 +20,12 @@ import {
   latestStatusEntry,
   lockUser,
 } from 'src/request/status-history';
-import { cardVerifiesAt } from './cards';
+import {
+  assertApprovalDate,
+  cardVerifiesAt,
+  inEffectToday,
+  latestCard,
+} from './cards';
 // import { RequestService } from 'src/request/request.service';
 
 interface OrganizationWithParent {
@@ -120,12 +125,12 @@ export class MembersService {
     }
   }
 
-  // The online card: the card valid today. Also shown to whoever verifies a
+  // The online card: the card in effect today. Also shown to whoever verifies a
   // QR code.
   getMember(user_id: number) {
     return this.findCard({
-      where: { userId: user_id, is_active: true },
-      orderBy: { end_date: 'desc' },
+      where: { userId: user_id, ...inEffectToday() },
+      orderBy: { start_date: 'desc' },
     });
   }
 
@@ -166,28 +171,22 @@ export class MembersService {
 
   async deactivateMember(user_id: number) {
     try {
-      const selectedMember = await this.prisma.members.findFirst({
-        where: { userId: user_id },
-        orderBy: { start_date: 'desc' },
-        select: { member_id: true, is_active: true },
-      });
+      const selectedMember = await latestCard(this.prisma, user_id);
 
       if (!selectedMember) {
         throw new NotFoundException('member not found');
       }
 
-      const isInactive = selectedMember.is_active === false;
-
-      if (!isInactive) {
-        return this.prisma.members.update({
-          where: { member_id: selectedMember.member_id },
-          data: {
-            is_active: false,
-          },
-        });
-      } else {
+      if (!selectedMember.is_active) {
         throw new BadRequestException('member already inactivated');
       }
+
+      // A type 2 Old card may still be valid next to the new card.
+      await this.prisma.members.updateMany({
+        where: { userId: user_id, is_active: true },
+        data: { is_active: false },
+      });
+      return { ...selectedMember, is_active: false };
     } catch (error: any) {
       this.logger.error(error);
       if (
@@ -205,11 +204,7 @@ export class MembersService {
 
   async setQrPassword(user_id: number, password: string) {
     try {
-      const selectedMember = await this.prisma.members.findFirst({
-        where: { userId: user_id },
-        orderBy: { start_date: 'desc' },
-        select: { member_id: true, is_active: true, qrcode_pass: true },
-      });
+      const selectedMember = await latestCard(this.prisma, user_id);
 
       if (!selectedMember) {
         throw new NotFoundException('member not found');
@@ -239,8 +234,8 @@ export class MembersService {
   async getMemberByQrcode(qrcode_no: string) {
     try {
       const member = await this.prisma.members.findFirst({
-        where: { qrcode: qrcode_no, is_active: true },
-        orderBy: { member_no: 'desc' },
+        where: { qrcode: qrcode_no, ...inEffectToday() },
+        orderBy: { start_date: 'desc' },
       });
 
       const current =
@@ -263,6 +258,7 @@ export class MembersService {
     try {
       const member = await this.prisma.members.findFirst({
         where: { qrcode: qrcode },
+        orderBy: { member_id: 'desc' },
       });
 
       if (!member) {
@@ -329,25 +325,11 @@ export class MembersService {
     try {
       return this.prisma.$transaction(async (tx) => {
         await lockUser(tx, user);
-        const targetMember = await tx.members.findFirst({
-          where: { userId: user },
-          orderBy: { create_date: 'desc' },
-          select: { member_id: true },
-        });
+        const targetMember = await latestCard(tx, user);
 
         if (!targetMember) {
           throw new NotFoundException('member not found');
         }
-
-        const startDate = new Date(start_date);
-        const endDate: Date = new Date(start_date);
-        endDate.setFullYear(startDate.getFullYear() + 5);
-        endDate.setDate(endDate.getDate() - 1);
-
-        await tx.members.update({
-          where: { member_id: targetMember.member_id },
-          data: { start_date: startDate, end_date: endDate },
-        });
 
         const current = await latestStatusEntry(tx, user);
 
@@ -355,6 +337,18 @@ export class MembersService {
           current?.request_status === 8 || current?.request_status === 11;
 
         if (isReady) {
+          const startDate = new Date(start_date);
+          await assertApprovalDate(tx, user, current.request_type, startDate);
+
+          const endDate: Date = new Date(start_date);
+          endDate.setFullYear(startDate.getFullYear() + 5);
+          endDate.setDate(endDate.getDate() - 1);
+
+          await tx.members.update({
+            where: { member_id: targetMember.member_id },
+            data: { start_date: startDate, end_date: endDate },
+          });
+
           const { entry } = await addStatusEntry(tx, {
             userId: user,
             status: current.request_status + 1,
@@ -384,9 +378,7 @@ export class MembersService {
           10000000 + Math.random() * 90000000,
         ).toString();
 
-        const existedMember = await tx.members.findFirst({
-          where: { userId: data.userId },
-        });
+        const existedMember = await latestCard(tx, data.userId);
 
         await addStatusEntry(tx, {
           userId: data.userId,

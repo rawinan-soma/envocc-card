@@ -17,7 +17,7 @@ import { assertUserInOrg } from 'src/organizations/user-org-scope';
 import { addStatusEntry, latestStatusEntry, lockUser } from './status-history';
 import { adminUpdateRefusal, isRevert } from './request-statuses';
 import { FIRST_CARD } from './request-types';
-import { issueCard } from 'src/members/cards';
+import { issueCard, latestCard } from 'src/members/cards';
 
 const REVERT_TO_0_FILES = [
   'photo',
@@ -163,13 +163,17 @@ export class RequestService {
             );
           }
 
-          // The card record (Member Number, QR code) is kept; its dates are
-          // set again when the card is re-issued.
+          // The card being issued keeps its Member Number and QR code; its
+          // dates are set again at the approval date. An Old card keeps its
+          // own dates.
           if (target === 1 || target === 6 || target === 7) {
-            await tx.members.updateMany({
-              where: { userId: userId },
-              data: { start_date: null, end_date: null },
-            });
+            const card = await latestCard(tx, userId);
+            if (card) {
+              await tx.members.update({
+                where: { member_id: card.member_id },
+                data: { start_date: null, end_date: null },
+              });
+            }
           }
 
           if (target === 15) {

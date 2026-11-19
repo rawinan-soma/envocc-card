@@ -111,6 +111,7 @@ describe('The Old card while a request for a new card runs', () => {
 
   it('stays valid while a request of type 2 runs', async () => {
     const user = await cardHolder();
+    world.setToday('2031-01-15');
 
     expect((await startRequest(user, 2)).status).toBe(201);
 

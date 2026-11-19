@@ -626,6 +626,38 @@ The new card becomes valid when the request reaches **15**, by `POST admins/user
 
 `GET common/qrcode` accepts a QR code while its holder's request status is 15, or while a type 2 request runs (1–14). Before, it accepted only 15. It now also refuses a card set inactive (`PATCH admins/members/:userId/deactivate`), and answers `400` instead of `500` when it refuses.
 
+### Expired-card request (type 2): start window and Approval date
+
+Issue #54. Dates are compared with today's date in Thailand.
+
+**Starting it.** `POST users/me/card?requestType=2` is accepted only from 30 days before the end date of the user's card. After the end date there is no limit. Earlier, it answers:
+
+```json
+403 Forbidden
+{
+  "message": "a request of type 2 can be started only from 2027-01-30, 30 days before the card's end date",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**The Approval date.** At status 8 or 11 of a type 2 request, while the Old card has not yet expired, `PATCH admins/members/:userId/activate` refuses a `startDate` on or before the Old card's end date. The earliest accepted date is the day after. Once the Old card has expired, any date is accepted. The card is valid for 5 years from the Approval date, as for every type: its `end_date` is the day before the same date 5 years later.
+
+```json
+400 Bad Request
+{
+  "message": "the approval date must be after the Old card's end date, 2027-03-01",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+Example: the card ends on 1 Mar 2027. The request may start from 30 Jan 2027. The earliest Approval date is 2 Mar 2027, and that card ends on 1 Mar 2032.
+
+**The card in effect today.** `GET users/me/envcard/qrcode`, `GET common/members/:userId` and `GET common/qrcode` return the card in effect today: valid, with `start_date` ≤ today ≤ `end_date`. Until 1 Mar 2027 in the example they return the Old card, and from 2 Mar 2027 the new one. Before, they returned the active card with the latest end date, whatever today was. A card past its end date, or with a `start_date` still to come, is no longer returned (`404` or `400` as above).
+
+**One card record per card.** Each request for a new card adds a card record (a `members` row) with the same Member Number, QR code and QR password as the one before it, so the Old card keeps its own dates. `GET admins/members/:userId` returns the latest record. A Revert to 1, 6 or 7 clears the dates of the latest record only, and a Revert from 16 to 15 sets only the latest record active. `PATCH users/me/members/qrcode` sets the password on the latest record, which `POST common/qrcode/validate` checks. `PATCH admins/members/:userId/deactivate` sets every record of the user inactive.
+
 ### Request Type in the admin user lists
 
 Issue #53. Admins see the Request Type of each user's current request, and can filter by it.
