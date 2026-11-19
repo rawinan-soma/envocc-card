@@ -7,26 +7,34 @@ description: TLA+ model of Member Number allocation when admins issue cards (Mem
 
 ## What it protects
 
-- **Property:** every card in `members` has a Member Number that no other person holds, and a user keeps their number across Reverts and re-issues (CONTEXT.md, Member Number).
+- **Property:** every card in `members` has a Member Number that no other person holds, ever, including after the first holder is deleted. A user keeps their number across Reverts and re-issues (CONTEXT.md, Member Number, plus the never-reuse decision of 2026-11-19).
 - **Harm if broken:** two people carry cards with the same printed number, so the number no longer identifies a card holder.
 
-Tests miss this. It breaks only when two admins issue cards at the same moment, or after a user is deleted. The e2e suite runs one request at a time.
+Tests rarely catch this. It breaks only when two admins issue cards at the same moment, or after a user is deleted. The e2e tests `gives different Member Numbers to users whose cards are created at the same time` and `never gives a deleted user's Member Number to anyone else` (`test/member-issue.e2e-spec.ts`) cover one schedule each. The model covers every schedule in its bound.
 
 ## Status at the sync commit
 
-Run on 2026-11-19 at `b8768cf`. Every config also checks for deadlock: a state where some admin is mid-transaction and nothing can move.
+Run on 2026-11-19 at `e8edfd9`. Every config also checks for deadlock: a state where some admin is mid-transaction and nothing can move.
 
 | Config | Scope | Result |
 |---|---|---|
-| `MemberNumberSerial` | 1 admin, 3 users, ≤5 issues, no deletes | PASS (832 states) |
-| `MemberNumber` | 2 admins issuing at once, 3 users, ≤4 issues, deletes allowed | PASS (18,212 states) |
-| `MemberNumberReuse` | 1 admin, deletes allowed | **VIOLATED `NeverReused`** (known finding 2, policy open) |
+| `MemberNumberSerial` | 1 admin, 3 users, ≤5 issues, no deletes | PASS (574 states) |
+| `MemberNumber` | 2 admins issuing at once, 3 users, ≤4 issues, deletes allowed | PASS (11,136 states) |
+| `MemberNumberReuse` | 1 admin, 3 users, ≤5 issues, deletes allowed | PASS (3,116 states) |
 
-**Finding 1, duplicate numbers (fixed in `b8768cf`).** Admin A issued a card for user u1 and admin B for user u3 at the same time. Each locked only its own user row (`lockUser`), and each read the highest `member_no` before the other committed. Both saved the same number. A live run reproduced it: 10 pairs of concurrent `POST admins/members` gave 9 duplicated numbers. The fix takes `pg_advisory_xact_lock(hashtext('members.member_no'))` before reading the highest number, so card creations run one at a time. After the fix, the same live run gave 20 cards with 20 distinct numbers. `member_no` still has no unique constraint, so the advisory lock is the only guard. Any new writer of `member_no` must take the same lock. The e2e test `gives different Member Numbers to users whose cards are created at the same time` (`test/member-issue.e2e-spec.ts`) guards it too.
+`check.sh all` exits 0. Any violation is a regression or a modeling error. See "Reading a result".
 
-**Finding 2, reuse after delete.** `DELETE admins/users/:id` cascades to the user's `members` row. When the deleted user held the highest number, the next card issued gets that number again. A live run gave the deleted user's 11 to a new user. CONTEXT.md does not say whether a deleted user's number may be reused. Ask before treating this as a bug.
+How numbers are given now: `member_no` defaults to `nextval('members_member_no_seq')` (migration `20261119090000_member_no_sequence`), and `transactionCreateMember` leaves it to that default. `nextval` is atomic and never goes back, so concurrent creations can't share a number and a deleted user's number is never given out again. A rolled-back creation still uses up its number, so gaps are normal.
 
-Until finding 2 is settled, `check.sh all` exits 1. A change is fine when the results match the table above. Anything new (a different invariant, a new config failing, or the serial config failing) is a regression or a modeling error. See "Reading a result".
+History. Both findings were reproduced in the live app and fixed:
+
+1. **Duplicate numbers when issued at once** (until `b8768cf`). The number was the highest + 1, read under a lock on the user's own row only. Two admins issuing for different users both read the same highest number. A live run gave 20 cards only 11 distinct numbers. `b8768cf` added an advisory lock, and `e8edfd9` replaced that with the sequence.
+2. **A deleted user's number given to the next card** (until `e8edfd9`). Deleting the holder of the highest number cascaded to their `members` row, so highest + 1 gave the same number again.
+
+Limits of the fix:
+
+- `member_no` has no unique constraint. Only rows that take the default are guarded, so any code or import that writes `member_no` explicitly must also run `setval('members_member_no_seq', <max>+1, false)`, or the sequence will later hand out a number that row already holds.
+- The migration starts the sequence after the highest number present when it runs. Numbers of users deleted before that are unknown, and each can still be given out once.
 
 ## Run it
 
@@ -49,42 +57,41 @@ Coverage record. The model mirrors these, and nothing else:
 |---|---|
 | `Start` | `AdminMemberController.createMemberHandler`, `src/members/admin-member.controller.ts` (POST admins/members: no status or org check) |
 | `Lock`, `GiveUp` | `lockUser` in `src/request/status-history.ts` (SELECT ... FOR NO KEY UPDATE on the user's row), called at the top of `transactionCreateMember`. For a deleted user it returns no rows, and the transaction later fails on the `userId` foreign key |
-| `NumLock` | `pg_advisory_xact_lock(hashtext('members.member_no'))` in `transactionCreateMember`, held until commit |
-| `ReadExisting`, `ReadLatest`, `NextNo`, `Write`, `Commit` | `MembersService.transactionCreateMember`, `src/members/members.service.ts` (`existedMember`, `latestMember`, `nextMemberNo`, `members.update` / `members.create`, end of `$transaction`) |
+| `ReadExisting`, `Write`, `Commit` | `MembersService.transactionCreateMember`, `src/members/members.service.ts` (`existedMember`, then `members.update` for a user with a card, or `members.create` without `member_no`, then the end of `$transaction`) |
+| `seq` and the create branch of `Write` | `member_no Int? @default(autoincrement())` in `prisma/schema.prisma`, and the sequence in `prisma/migrations/20261119090000_member_no_sequence` |
 | `Delete` | `UsersService.deleteUserById`, `src/users/users.service.ts`, plus `onDelete: Cascade` on `members.user` in `prisma/schema.prisma` |
 | READ COMMITTED reads | no `isolationLevel` passed to any `$transaction` (`grep -rn isolationLevel src` is empty) |
-| `member_no` not unique | `model members` in `prisma/schema.prisma` |
+| `member_no` not unique, so `UniqueMemberNo` relies on every writer using the default | `model members` in `prisma/schema.prisma` |
 
-Sync commit: **`b8768cf`**. List the changes since then:
+Sync commit: **`e8edfd9`**. List the changes since then:
 
 ```bash
-git diff b8768cf -- src/members/members.service.ts src/members/admin-member.controller.ts \
+git diff e8edfd9 -- src/members/members.service.ts src/members/admin-member.controller.ts \
   src/request/status-history.ts src/users/users.service.ts prisma/schema.prisma prisma/migrations
 ```
 
-If none of the changes touch the code in the coverage table, the model still holds and you can stop. Also check for any new caller that creates or updates `members.member_no` (`grep -rn "member_no" src`). The model assumes `transactionCreateMember` is the only writer.
+If none of the changes touch the code in the coverage table, the model still holds and you can stop. Also check for any new code that writes `members.member_no` (`grep -rn "member_no" src prisma/seed.ts`). The model assumes the column default is the only source of new numbers.
 
 ## Keeping the model true to the code
 
 Each model action is one Prisma statement. Keep it that way. When the code changes:
 
 1. Mirror the change in `spec/MemberNumber.tla` at the action named in the coverage table, and update the code pointer in its comment. A new statement becomes a new `pc` step. Don't merge it into an existing step, or you hide interleavings.
-2. A design change changes the model too. Removing or moving the advisory lock changes or removes `NumLock`. A unique constraint on `member_no` turns a duplicate `Commit` into a failed transaction (model it as an abort that writes nothing). A sequence (`nextval`) makes `ReadLatest`, `NextNo` and `Write` one atomic step, and would also settle finding 2.
-3. Run `check.sh all`. `MemberNumber` must keep passing. Keep the scope (2 admins, 3 users, 4 issues) as it is, and never shrink it to get a pass.
+2. A design change changes the model too. Writing `member_no` explicitly brings back a read step before `Write` that takes the number from somewhere other than `seq`. Resetting the sequence makes `seq` go back. A unique constraint on `member_no` turns a duplicate `Commit` into a failed transaction (model it as an abort that writes nothing).
+3. Run `check.sh all`. Every config must keep passing. Keep the scope (2 admins, 3 users, 4 issues) as it is, and never shrink it to get a pass.
 4. When the model describes the code at the new commit, update the status table and move the sync commit forward to that commit. Do it only after reading the diff and confirming the model matches. A green run alone doesn't prove the model matches the code.
 
 ## Reading a result
 
-- **`NeverReused` violated in `MemberNumberReuse`:** known finding 2, expected until its policy is settled.
-- **`Deadlock reached`:** some admin waits on a lock forever. Check the lock order: every path here takes the user row first, then the advisory lock.
+- **`Deadlock reached`:** some admin waits on a lock forever. Today each path takes one lock, the user's row, so a deadlock means a new lock was added. Check the order in which locks are taken.
 - **Any other violation:** turn the trace into code steps with `/statechart`. Then check each step against the code it points to. If a step can't happen in the code (wrong lock, wrong order, a read that would see a row it can't see), the model is wrong, so fix the model. If every step can happen, it's a real bug. Report the trace in the code's words, and don't weaken the invariant.
 - **`MemberNumberSerial` fails:** the allocation rule itself broke, with no concurrency involved, for example the `existedMember` branch was removed and a re-issue gets a new number (`KeepsMemberNo`).
-- **To confirm a finding against the real app**, use the `verify` skill. Register two admins and users, then send two `POST admins/members` calls (`{"userId":N,"signature_method":8}`) at the same moment as different actors (`&` + `wait`). Then run `db.sh 'select member_no, count(*) from members group by 1 having count(*) > 1'`.
+- **To confirm a finding against the real app**, use the `verify` skill. Register two admins and some users, then send pairs of `POST admins/members` calls (`{"userId":N,"signature_method":8}`) at the same moment as different actors (`&` + `wait`). Run `db.sh 'select member_no, count(*) from members group by 1 having count(*) > 1'`. For reuse, delete the holder of the highest number with `DELETE admins/users/:id`, issue a new card, and compare the numbers.
 
 ## What it does not cover
 
 - Request Type 11 (a change of organization gets a new number, per CONTEXT.md). The code always reuses the existing number and writes `requestType: 1`, so the rule isn't implemented and isn't modeled.
 - The Status History entry written by `addStatusEntry` in the same transaction, statuses in general, and whether issuing is allowed at the user's current status (the route checks neither).
-- `member_no` NULL rows: Postgres sorts NULLs first in `DESC`, which would make `latestMember` a NULL row. The code never writes NULL, so this is assumed away.
+- Rows written with an explicit `member_no` (imports, manual SQL), and numbers held by users deleted before the migration. See "Limits of the fix".
 - More than 2 admins, 3 users or 4 issues. A pass covers only that bound.
 - Several API instances, retries, and crashes between statements. A crash rolls back the transaction, so it has no effect here.
