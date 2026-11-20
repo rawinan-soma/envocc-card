@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { members, Prisma } from '@prisma/client';
 import { addDays, clock, isoDate } from 'src/common/clock';
 import { REQUEST_TYPES } from 'src/request/request-types';
 
@@ -47,15 +47,40 @@ export const startNewCard = async (
   await tx.members.create({
     data: {
       userId,
-      // Left out, member_no takes nextval of members_member_no_seq. See
-      // .claude/skills/member-number.
-      member_no: rule.newMemberNumber ? undefined : oldCard.member_no,
+      member_no: oldCard.member_no,
       qrcode: oldCard.qrcode,
       qrcode_pass: oldCard.qrcode_pass,
       signatureId: oldCard.signatureId,
       is_active: false,
     },
   });
+};
+
+// A card for a Request Type with newMemberNumber starts with the Old card's
+// number and gets its own at step 7. Once given, no older card shares it, so
+// passing step 7 again after a Revert keeps it. The number comes from
+// members_member_no_seq; see .claude/skills/member-number.
+export const memberNumberAtStep7 = async (
+  tx: Prisma.TransactionClient,
+  card: members,
+  requestType: number,
+) => {
+  if (!REQUEST_TYPES[requestType]?.newMemberNumber) {
+    return card.member_no;
+  }
+  const sharedWithOldCard = await tx.members.count({
+    where: {
+      userId: card.userId,
+      member_no: card.member_no,
+      member_id: { not: card.member_id },
+    },
+  });
+  if (sharedWithOldCard === 0) {
+    return card.member_no;
+  }
+  const [{ nextval }] = await tx.$queryRaw<{ nextval: bigint }[]>`
+    SELECT nextval('members_member_no_seq')`;
+  return Number(nextval);
 };
 
 // When the Old card stays valid and has not yet expired, the new card's

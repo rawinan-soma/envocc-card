@@ -606,7 +606,7 @@ Content-Type: application/json
 
 Once started, the request walks the same statuses to 15 as a first-card request, and every Status History entry it adds carries its `request_type`, whichever route writes it. Before, the entries written by `POST admins/members` (signing method) and `PATCH admins/members/:userId/activate` (approval date) always had `request_type` 1.
 
-The user keeps their QR code, and their Member Number unless `requestType` is 11: step 7 reuses their card record.
+The user keeps their QR code, and their Member Number unless `requestType` is 11, which gets a new one at step 7: see [A new Member Number](#change-of-organization-type-11). Step 7 reuses their card record.
 
 ### The Old card while a request for a new card runs
 
@@ -699,7 +699,7 @@ Content-Type: application/json
 { "user": { "orgId": 27, "positionId": 203 } }
 ```
 
-**A new Member Number.** The card issued for a type 11 request has a Member Number no one has held before, including users since deleted. Every other type keeps the number the user had. The number is given when the request starts, on the new card record, so `GET admins/members/:userId` shows it while the request runs. A Revert keeps it. The Old card keeps its old number. The QR code and QR password stay the same, as for every other type.
+**A new Member Number.** The card issued for a type 11 request has a Member Number no one has held before, including users since deleted. Every other type keeps the number the user had. The number is given at step 7, when the admin chooses the signing method (`POST admins/members`), as for a first card. Until then the new card record carries the Old card's number, and a request that stops before step 7 uses up no number. A Revert keeps the number once given: passing step 7 again does not give another. The Old card keeps its old number. The QR code and QR password stay the same, as for every other type.
 
 ### Request Type in the admin user lists
 

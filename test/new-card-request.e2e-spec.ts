@@ -450,6 +450,67 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
       expect(printed.body).toMatchObject({ member_no: issued.member_no });
     });
 
+    const toStep7 = async (user: number) => {
+      const admin = world.asAdmin(ADMIN.MINISTRY);
+      expect((await startRequest(user, 11)).status).toBe(201);
+      const uploaded = await world
+        .asUser(user)
+        .post('/users/me/files')
+        .attach('govCard', Buffer.from('fake'), 'govCard.pdf')
+        .attach('photo', Buffer.from('fake'), 'me.jpg');
+      expect(uploaded.status).toBe(201);
+      const checked = await admin.post('/admins/users/requests/update').send({
+        user,
+        current_status: 4,
+        next_status: 7,
+        request_type: 1,
+        description: '',
+      });
+      expect(checked.status).toBe(201);
+    };
+
+    const chooseSigningMethod = (user: number) =>
+      world
+        .asAdmin(ADMIN.MINISTRY)
+        .post('/admins/members')
+        .send({ userId: user, signature_method: 8 });
+
+    it('gives the new Member Number at step 7, not when the request starts', async () => {
+      const user = await world.createUser({ history: [...ISSUED, 16] });
+      const oldCard = await world.giveMember(user, {
+        qrcode: '10001000',
+        is_active: false,
+      });
+      const used = await numbersInUse();
+
+      await toStep7(user);
+      expect((await cardsOf(user))[1].member_no).toBe(oldCard.member_no);
+
+      expect((await chooseSigningMethod(user)).status).toBe(201);
+      const given = (await cardsOf(user))[1].member_no;
+      expect(given).toEqual(expect.any(Number));
+      expect(used).not.toContain(given);
+    });
+
+    it('keeps the Member Number given at step 7 when a Revert passes step 7 again', async () => {
+      const user = await world.createUser({ history: [...ISSUED, 16] });
+      await world.giveMember(user, { qrcode: '10001000', is_active: false });
+      await toStep7(user);
+      expect((await chooseSigningMethod(user)).status).toBe(201);
+      const given = (await cardsOf(user))[1].member_no;
+
+      const reverted = await world
+        .asAdmin(ADMIN.MINISTRY)
+        .post(`/admins/users/${user}/requests/revert`)
+        .send({ current_status: 8, target_status: 7, description: '' });
+      expect(reverted.status).toBe(201);
+      expect((await chooseSigningMethod(user)).status).toBe(201);
+
+      const cards = await cardsOf(user);
+      expect(cards).toHaveLength(2);
+      expect(cards[1].member_no).toBe(given);
+    });
+
     it.each([3, 4, 5, 6, 7, 8, 9, 10])(
       "issues a type %i card with the Old card's Member Number",
       async (requestType) => {

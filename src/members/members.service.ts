@@ -25,6 +25,7 @@ import {
   cardVerifiesAt,
   inEffectToday,
   latestCard,
+  memberNumberAtStep7,
 } from './cards';
 import { SIGNING_METHOD_STATUSES } from 'src/request/request-statuses';
 // import { RequestService } from 'src/request/request.service';
@@ -398,10 +399,18 @@ export class MembersService {
 
         // A Revert keeps the card record, so passing step 7 again reuses it
         // (same Member Number and QR code) rather than adding a second one.
+        // A change of organization (type 11) gets its new number here.
         if (existedMember) {
           return await tx.members.update({
             where: { member_id: existedMember.member_id },
-            data: rest,
+            data: {
+              ...rest,
+              member_no: await memberNumberAtStep7(
+                tx,
+                existedMember,
+                current.request_type,
+              ),
+            },
             select: { member_id: true },
           });
         }
