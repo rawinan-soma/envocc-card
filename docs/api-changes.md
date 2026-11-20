@@ -600,6 +600,7 @@ Content-Type: application/json
 |---|---|---|
 | 400 | `requestType must be one of 2, 3, 4, 5, 6, 7, 8, 9, 10, 11` | `requestType` is 1, or not a Request Type (0, 12, …). |
 | 400 | `Validation failed (numeric string is expected)` | `requestType` is missing or not a number. |
+| 400 | `bad request by user` | A `user` field names a row that does not exist, for example an unknown `positionId`. Nothing is saved and no request starts. Before, it answered 500. |
 | 403 | `a new card can be requested only at request status 15 or 16` | The user is at any other status, or has no status history. |
 | 403 | `a new card can be requested only at request status 16` | `requestType` is 11 and the user is at any other status, 15 included. |
 

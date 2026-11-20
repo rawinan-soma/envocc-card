@@ -176,7 +176,7 @@ describe('The Old card while a request for a new card runs', () => {
 
   it.each([
     ['an unknown Request Type', 12, {}, 400],
-    ['a detail that cannot be saved', 4, { user: { positionId: 999999 } }, 500],
+    ['a detail that cannot be saved', 4, { user: { positionId: 999999 } }, 400],
   ])(
     'stays valid when starting the request is refused for %s',
     async (_, requestType, body, status) => {

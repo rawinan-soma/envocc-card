@@ -705,6 +705,9 @@ export class UsersService {
       if (err instanceof HttpException) {
         throw err;
       }
+      if (err instanceof PrismaClientKnownRequestError) {
+        throw new BadRequestException('bad request by user');
+      }
       this.logger.error(err);
       throw new InternalServerErrorException('failed to create request');
     }
