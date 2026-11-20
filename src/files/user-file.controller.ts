@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { FileModelMap, FilesService } from './files.service';
 import { fileDto } from './dto/file-create.dto';
+import { ParseFileKindPipe } from './parse-file-kind.pipe';
 import {
   FileFieldsInterceptor,
   FileInterceptor,
@@ -27,17 +28,19 @@ const PHOTO_UPLOAD = FileInterceptor(
   getMulterOptions(['.jpg', '.png'], 10 * 1024 * 1024),
 );
 
-const STEP_THREE_UPLOAD = FileFieldsInterceptor(
+const DOCUMENT_UPLOAD = FileFieldsInterceptor(
   [
     { name: 'govCard', maxCount: 1 },
     { name: 'experienceForm', maxCount: 1 },
     { name: 'photo', maxCount: 1 },
+    { name: 'policeReport', maxCount: 1 },
   ],
   getMulterOptions(
     {
       govCard: ['.pdf'],
       experienceForm: ['.pdf'],
       photo: ['.jpg', '.png'],
+      policeReport: ['.pdf'],
     },
     10 * 1024 * 1024,
   ),
@@ -61,9 +64,10 @@ export class UserFileController {
     @UploadedFile(fileRequired('envcard')) file: Express.Multer.File,
     @Req() request: RequestwithUserData,
   ) {
-    const dto = fileDto(file, request.user.id);
-
-    const envcard = await this.filesService.createFile('envcard', dto);
+    const envcard = await this.filesService.uploadEnvcard(
+      request.user.id,
+      fileDto(file, request.user.id),
+    );
     return { msg: 'envcard create', id: envcard?.id };
   }
 
@@ -91,29 +95,31 @@ export class UserFileController {
     return { msg: 'photo replaced', id: photo?.id };
   }
 
-  // Step 3 upload: needs the user to be at Request Status 1 or 3.
+  // Document upload: needs the user to be at Request Status 1 or 6.
   @Post('me/files')
-  @UseInterceptors(STEP_THREE_UPLOAD)
+  @UseInterceptors(DOCUMENT_UPLOAD)
   async uploadFilesHandler(
     @UploadedFiles()
     files: {
       govCard?: Express.Multer.File[];
       experienceForm?: Express.Multer.File[];
       photo?: Express.Multer.File[];
+      policeReport?: Express.Multer.File[];
     },
     @Req() request: RequestwithUserData,
   ) {
     const userId = request.user.id;
-    return await this.filesService.uploadStepThree('user', userId, {
+    return await this.filesService.uploadDocuments({ role: 'user' }, userId, {
       govcard: fileDto(files?.govCard?.[0], userId),
       expfile: fileDto(files?.experienceForm?.[0], userId),
       photo: fileDto(files?.photo?.[0], userId),
+      policeReport: fileDto(files?.policeReport?.[0], userId),
     });
   }
 
   @Get('me/files/:file')
   async getUsersFilesHandler(
-    @Param('file') file: keyof FileModelMap,
+    @Param('file', ParseFileKindPipe) file: keyof FileModelMap,
     @Req() request: RequestwithUserData,
   ) {
     return await this.filesService.getFileByUserId(file, request.user.id);

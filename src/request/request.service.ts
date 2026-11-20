@@ -11,31 +11,21 @@ import { OrgLevel, Prisma } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
 import { StatusCreateDto } from './dto/status-create.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { RequestCreateDto } from './dto/request-create.dto';
 import { RevertStatusDto } from './dto/revert-status.dto';
 import { FilesService } from 'src/files/files.service';
 import { assertUserInOrg } from 'src/organizations/user-org-scope';
 import { addStatusEntry, latestStatusEntry, lockUser } from './status-history';
+import { adminUpdateRefusal, isRevert } from './request-statuses';
+import { FIRST_CARD } from './request-types';
+import { issueCard, latestCard } from 'src/members/cards';
 
-// The only moves that are Reverts: each target and the statuses it can be
-// reached from (see Revert in CONTEXT.md).
-const REVERT_RULES: { target: number; from: [number, number] }[] = [
-  { target: 0, from: [1, 6] },
-  { target: 1, from: [2, 14] },
-  { target: 6, from: [7, 14] },
-  { target: 7, from: [8, 14] },
-  { target: 15, from: [16, 16] },
-];
-
-const REVERT_TARGETS = new Set(REVERT_RULES.map((rule) => rule.target));
-
-const REVERT_TO_0_FILES = ['photo', 'govcard', 'expfile', 'reqFile'] as const;
-
-const isRevert = (from: number, target: number) =>
-  REVERT_RULES.some(
-    (rule) =>
-      rule.target === target && from >= rule.from[0] && from <= rule.from[1],
-  );
+const REVERT_TO_0_FILES = [
+  'photo',
+  'govcard',
+  'expfile',
+  'reqFile',
+  'policeReport',
+] as const;
 
 @Injectable()
 export class RequestService {
@@ -60,37 +50,27 @@ export class RequestService {
       return await this.prisma.$transaction(async (tx) => {
         await lockUser(tx, updated.user);
         const current = await latestStatusEntry(tx, updated.user);
-        const mismatchedStatus =
-          current?.request_status !== updated.current_status;
-        const sameStatus = current?.request_status === updated.next_status;
-
-        if (mismatchedStatus) {
+        if (current?.request_status !== updated.current_status) {
           throw new BadRequestException(`user's status mismatched`);
         }
 
-        if (sameStatus) {
-          throw new BadRequestException(`user's already in this status`);
+        const refusal = adminUpdateRefusal(
+          current.request_status,
+          updated.next_status,
+        );
+        if (refusal) {
+          throw new BadRequestException(refusal);
         }
 
-        // Going back to a Revert target must go through the Revert, so its
-        // rules and clean-up can't be bypassed.
-        const backwardToRevertTarget =
-          REVERT_TARGETS.has(updated.next_status) &&
-          updated.next_status < current.request_status;
-
-        if (backwardToRevertTarget) {
-          throw new BadRequestException(
-            `moving back to ${updated.next_status} is a revert: use POST admins/users/:userId/requests/revert`,
-          );
+        if (updated.next_status === 15) {
+          await issueCard(tx, updated.user);
         }
 
         const { entry } = await addStatusEntry(tx, {
           userId: updated.user,
           status: updated.next_status,
-          requestType: current.request_type,
           approver: approver,
           description: updated.description,
-          from: current.request_status,
         });
         return entry;
       });
@@ -123,36 +103,6 @@ export class RequestService {
     }
   }
 
-  async createNewRequest(data: RequestCreateDto) {
-    try {
-      await this.prisma.$transaction(async (tx) => {
-        await lockUser(tx, data.userId);
-        const user = await latestStatusEntry(tx, data.userId);
-        if (user) {
-          throw new BadRequestException(
-            'user already has new card request, please ensure the card from user',
-          );
-        }
-
-        await addStatusEntry(tx, {
-          userId: data.userId,
-          status: 1,
-          requestType: data.request_type,
-          from: null,
-        });
-      });
-    } catch (err: any) {
-      this.logger.error(err);
-      if (err instanceof BadRequestException) {
-        throw err;
-      } else if (err instanceof PrismaClientKnownRequestError) {
-        throw new BadRequestException('bad request by user');
-      } else {
-        throw new InternalServerErrorException('something went wrong');
-      }
-    }
-  }
-
   async revertStatus(userId: number, revert: RevertStatusDto, adminId: number) {
     try {
       const { entry, filesToDelete } = await this.prisma.$transaction(
@@ -169,6 +119,17 @@ export class RequestService {
           if (!isRevert(current.request_status, revert.target_status)) {
             throw new BadRequestException(
               `cannot revert from ${current.request_status} to ${revert.target_status}`,
+            );
+          }
+
+          // A card holder never goes back to unapproved: see
+          // docs/adr/0003-a-request-for-a-new-card-cannot-be-ended-early.md
+          if (
+            revert.target_status === 0 &&
+            current.request_type !== FIRST_CARD
+          ) {
+            throw new BadRequestException(
+              'only a first-card request (Request Type 1) can be reverted to 0',
             );
           }
 
@@ -202,29 +163,25 @@ export class RequestService {
             );
           }
 
-          // The card record (Member Number, QR code) is kept; its dates are
-          // set again when the card is re-issued.
           if (target === 1 || target === 6 || target === 7) {
-            await tx.members.updateMany({
-              where: { userId: userId },
-              data: { start_date: null, end_date: null },
-            });
+            const card = await latestCard(tx, userId);
+            if (card) {
+              await tx.members.update({
+                where: { member_id: card.member_id },
+                data: { start_date: null, end_date: null },
+              });
+            }
           }
 
           if (target === 15) {
-            await tx.members.updateMany({
-              where: { userId: userId },
-              data: { is_active: true },
-            });
+            await issueCard(tx, userId);
           }
 
           const { entry } = await addStatusEntry(tx, {
             userId: userId,
             status: revert.target_status,
-            requestType: current.request_type,
             approver: adminId,
             description: revert.description,
-            from: current.request_status,
           });
 
           return { entry, filesToDelete };

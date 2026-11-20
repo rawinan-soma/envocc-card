@@ -1,0 +1,20 @@
+# Verification image. The repo's Dockerfile with two changes:
+# - bun 1.3.0 (mise.toml's version) instead of 1.1.29: the 1.1.29 image is
+#   Debian 11, whose security mirror now answers 404, so its apt step fails.
+# - copies bun.lock, so dependencies match the lockfile (the repo's Dockerfile
+#   copies bun.lockb*, which matches nothing, and resolves fresh).
+FROM oven/bun:1.3.0
+
+RUN apt-get update -y && \
+  apt-get install -y openssl ca-certificates curl python3 make g++ && \
+  rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package.json bun.lock ./
+
+RUN bun install --frozen-lockfile
+
+COPY . .
+
+EXPOSE 3000

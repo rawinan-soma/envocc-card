@@ -11,6 +11,7 @@ import { startApp, testConfig } from './support/test-app';
 
 const ACCESS_SECRET = 'test-access-secret';
 const ADMIN_ID = 3;
+const ORG_ID = 1;
 
 const routes = [
   { method: 'get', path: '/admins/users/7/files/envcard' },
@@ -22,6 +23,7 @@ describe('admin file routes', () => {
   let token: string;
   let prisma: {
     admins: { findUnique: jest.Mock };
+    users: { findUnique: jest.Mock };
     envocc_card_files: { findFirst: jest.Mock; delete: jest.Mock };
   };
 
@@ -32,8 +34,12 @@ describe('admin file routes', () => {
           id: ADMIN_ID,
           username: 'admin',
           role: 'admin',
+          organizationId: ORG_ID,
           organization: { level: 'MINISTRY' },
         }),
+      },
+      users: {
+        findUnique: jest.fn().mockResolvedValue({ organizationId: ORG_ID }),
       },
       // No stored file, so an authenticated call ends in 404 inside
       // FilesService and never touches the disk.
@@ -93,6 +99,19 @@ describe('admin file routes', () => {
       expect(prisma.envocc_card_files.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({ where: { userId: 7 } }),
       );
+    },
+  );
+
+  it.each(['get', 'delete'] as const)(
+    'answers 404 to %s of a file kind that does not exist',
+    async (method) => {
+      const res = await request(app.getHttpServer())
+        [method]('/admins/users/7/files/constructor')
+        .set('Cookie', `Authentication_Admin=${token}`);
+
+      expect(res.status).toBe(404);
+      expect(res.body).toMatchObject({ message: 'no file kind constructor' });
+      expect(prisma.users.findUnique).not.toHaveBeenCalled();
     },
   );
 });

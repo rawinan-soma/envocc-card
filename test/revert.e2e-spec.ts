@@ -113,9 +113,9 @@ describe('Revert (POST admins/users/:userId/requests/revert)', () => {
         const history = [0, 1, 3, 4, 5, 6].filter((s) => s < from);
         const user = await world.createUser({ history: [...history, from] });
         const files = await Promise.all(
-          (['photo', 'govcard', 'expfile', 'reqFile'] as const).map((kind) =>
-            world.giveFile(user, kind),
-          ),
+          (
+            ['photo', 'govcard', 'expfile', 'reqFile', 'policeReport'] as const
+          ).map((kind) => world.giveFile(user, kind)),
         );
         await world.prisma.experiences.create({
           data: { userId: user, exp_office: 'hospital' },
@@ -147,12 +147,46 @@ describe('Revert (POST admins/users/:userId/requests/revert)', () => {
           'govcard',
           'expfile',
           'reqFile',
+          'policeReport',
         ] as const) {
           expect(await world.filesOf(user, kind)).toEqual([]);
         }
         for (const file of files) {
           expect(existsSync(file)).toBe(false);
         }
+      },
+    );
+
+    it.each([2, 3, 11])(
+      'rejects a request of type %i with 400 and changes nothing',
+      async (requestType) => {
+        const history = [...ISSUED, 1, 4];
+        const user = await world.createUser({ history, requestType });
+        const photo = await world.giveFile(user, 'photo');
+        const validated = await world.prisma.users.findFirstOrThrow({
+          where: { id: user },
+          select: { is_validate: true },
+        });
+
+        const res = await revert(user, {
+          current_status: 4,
+          target_status: 0,
+        });
+
+        expect(res.status).toBe(400);
+        expect(res.body).toMatchObject({
+          message:
+            'only a first-card request (Request Type 1) can be reverted to 0',
+        });
+        expect(await world.historyOf(user)).toEqual(history);
+        expect(
+          await world.prisma.users.findFirstOrThrow({
+            where: { id: user },
+            select: { is_validate: true },
+          }),
+        ).toEqual(validated);
+        expect(await world.filesOf(user, 'photo')).toEqual([{ url: photo }]);
+        expect(existsSync(photo)).toBe(true);
       },
     );
 
@@ -260,6 +294,42 @@ describe('Revert (POST admins/users/:userId/requests/revert)', () => {
             end_date: null,
           }),
         ]);
+      },
+    );
+  });
+
+  describe('a request for a new card (types 2–11)', () => {
+    const moves = [
+      [4, 1, [1, 4]],
+      [7, 6, [1, 4, 7]],
+      [8, 7, [1, 4, 7, 8]],
+    ] as const;
+
+    it.each(
+      [2, 3, 11].flatMap((requestType) =>
+        moves.map(([from, target, request]) => ({
+          from,
+          target,
+          requestType,
+          history: [...ISSUED, ...request],
+        })),
+      ),
+    )(
+      'Reverts $from → $target on a type $requestType request, and the entry carries that type',
+      async ({ from, target, requestType, history }) => {
+        const user = await world.createUser({ history, requestType });
+
+        const res = await revert(user, {
+          current_status: from,
+          target_status: target,
+        });
+
+        expect(res.status).toBe(201);
+        expect(res.body).toMatchObject({
+          request_status: target,
+          request_type: requestType,
+        });
+        expect(await world.historyOf(user)).toEqual([...history, target]);
       },
     );
   });

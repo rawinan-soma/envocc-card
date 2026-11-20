@@ -14,8 +14,9 @@ params:query {
   status: ongoing
   page: 1
   ~search_term: สมชาย
+  ~request_type: 3
 }
 
 docs {
-  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Users of the admin's organization and below. `status`: `ongoing`, `activated` or `suspended`.
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Users of the admin's organization and below. `status`: `ongoing`, `activated` or `suspended`. Optional `request_type` (1-11, otherwise 400) keeps users whose latest Status History entry has that Request Type. Each row has `request_type` and `request_type_name` of the user's latest entry.
 }

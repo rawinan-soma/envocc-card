@@ -11,5 +11,5 @@ get {
 }
 
 docs {
-  User login (cookie Authentication_User): run "User auth / Login" first. The user must also be approved (is_validate), or this answers 403.
+  User login (cookie Authentication_User): run "User auth / Login" first. The user must also be approved (is_validate), or this answers 403. Returns the card in effect today (start_date <= today <= end_date). Answers 404 `not found member` while the user holds no such card, for example from the start of a request of types 3-11 until it reaches 15, or before a new card's start date once the Old card has ended.
 }

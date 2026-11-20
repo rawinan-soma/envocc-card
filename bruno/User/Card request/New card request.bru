@@ -5,13 +5,13 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/users/me/card?requestType=1
+  url: {{baseUrl}}/users/me/card?requestType=2
   body: json
   auth: none
 }
 
 params:query {
-  requestType: 1
+  requestType: 2
 }
 
 body:json {
@@ -33,5 +33,5 @@ body:json {
 }
 
 docs {
-  User login (cookie Authentication_User): run "User auth / Login" first. The user must also be approved (is_validate), or this answers 403. `requestType` picks the kind of request; `user` and `experiences` are optional updates sent with it.
+  User login (cookie Authentication_User): run "User auth / Login" first. The user must also be approved (is_validate), or this answers 403. Starts a request for a new card, allowed only while the request status is 15 (card issued) or 16 (card cancelled), otherwise 403 "a new card can be requested only at request status 15 or 16". `requestType` is the Request Type, the reason for the new card: 2 expired, 3 lost, 4 destroyed, 5 first name changed, 6 last name changed, 7 both names changed, 8 name title changed, 9 rank or level promoted, 10 position changed, 11 organization changed. Type 1 (first card) comes only from registering; 1 or any other number is 400 "requestType must be one of 2, 3, 4, 5, 6, 7, 8, 9, 10, 11". `user` and `experiences` are optional and are saved together with the new status, or not at all when the request is refused. `user` takes the fields of "Update me": `user.orgId` moves the user to that organization (400 "organization not found" when it does not exist), and a `password` is ignored. Each experience gets `exp_years` from its dates. On success the user is at status 1, and every later status entry of the request carries its type. Starting it deletes the user's government card and police report, and their photo too unless the type is 2, so they are sent again with "Upload documents"; the experience form, experiences and env card are kept. Type 11 (organization changed) is accepted only at 16, otherwise 403 "a new card can be requested only at request status 16": the old organization's admin, or a Ministry admin, cancels the card first ("Admin / Requests / Update status" 15 → 16, then "Admin / Members / Deactivate member"). The user keeps their Member Number, except that a type 11 card gets a new one, never held by anyone before. Type 2 is accepted only from 30 days before the card's end date (no limit once it has ended), otherwise 403 "a request of type 2 can be started only from <date>, 30 days before the card's end date". A type 2 request started from 15 leaves the Old card valid until its end date; every other type, and any request started from 16, stops it being valid at once. For type 11 send the new organization as `user.orgId`: its admins then see the user, and the old organization's admins no longer do.
 }

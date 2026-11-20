@@ -9,8 +9,7 @@ import {
 } from './support/card-request-world';
 
 const PNG = Buffer.from('fake-png');
-const REPLACE_REFUSED =
-  'photo can be replaced only at request status 1, 2 or 3';
+const REPLACE_REFUSED = 'photo can be replaced only at request status 1 or 6';
 
 describe('Replace photo (PUT users/me/photo)', () => {
   let world: CardRequestWorld;
@@ -30,10 +29,11 @@ describe('Replace photo (PUT users/me/photo)', () => {
   const photosOf = (user: number) =>
     world.prisma.photos.findMany({ where: { userId: user } });
 
-  it.each([1, 2, 3])('replaces the photo at status %i', async (status) => {
-    const user = await world.createUser({
-      history: Array.from({ length: status + 1 }, (_, i) => i),
-    });
+  it.each([
+    [1, [0, 1]],
+    [6, [0, 1, 4, 7, 6]],
+  ])('replaces the photo at status %i', async (_, history) => {
+    const user = await world.createUser({ history });
     const oldUrl = await world.giveFile(user, 'photo');
 
     const res = await replace(user);
@@ -143,9 +143,14 @@ describe('Replace photo (PUT users/me/photo)', () => {
     });
   });
 
-  it.each([
-    ['status 4', [0, 1, 2, 3, 4], REPLACE_REFUSED],
-    ['status 15', [0, 1, 15], REPLACE_REFUSED],
+  it.each<[string, number[], string]>([
+    ...[2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].map(
+      (status): [string, number[], string] => [
+        `status ${status}`,
+        [0, 1, status],
+        REPLACE_REFUSED,
+      ],
+    ),
     ['unapproved', [0], 'user not validated'],
   ])(
     'refuses at %s and leaves the old photo untouched',
@@ -187,17 +192,17 @@ describe('Replace photo (PUT users/me/photo)', () => {
     });
 
     it('never leaves a replaced photo behind at status 4', async () => {
-      const user = await world.createUser({ history: [0, 1, 2, 3] });
+      const user = await world.createUser({ history: [0, 1] });
       const oldUrl = await world.giveFile(user, 'photo');
 
       const [res, moved] = await Promise.all([
         replace(user),
-        updateStatus(user, 3, 4),
+        updateStatus(user, 1, 4),
       ]);
 
       const rows = await photosOf(user);
       expect(moved.status).toBe(201);
-      expect(await world.historyOf(user)).toEqual([0, 1, 2, 3, 4]);
+      expect(await world.historyOf(user)).toEqual([0, 1, 4]);
       expect(rows).toHaveLength(1);
       if (res.status === 200) {
         expect(rows[0].url).not.toBe(oldUrl);
@@ -209,7 +214,7 @@ describe('Replace photo (PUT users/me/photo)', () => {
     });
 
     it('waits for a status change already in flight and then sees it', async () => {
-      const user = await world.createUser({ history: [0, 1, 2, 3] });
+      const user = await world.createUser({ history: [0, 1] });
       const oldUrl = await world.giveFile(user, 'photo');
       let locked!: () => void;
       const lockHeld = new Promise<void>((resolve) => (locked = resolve));

@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  ForbiddenException,
+  HttpException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -9,16 +11,21 @@ import { OrgLevel, organizations, Prisma } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'prisma/prisma.service';
 import { UserUpdateDto, UserUpdateInternalDto } from './dto/user-update.dto';
-import { StatusCreateDto } from 'src/request/dto/status-create.dto';
 import {
   addStatusEntry,
   latestStatusEntry,
   lockUser,
 } from 'src/request/status-history';
+import { editPersonalData, toUserUpdate } from './edit-personal-data';
+import { expYears } from 'src/experiences/exp-years';
+import { REQUEST_TYPES, USER_STARTED_TYPES } from 'src/request/request-types';
+import { FilesService } from 'src/files/files.service';
+import { startNewCard } from 'src/members/cards';
 
 interface UsersPageQuery {
   page: number;
   search_term?: string;
+  request_type?: number;
 }
 
 interface OrganizationWithParent {
@@ -31,7 +38,10 @@ interface OrganizationWithParent {
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly filesService: FilesService,
+  ) {}
 
   private async getChildIds(orgId: number): Promise<number[]> {
     const parent = await this.prisma.organizations.findUnique({
@@ -65,6 +75,15 @@ export class UsersService {
 
     const parentResult = this.pickLevelForRequestForm(org.parent, levels);
     return { ...parentResult, ...result };
+  }
+
+  private latestRequestType(requests: { request_type: number }[]) {
+    const type = requests[0]?.request_type ?? null;
+    return {
+      request_type: type,
+      request_type_name:
+        type === null ? null : (REQUEST_TYPES[type]?.name ?? null),
+    };
   }
 
   async getUserById(id: number) {
@@ -124,6 +143,7 @@ export class UsersService {
     return await this.getUsersPage({
       page: queryData.page,
       search_term: queryData.search_term,
+      request_type: queryData.request_type,
       statuses,
       orgId: queryData.orgId,
     });
@@ -134,8 +154,6 @@ export class UsersService {
     return await this.getUsersPage({ ...queryData, includeUsername: true });
   }
 
-  // statuses filters on each user's latest request; orgId limits the result
-  // to that organization and its descendants. Omit either to skip it.
   private async getUsersPage(
     queryData: UsersPageQuery & {
       statuses?: number[];
@@ -144,7 +162,7 @@ export class UsersService {
     },
   ) {
     try {
-      const { statuses, orgId } = queryData;
+      const { statuses, request_type, orgId } = queryData;
 
       const where: Prisma.usersWhereInput = {
         OR: [
@@ -153,8 +171,17 @@ export class UsersService {
           { organization: { name_th: { contains: queryData.search_term } } },
         ],
       };
+      // Narrows to users with any matching entry; only their latest entry
+      // counts, so the rows are filtered again below.
+      const anyEntry: Prisma.requestsWhereInput = {};
       if (statuses) {
-        where.requests = { some: { request_status: { in: statuses } } };
+        anyEntry.request_status = { in: statuses };
+      }
+      if (request_type !== undefined) {
+        anyEntry.request_type = request_type;
+      }
+      if (statuses || request_type !== undefined) {
+        where.requests = { some: anyEntry };
       }
       if (orgId !== undefined) {
         where.organizationId = { in: await this.getChildIds(orgId) };
@@ -209,11 +236,12 @@ export class UsersService {
             },
             members: {
               select: { start_date: true, end_date: true },
-              orderBy: { end_date: 'desc' },
+              orderBy: { end_date: { sort: 'desc', nulls: 'last' } },
             },
             requests: {
               select: {
                 request_status: true,
+                request_type: true,
               },
               orderBy: { date_update: 'desc' },
               take: 1,
@@ -238,6 +266,7 @@ export class UsersService {
           start_date: user.members[0]?.start_date,
           end_date: user.members[0]?.end_date,
           request_status: user.requests[0]?.request_status ?? null,
+          ...this.latestRequestType(user.requests),
           position: user.position?.position_name,
           position_lv: user.position_lv?.position_lv_name,
           unit:
@@ -250,12 +279,13 @@ export class UsersService {
         };
       });
 
-      const filteredData = statuses
-        ? data.filter(
-            (d) =>
-              d.request_status !== null && statuses.includes(d.request_status),
-          )
-        : data;
+      const filteredData = data.filter(
+        (d) =>
+          (!statuses ||
+            (d.request_status !== null &&
+              statuses.includes(d.request_status))) &&
+          (request_type === undefined || d.request_type === request_type),
+      );
 
       const totalItems = filteredData.length;
       const totalPages = Math.ceil(totalItems / limit);
@@ -349,6 +379,13 @@ export class UsersService {
               },
             },
             experiences: true,
+            requests: {
+              select: {
+                request_type: true,
+              },
+              orderBy: { date_update: 'desc' },
+              take: 1,
+            },
           },
           omit: {
             password: true,
@@ -403,6 +440,8 @@ export class UsersService {
 
       const data = {
         ...user,
+        requests: undefined,
+        ...this.latestRequestType(user.requests),
         position: undefined,
         position_lv: undefined,
         position_name_th: user?.position?.position_name,
@@ -474,26 +513,18 @@ export class UsersService {
 
   async updateUser(id: number, data: UserUpdateInternalDto) {
     try {
-      const user = await this.prisma.users.findUnique({ where: { id: id } });
-
-      if (!user) {
-        throw new NotFoundException('user not found');
-      }
-
-      // const filteredData = Object.fromEntries(
-      //   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      //   Object.entries(data).filter(([_, value]) => value !== undefined),
-      // );
-
-      return await this.prisma.users.update({
-        where: { id: id },
-        data: data as Prisma.usersUpdateInput,
-      });
+      return await editPersonalData(this.prisma, id, async (tx) =>
+        tx.users.update({
+          where: { id: id },
+          data: await toUserUpdate(tx, data),
+        }),
+      );
     } catch (err) {
-      this.logger.error(err);
-      if (err instanceof NotFoundException) {
+      if (err instanceof HttpException) {
         throw err;
-      } else if (err instanceof PrismaClientKnownRequestError) {
+      }
+      this.logger.error(err);
+      if (err instanceof PrismaClientKnownRequestError) {
         throw new BadRequestException('bad request by user');
       } else {
         throw new InternalServerErrorException('something went wrong');
@@ -560,17 +591,9 @@ export class UsersService {
           throw new BadRequestException('user cannot re-activated');
         }
 
-        const data: StatusCreateDto = {
-          user: id,
-          next_status: 1,
-          request_type: 1,
-          current_status: 0,
-        };
-
         const { entry } = await addStatusEntry(tx, {
-          userId: data.user,
-          status: data.next_status,
-          requestType: data.request_type,
+          userId: id,
+          status: 1,
           approver: approver,
           from: currentStatus.request_status,
         });
@@ -624,71 +647,71 @@ export class UsersService {
     }
   }
 
-  async checkUserExisting(userId: number) {
-    const user = await this.prisma.users.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('user not found');
-    }
-  }
-
-  async updateUserwithExp(userId: number, data: UserUpdateDto) {
-    if (data.user) {
-      if (data.experiences) {
-        const updatedUser = await this.prisma.users.update({
-          where: { id: userId },
-          data: {
-            ...data.user,
-            experiences: { createMany: { data: { ...data.experiences } } },
-          },
-        });
-
-        return updatedUser;
-      }
-
-      if (!data.experiences) {
-        const updateUser = await this.prisma.users.update({
-          where: { id: userId },
-          data: data.user,
-        });
-
-        return updateUser;
-      }
-    }
-  }
-
-  async createRequest(userId: number, requestType: number) {
-    const { entry } = await this.prisma.$transaction((tx) =>
-      addStatusEntry(tx, {
-        userId: userId,
-        status: 1,
-        requestType: requestType,
-        approver: userId,
-      }),
-    );
-    return entry;
-  }
-
   async createNewCardRequest(
     userId: number,
     data: UserUpdateDto,
     requestType: number,
   ) {
-    // 1. update user data
-    // 2. create new experience
-    // 3. create new request
+    const type = REQUEST_TYPES[requestType];
+    const startsFrom = type?.userStartsFrom;
+    if (!startsFrom) {
+      throw new BadRequestException(
+        `requestType must be one of ${USER_STARTED_TYPES.join(', ')}`,
+      );
+    }
+    const sentAgain = type.oldCardStaysValid
+      ? (['govcard', 'policeReport'] as const)
+      : (['govcard', 'policeReport', 'photo'] as const);
+    let deleted: string[];
     try {
-      await this.checkUserExisting(userId);
-      const updateUser = await this.updateUserwithExp(userId, data);
-      if (!updateUser) {
-        throw new BadRequestException('invalid user input');
-      }
-      await this.createRequest(userId, requestType);
+      deleted = await this.prisma.$transaction(async (tx) => {
+        if ((await lockUser(tx, userId)).length === 0) {
+          throw new NotFoundException('user not found');
+        }
+        const current = await latestStatusEntry(tx, userId);
+        if (!current || !startsFrom.includes(current.request_status)) {
+          throw new ForbiddenException(
+            `a new card can be requested only at request status ${startsFrom.join(' or ')}`,
+          );
+        }
+
+        await startNewCard(tx, userId, requestType, current.request_status);
+
+        await tx.users.update({
+          where: { id: userId },
+          data: {
+            ...(await toUserUpdate(tx, data.user ?? {})),
+            experiences: data.experiences && {
+              createMany: {
+                data: data.experiences.map((exp) => ({
+                  ...exp,
+                  exp_years: expYears(exp.exp_fdate, exp.exp_ldate),
+                })),
+              },
+            },
+          },
+        });
+
+        await addStatusEntry(tx, {
+          userId,
+          status: 1,
+          requestType,
+          from: current.request_status,
+        });
+
+        return this.filesService.txDeleteFilesForUser(sentAgain, userId, tx);
+      });
     } catch (err) {
-      this.logger.error(err);
-      if (err instanceof BadRequestException) {
+      if (err instanceof HttpException) {
         throw err;
       }
+      if (err instanceof PrismaClientKnownRequestError) {
+        throw new BadRequestException('bad request by user');
+      }
+      this.logger.error(err);
       throw new InternalServerErrorException('failed to create request');
     }
+
+    await this.filesService.deleteFilesFromDisk(deleted);
   }
 }

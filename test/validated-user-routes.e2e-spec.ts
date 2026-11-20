@@ -55,7 +55,7 @@ const blockedRoutes: (Route & { validatedStatus: number })[] = [
     upload: envcardUpload,
     validatedStatus: 201,
   },
-  // 400: reaches FilesService, whose stubbed user is at status 3 with no
+  // 400: reaches FilesService, whose stubbed user is at status 1 with no
   // government card stored.
   { method: 'post', path: '/users/me/files', validatedStatus: 400 },
   // 404: reaches FilesService, which finds no stored photo for this user.
@@ -83,7 +83,7 @@ describe('@ValidatedUser() routes', () => {
   let prisma: {
     users: { findUnique: jest.Mock };
     photos: { findFirst: jest.Mock; create: jest.Mock };
-    envocc_card_files: { findFirst: jest.Mock; create: jest.Mock };
+    envocc_card_files: { count: jest.Mock; create: jest.Mock };
     requests: { findFirst: jest.Mock };
     gov_card_files: { count: jest.Mock };
     $queryRaw: jest.Mock;
@@ -110,11 +110,11 @@ describe('@ValidatedUser() routes', () => {
       },
       photos: { findFirst: jest.fn(), create: stubReturningOk() },
       envocc_card_files: {
-        findFirst: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
         create: stubReturningOk(),
       },
       requests: {
-        findFirst: jest.fn().mockResolvedValue({ request_status: 3 }),
+        findFirst: jest.fn().mockResolvedValue({ request_status: 1 }),
       },
       gov_card_files: { count: jest.fn().mockResolvedValue(0) },
       // The user lock's row: the user exists.

@@ -18,12 +18,11 @@ body:json {
       "exp_typeoffice": 1,
       "exp_office": "โรงพยาบาลตัวอย่าง",
       "exp_position": "นักวิชาการสาธารณสุข",
-      "exp_work": "งานอาชีวอนามัย",
-      "userId": 1
+      "exp_work": "งานอาชีวอนามัย"
     }
   ]
 }
 
 docs {
-  User login (cookie Authentication_User): run "User auth / Login" first. An array; each item names its `userId`.
+  User login (cookie Authentication_User): run "User auth / Login" first. An array of experiences, all added to the logged-in user (a `userId` in an item is ignored). Only at request status 0, 1 or 6; at any other status, or with no status history, 403 "personal data can be edited only at request status 0, 1 or 6" and nothing changes.
 }

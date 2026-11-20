@@ -1,0 +1,42 @@
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from 'prisma/prisma.service';
+import { canEditPersonalData } from 'src/request/request-statuses';
+import { latestStatusEntry, lockUser } from 'src/request/status-history';
+import { UserUpdateInternalDto } from './dto/user-update.dto';
+
+export const editPersonalData = <T>(
+  prisma: PrismaService,
+  userId: number,
+  write: (tx: Prisma.TransactionClient) => Promise<T>,
+) =>
+  prisma.$transaction(async (tx) => {
+    if ((await lockUser(tx, userId)).length === 0) {
+      throw new NotFoundException('user not found');
+    }
+    const current = await latestStatusEntry(tx, userId);
+    if (!current || !canEditPersonalData(current.request_status)) {
+      throw new ForbiddenException(
+        'personal data can be edited only at request status 0, 1 or 6',
+      );
+    }
+    return write(tx);
+  });
+
+export const toUserUpdate = async (
+  tx: Prisma.TransactionClient,
+  { orgId, ...rest }: UserUpdateInternalDto = {},
+): Promise<Prisma.usersUncheckedUpdateInput> => {
+  if (
+    orgId !== undefined &&
+    (orgId === null ||
+      !(await tx.organizations.findUnique({ where: { id: orgId } })))
+  ) {
+    throw new BadRequestException('organization not found');
+  }
+  return { ...rest, organizationId: orgId };
+};

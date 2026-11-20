@@ -16,6 +16,8 @@ Changes to the EnvOcc Card API since `b5a3abd` (agent skills setup), up to `ef03
   4. [Unapproved users can log in; card-request routes need approval](#4-unapproved-users-can-log-in-card-request-routes-need-approval)
   5. [Admin file routes need an admin login](#5-admin-file-routes-need-an-admin-login)
   6. [The admin document upload moved to `POST admins/users/:userId/files`](#6-the-admin-document-upload-moved-to-post-adminsusersuseridfiles)
+  7. [Request Statuses 2, 3 and 5 are retired](#7-request-statuses-2-3-and-5-are-retired)
+  8. [Admin file routes are limited to the admin's organization](#8-admin-file-routes-are-limited-to-the-admins-organization)
 - [New endpoints](#new-endpoints)
   - [`POST admins/users/:userId/requests/revert`](#post-adminsusersuseridrequestsrevert)
   - [`GET admins/users/all`](#get-adminsusersall)
@@ -145,7 +147,7 @@ Cookie: Authentication_User=<token>
 { "message": "user not validated", "error": "Forbidden", "statusCode": 403 }
 ```
 
-These stay open to any logged-in user: `GET users/me`, `PATCH users/me`, `GET users/me/requests/form`, `GET users/me/requests/exp`, and `GET`/`POST`/`PATCH`/`DELETE users/me/experiences…`.
+These stay open to any logged-in user: `GET users/me`, `PATCH users/me`, `GET users/me/requests/form`, `GET users/me/requests/exp`, and `GET`/`POST`/`PATCH`/`DELETE users/me/experiences…`. The routes that change data among them also depend on the request status; see [Personal data only at request status 0, 1 or 6](#personal-data-only-at-request-status-0-1-or-6).
 
 `GET users/me/requests/form` is the only route that returns the user's full profile, so an unapproved user can read what they edit with `PATCH users/me` (issue #17). Its response includes `is_validate`.
 
@@ -171,9 +173,45 @@ Without the cookie:
 
 ### 6. The admin document upload moved to `POST admins/users/:userId/files`
 
-`POST users/me/files` used to be the admin's upload, with the target user in a `user` field. That route now belongs to the user (see [`POST users/me/files`](#post-usersmefiles)), and an admin cookie on it answers `401`. Admins upload on behalf of a user at `POST admins/users/:userId/files`, with the user's id in the path and no `user` field. The other fields and rules are unchanged; see [Step 3 upload](#step-3-upload-the-request-file-is-optional).
+`POST users/me/files` used to be the admin's upload, with the target user in a `user` field. That route now belongs to the user (see [`POST users/me/files`](#post-usersmefiles)), and an admin cookie on it answers `401`. Admins upload on behalf of a user at `POST admins/users/:userId/files`, with the user's id in the path and no `user` field. The other fields and rules are unchanged; see [Document upload by an admin](#document-upload-by-an-admin-the-request-file-is-optional).
+
+### 7. Request Statuses 2, 3 and 5 are retired
+
+Issue #48. The Request Status steps were redrawn: the user sends their documents and photo together at **1**, the admin checks both at **4**, and when the check fails the admin moves the user to **6**, where the user corrects their data, photo and documents and sends them again. Statuses 2 (correct photo), 3 (upload documents) and 5 (unit admin corrects documents) are no longer used.
+
+- **`POST admins/users/requests/update`** refuses a `next_status` of 2, 3 or 5, and any number outside 0–16. The admin moves a user from 4 to 6 with this route when the check fails.
+
+  ```json
+  400 Bad Request
+  {
+    "message": "request status 3 is not in use",
+    "error": "Bad Request",
+    "statusCode": 400
+  }
+  ```
+
+- **Document upload** by the user ([`POST users/me/files`](#post-usersmefiles)) starts from 1 or 6, no longer from 3. [`PUT users/me/photo`](#put-usersmephoto) works at 1 or 6, no longer at 2 or 3.
+- **Status names** (`request_statuses.status_name`) changed: 1 is `อัปโหลดเอกสารและรูปถ่าย`, 4 is `ตรวจสอบเอกสารและรูปถ่าย`, and 2, 3 and 5 end in `(เลิกใช้)`. They stay in the table, so older Status History entries still resolve. Older entries at 1 show the new name.
+- **Users at 2, 3 or 5** when this ships are moved by the database migration: 2 → 6, 3 → 1, 5 → 4. Each gets a new Status History entry with the same `request_type`, no `approver`, and the description `ย้ายอัตโนมัติ: เลิกใช้สถานะ 2` (or 3, or 5). Their earlier entries are kept.
 
 ---
+
+### 8. Admin file routes are limited to the admin's organization
+
+`GET` and `DELETE admins/users/:userId/files/:file` and the admin's Document upload, `POST admins/users/:userId/files`, now work only for users in the admin's own organization or one below it, for every file kind. Before, any admin could read, delete or upload any user's files. A refused upload stores nothing and leaves the user's Request Status as it was.
+
+`:file` is one of `envcard`, `expfile`, `govcard`, `photo`, `policeReport` (new, issue #57) or `reqFile`, spelled exactly so. `policeReport` is the police report (ใบแจ้งความ) of a lost-card request (Request Type 3); its `adminId` is the admin who uploaded it, or `null` when the user sent it. `GET users/me/files/:file` takes the same kinds.
+
+| Status | `message` | When |
+|---|---|---|
+| 403 | `user is outside your organization` | The user is not in the admin's organization or one below it. |
+| 404 | `no file kind <file>` | `:file` is not one of the kinds above. Before, this answered 500. `GET users/me/files/:file` answers the same. |
+| 404 | `user not found` | No user has the id `:userId`. |
+
+```json
+403 Forbidden
+{ "message": "user is outside your organization", "error": "Forbidden", "statusCode": 403 }
+```
 
 ## New endpoints
 
@@ -187,13 +225,15 @@ Issue #7. Sends a user's card request back to an earlier Request Status.
 
 | Target | From | Effect |
 |---|---|---|
-| **0** | 1–6 | A full restart. It deletes the user's whole status history and every uploaded file (photo, government card, experience form, request file), and marks the user unapproved again. Only one status-0 entry is left. See `docs/adr/0001-revert-to-0-deletes-status-history.md`. |
+| **0** | 1–6 | Only for a first-card request (Request Type 1). A full restart. It deletes the user's whole status history and every uploaded file (photo, government card, experience form, request file, police report), and marks the user unapproved again. Only one status-0 entry is left. See `docs/adr/0001-revert-to-0-deletes-status-history.md`. |
 | **1** | 2–14 | Deletes the files listed in `delete_files`. Clears the card's start and end dates. |
 | **6** | 7–14 | Deletes the files listed in `delete_files`. Clears the card's start and end dates. |
 | **7** | 8–14 | Clears the card's start and end dates. |
 | **15** | 16 | Reactivates the card. |
 
-Every Revert except a revert to 0 adds a new status-history entry. The user keeps their Member Number and QR code.
+Every Revert except a revert to 0 adds a new status-history entry, with the `request_type` of the user's current request. The user keeps their Member Number and QR code.
+
+A request for a new card (Request Types 2–11) cannot be Reverted to 0, because the user already holds a card (`docs/adr/0003-a-request-for-a-new-card-cannot-be-ended-early.md`). When something is wrong with it, Revert it to 1, 6 or 7 and it carries on.
 
 **Request**
 
@@ -244,6 +284,7 @@ A revert to 0 has no `delete_files`, because it always deletes everything:
 |---|---|---|
 | 400 | `user's status mismatched` | `current_status` isn't the user's latest status, for example if another admin moved the user first. Reload and retry. |
 | 400 | `cannot revert from 16 to 6` | The move isn't in the table above. |
+| 400 | `only a first-card request (Request Type 1) can be reverted to 0` | The user's request is of types 2–11 (a card holder's new request). Revert it to 1, 6 or 7 instead. |
 | 400 | an array of validation messages | The body is invalid, for example `delete_files` contains `"reqFile"`. |
 | 403 | `only DEPARTMENT or MINISTRY admins can revert` | The admin's organization is a REGION, PROVINCE or UNIT. |
 | 403 | `user is outside your organization` | The user isn't in the admin's organization or one below it. |
@@ -263,6 +304,7 @@ Issue #6. Lists users at **every** status, across **all** organizations.
 |---|---|---|---|
 | `page` | integer ≥ 1 | `1` | 10 users per page. |
 | `search_term` | string | | Matches first name, last name or organization name (Thai). |
+| `request_type` | integer 1–11 | | Keeps users whose latest Status History entry has this Request Type. See [Request Type in the admin user lists](#request-type-in-the-admin-user-lists). |
 
 The response shape matches `GET admins/users`, with one added field, `username`. There's no `status` filter and no organization limit.
 
@@ -288,6 +330,8 @@ Cookie: Authentication_Admin=<token>
       "start_date": "2026-03-01T00:00:00.000Z",
       "end_date": "2031-02-28T00:00:00.000Z",
       "request_status": 9,
+      "request_type": 3,
+      "request_type_name": "บัตรสูญหาย",
       "position": "นักวิชาการสาธารณสุข",
       "position_lv": "ชำนาญการ",
       "unit": "สำนักงานป้องกันควบคุมโรคที่ 1 เชียงใหม่",
@@ -303,6 +347,8 @@ Cookie: Authentication_Admin=<token>
       "lname_th": "รักงาน",
       "members": [],
       "request_status": null,
+      "request_type": null,
+      "request_type_name": null,
       "position": "พยาบาลวิชาชีพ",
       "position_lv": "ปฏิบัติการ",
       "unit": "โรงพยาบาลตัวอย่าง",
@@ -406,7 +452,7 @@ Not a MOPH admin:
 
 `multipart/form-data` with the `photo` field, a JPG or PNG of at most 10 MB. It needs the `Authentication_User` cookie and an approved user. It replaces the user's photo, or creates it when there is none. `POST users/me/photo` still refuses a second photo with `400 user already has file(s)`.
 
-The photo can be replaced only while the user's current request status is **1, 2 or 3**, that is while the photo is being checked (1) or corrected (2), or the documents are still being uploaded (3).
+The photo can be replaced only while the user's current request status is **1 or 6**, that is while it is the user's turn to upload their documents (1) or correct their data (6).
 
 ```http
 PUT /envocc-card/api/v2/users/me/photo
@@ -431,7 +477,7 @@ Content-Type: image/png
 ```json
 403 Forbidden
 {
-  "message": "photo can be replaced only at request status 1, 2 or 3",
+  "message": "photo can be replaced only at request status 1 or 6",
   "error": "Forbidden",
   "statusCode": 403
 }
@@ -446,20 +492,21 @@ An unapproved user gets `403 user not validated`, as on the other card-request r
 | 400 | `photo is required` | The form has no `photo` field. `POST users/me/photo` returns the same instead of a 500. |
 | 400 | `unsupported file type` | The file isn't a `.jpg` or `.png`. |
 | 413 | `File too large` | The file is over 10 MB. |
-| 403 | `photo can be replaced only at request status 1, 2 or 3` | The user's request status isn't 1, 2 or 3, or they have no status history. |
+| 403 | `photo can be replaced only at request status 1 or 6` | The user's request status isn't 1 or 6, or they have no status history. |
 | 403 | `user not validated` | The user isn't approved yet. |
 
 ### `POST users/me/files`
 
-A user uploads their own step 3 documents. `multipart/form-data`, with the `Authentication_User` cookie and an approved user. The user is taken from the cookie.
+A user sends their own documents (Document upload). `multipart/form-data`, with the `Authentication_User` cookie and an approved user. The user is taken from the cookie.
 
 | Field | Required | Notes |
 |---|---|---|
 | `govCard` | yes, unless the user already has one | PDF, at most 10 MB. |
 | `experienceForm` | no | PDF, at most 10 MB. |
-| `photo` | no | JPG or PNG, at most 10 MB. When sent, it replaces the user's current photo. |
+| `photo` | for a request for a new card (Request Types 2–11), unless the user already has one; otherwise no | JPG or PNG, at most 10 MB. When sent, it replaces the user's current photo. |
+| `policeReport` | for a lost-card request (Request Type 3), unless the user already has one; otherwise no | PDF, at most 10 MB. The police report (ใบแจ้งความ). When sent, it replaces the stored one. |
 
-The upload is allowed only while the user's current request status is **1 or 3**. On success the user moves to status 4. A document sent again replaces the existing one; a `govCard` or `experienceForm` left out is kept. The old files are deleted from the server after the upload commits, best-effort.
+The upload is allowed only while the user's current request status is **1** (first upload) or **6** (correction after a Revert). On success the user moves to status 4. A document sent again replaces the existing one; a `govCard` or `experienceForm` left out is kept. The old files are deleted from the server after the upload commits, best-effort.
 
 ```http
 POST /envocc-card/api/v2/users/me/files
@@ -484,7 +531,7 @@ The body of a `201 Created` is empty. At any other status:
 ```json
 403 Forbidden
 {
-  "message": "documents can be uploaded only at request status 1, 3",
+  "message": "documents can be uploaded only at request status 1, 6",
   "error": "Forbidden",
   "statusCode": 403
 }
@@ -495,10 +542,12 @@ The body of a `201 Created` is empty. At any other status:
 | Status | `message` | When |
 |---|---|---|
 | 400 | `govcard is required` | The user has no stored government card and the form has no `govCard`. |
-| 400 | `unsupported file type` | A `govCard` or `experienceForm` isn't a `.pdf`, or the `photo` isn't a `.jpg` or `.png`. |
+| 400 | `photo is required` | The request is for a new card (Request Types 2–11), the user has no stored photo and the form has no `photo`. |
+| 400 | `policeReport is required` | The request is for a lost card (Request Type 3), the user has no stored police report and the form has no `policeReport`. |
+| 400 | `unsupported file type` | A `govCard`, `experienceForm` or `policeReport` isn't a `.pdf`, or the `photo` isn't a `.jpg` or `.png`. |
 | 400 | `Unexpected field - <field>` | The form has a field this route doesn't take, such as `requestFile`. |
 | 413 | `File too large` | A file is over 10 MB. |
-| 403 | `documents can be uploaded only at request status 1, 3` | The user's request status isn't 1 or 3, or they have no status history. |
+| 403 | `documents can be uploaded only at request status 1, 6` | The user's request status isn't 1 or 6, or they have no status history. |
 | 403 | `user not validated` | The user isn't approved yet. |
 | 401 | `Unauthorized` | No `Authentication_User` cookie, or an admin cookie. |
 
@@ -510,11 +559,211 @@ The stored `gov_card_files` and `exp_files` rows have no admin, so `GET users/me
 
 ## Other behaviour changes
 
+### Starting a request for a new card (`POST users/me/card`)
+
+Issue #50. A card holder starts a request for a new card and gives the reason, the **Request Type**, as `?requestType=`:
+
+| `requestType` | Reason |
+|---|---|
+| 2 | บัตรหมดอายุ (card expired) |
+| 3 | บัตรสูญหาย (card lost) |
+| 4 | บัตรถูกทำลาย (card destroyed) |
+| 5 | เปลี่ยนชื่อตัว (first name changed) |
+| 6 | เปลี่ยนชื่อสกุล (last name changed) |
+| 7 | เปลี่ยนชื่อตัวและชื่อสกุล (first and last name changed) |
+| 8 | เปลี่ยนคำนำหน้าชื่อตัว (name title changed) |
+| 9 | เลื่อนยศหรือชั้นหรือระดับ (rank or level promoted) |
+| 10 | เปลี่ยนตำแหน่ง (position changed) |
+| 11 | ย้ายสังกัด (organization changed) |
+
+Type 1 (ครั้งแรก, first card) comes only from registering. The names are in a new `request_types` table (`type_id`, `type_name`), and `requests.request_type` refers to it.
+
+```http
+POST /envocc-card/api/v2/users/me/card?requestType=9
+Cookie: Authentication_User=<token>
+Content-Type: application/json
+
+{ "user": { "position_lvId": 3 } }
+```
+
+- **When:** only while the user's current request status is **15** (card issued) or **16** (card cancelled), and type 11 only at **16**: see [Change of organization (type 11)](#change-of-organization-type-11). Before, it was accepted at any status.
+- **Body:** `user` (the user's details) and `experiences` (items added to the user's experiences) are both optional. They are saved in the same transaction as the new status: either the request starts and they are saved, or nothing is saved. Before, `user` was required (`400 invalid user input`) and sending `experiences` failed with 500.
+- **`user`** takes the same fields as [`PATCH users/me`](#personal-data-only-at-request-status-0-1-or-6): `user.orgId` moves the user to that organization, and an `orgId` that is not an organization answers `400 organization not found` and starts nothing. A `password` sent is ignored. Before, `orgId` answered 500 and a `password` was saved as sent, unhashed.
+- **`experiences`** items get `exp_years`, the whole years from `exp_fdate` to `exp_ldate`, as when registering or with `POST users/me/experiences`. Before, it was saved empty (`null`).
+- **Response:** `201` with an empty body. The user is now at status 1. The new Status History entry has the `request_type` given and no `approver` (it used to carry the user's own id in that admin field).
+- **Two requests sent at once** start one request. The other answers 403.
+- **Files:** issues #51 and #57. Starting the request deletes the government card and police report sent for the user's earlier request, and the photo too unless `requestType` is 2, so the user sends them again with [`POST users/me/files`](#post-usersmefiles), which then requires both (the photo only when none is stored). A type 2 request keeps the photo, because the old card stays valid until its end date and the online card shows it. The experience form, the experiences and the copy of the old issued card (`envcard`) are kept. At status 12 of the new request, `POST users/me/envcard` replaces that copy with the new card's: the old row and file are deleted. Outside status 12 of a request for a new card, a user who already has a copy still gets `400 user already has file(s)`. The files are deleted only when the request starts: a refused request deletes nothing. They cannot be got back.
+
+**Errors**
+
+| Status | `message` | When |
+|---|---|---|
+| 400 | `requestType must be one of 2, 3, 4, 5, 6, 7, 8, 9, 10, 11` | `requestType` is 1, or not a Request Type (0, 12, …). |
+| 400 | `Validation failed (numeric string is expected)` | `requestType` is missing or not a number. |
+| 400 | `bad request by user` | A `user` field names a row that does not exist, for example an unknown `positionId`. Nothing is saved and no request starts. Before, it answered 500. |
+| 403 | `a new card can be requested only at request status 15 or 16` | The user is at any other status, or has no status history. |
+| 403 | `a new card can be requested only at request status 16` | `requestType` is 11 and the user is at any other status, 15 included. |
+
+Once started, the request walks the same statuses to 15 as a first-card request, and every Status History entry it adds carries its `request_type`, whichever route writes it. Before, the entries written by `POST admins/members` (signing method) and `PATCH admins/members/:userId/activate` (approval date) always had `request_type` 1.
+
+The user keeps their QR code, and their Member Number unless `requestType` is 11, which gets a new one at step 7: see [A new Member Number](#change-of-organization-type-11). Step 7 reuses their card record.
+
+### The Old card while a request for a new card runs
+
+Issue #55. The card a user holds when they start a request for a new card is the **Old card**.
+
+| Request Type | The Old card while the request runs |
+|---|---|
+| 2 (expired) | Stays valid when the request starts from **15**. Started from **16** (card cancelled), it stays not valid, as for every type. |
+| 3–11 | Stops being valid as soon as `POST users/me/card` succeeds (type 11 starts from a cancelled card, so it already was not). |
+
+Starting any request from **16** sets every card of the user not valid, whatever its type, even when the admin who cancelled it did not call `PATCH admins/members/:userId/deactivate`.
+
+"Not valid" means:
+
+- `GET common/qrcode?qrcode_number=` answers `400` with `cannot generate qr code`.
+- `GET users/me/envcard/qrcode` and `GET common/members/:userId` answer `404` with `not found member`.
+
+When starting the request is refused, nothing changes and the Old card stays valid.
+
+The new card becomes valid when the request reaches **15**, by `POST admins/users/requests/update` or by a Revert from 16. Before, `PATCH admins/members/:userId/activate` (the approval date, at 8 or 11) set the card active. It now only sets the dates. So for a request for a new card (types 2–11), the new card does not show between the approval date and 15. A first card (type 1) is still created valid at step 7 (`POST admins/members`): from its approval date the online card routes return it, and `GET common/qrcode` accepts it only from 15.
+
+`GET admins/members/:userId` now returns the user's latest card whether it is valid or not, so admins can print the card being issued. Its body has a new field, `is_active`: `true` once the card is valid. Before, it answered `404` for a card that was not active. The online card routes return `is_active` too.
+
+`GET common/qrcode` accepts a QR code while its holder's request status is 15, or while a type 2 request started from 15 runs (1–14). Before, it accepted only 15. It now also refuses a card set inactive (`PATCH admins/members/:userId/deactivate`), and answers `400` instead of `500` when it refuses.
+
+### Expired-card request (type 2): start window and Approval date
+
+Issue #54. Dates are compared with today's date in Thailand.
+
+**Starting it.** `POST users/me/card?requestType=2` is accepted only from 30 days before the end date of the user's card. After the end date there is no limit. Earlier, it answers:
+
+```json
+403 Forbidden
+{
+  "message": "a request of type 2 can be started only from 2027-01-30, 30 days before the card's end date",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**The Approval date.** At status 8 or 11 of a type 2 request, while the Old card has not yet expired, `PATCH admins/members/:userId/activate` refuses a `startDate` on or before the Old card's end date. The earliest accepted date is the day after. Once the Old card has expired, any date is accepted. The card is valid for 5 years from the Approval date, as for every type: its `end_date` is the day before the same date 5 years later.
+
+```json
+400 Bad Request
+{
+  "message": "the approval date must be after the Old card's end date, 2027-03-01",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+Example: the card ends on 1 Mar 2027. The request may start from 30 Jan 2027. The earliest Approval date is 2 Mar 2027, and that card ends on 1 Mar 2032.
+
+**The card in effect today.** `GET users/me/envcard/qrcode`, `GET common/members/:userId` and `GET common/qrcode` return the card in effect today: valid, with `start_date` ≤ today ≤ `end_date`. Until 1 Mar 2027 in the example they return the Old card, and from 2 Mar 2027 the new one. Before, they returned the active card with the latest end date, whatever today was. A card past its end date, or with a `start_date` still to come, is no longer returned (`404` or `400` as above).
+
+**One card record per card.** Each request for a new card adds a card record (a `members` row) with the same Member Number (a new one for type 11), QR code and QR password as the one before it, so the Old card keeps its own dates. `GET admins/members/:userId` returns the latest record. A Revert to 1, 6 or 7 clears the dates of the latest record only, and a Revert from 16 to 15 sets only the latest record active. `PATCH users/me/members/qrcode` sets the password on the latest record, which `POST common/qrcode/validate` checks. `PATCH admins/members/:userId/deactivate` sets every record of the user inactive, so during a type 2 request it stops the Old card too. It answers `400 member already inactivated` only when no record is valid. Before, during a type 2 request it answered that `400` and left the Old card valid.
+
+### Change of organization (type 11)
+
+Issue #56. A user who moves to another organization asks for a card with `POST users/me/card?requestType=11`.
+
+**Starting it.** Accepted only at request status **16** (card cancelled). At 15 it answers:
+
+```json
+403 Forbidden
+{
+  "message": "a new card can be requested only at request status 16",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+The check reads the request status, not whether the card is set inactive. So the old organization's admin cancels the card first: `POST admins/users/requests/update` from 15 to 16, and `PATCH admins/members/:userId/deactivate` to stop the card being valid. When the old organization does not act, a Ministry admin may do the same. Both routes accept any admin for any user, whatever their organization, as before.
+
+```http
+POST /envocc-card/api/v2/admins/users/requests/update
+Cookie: Authentication_Admin=<token>
+Content-Type: application/json
+
+{ "user": 42, "current_status": 15, "next_status": 16, "request_type": 1, "description": "ย้ายสังกัด" }
+```
+
+**The new organization.** The user sends their new organization as `user.orgId` in the body. The request then belongs to it: the new organization's admins see the user in `GET admins/users`, and the old organization's admins no longer do.
+
+```http
+POST /envocc-card/api/v2/users/me/card?requestType=11
+Cookie: Authentication_User=<token>
+Content-Type: application/json
+
+{ "user": { "orgId": 27, "positionId": 203 } }
+```
+
+**A new Member Number.** The card issued for a type 11 request has a Member Number no one has held before, including users since deleted. Every other type keeps the number the user had. The number is given at step 7, when the admin chooses the signing method (`POST admins/members`), as for a first card. Until then the new card record carries the Old card's number, and a request that stops before step 7 uses up no number. A Revert keeps the number once given: passing step 7 again does not give another. The Old card keeps its old number. The QR code and QR password stay the same, as for every other type.
+
+### Request Type in the admin user lists
+
+Issue #53. Admins see the Request Type of each user's current request, and can filter by it.
+
+- Each row of `GET admins/users` and `GET admins/users/all` has two new fields, `request_type` (1–11) and `request_type_name` (its Thai name), taken from the user's **latest** Status History entry, the same entry `request_status` comes from. Both are `null` for a user with no entries. An entry written before Request Types were checked may hold a number that is not a Request Type: `request_type` is then that number and `request_type_name` is `null`.
+- `GET admins/users/:userId/requests/form` and `GET users/me/requests/form` return the same two fields.
+- `GET admins/users` and `GET admins/users/all` take an optional `request_type` query parameter. It keeps only users whose latest entry has that Request Type, and combines with `status`, `search_term` and `page`. `pageData` counts the filtered users. An admin still sees only users in their organization and below.
+
+```http
+GET /envocc-card/api/v2/admins/users?status=ongoing&request_type=3&page=1
+Cookie: Authentication_Admin=<token>
+```
+
+A `request_type` that isn't a Request Type (for example `99`, `0` or `lost`) answers `400`:
+
+```json
+400 Bad Request
+{
+  "message": ["request_type must be one of the following values: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11"],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+Without `request_type`, both lists answer as before, apart from the two new fields.
+
+### Personal data only at request status 0, 1 or 6
+
+Issue #49. A user changes their own details only while their current request status is **0** (registered), **1** (document upload) or **6** (data correction). This covers:
+
+- `PATCH users/me`
+- `POST users/me/experiences`
+- `PATCH users/me/experiences/:expId`
+- `DELETE users/me/experiences/:expId`
+
+At any other status, or with no status history, these answer `403` and change nothing. Before, they were accepted at any status, so a card holder at 15 could change the name on their card.
+
+```json
+403 Forbidden
+{
+  "message": "personal data can be edited only at request status 0, 1 or 6",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+`PATCH users/me` takes the organization as `orgId`, the field registering uses, and saves it as the user's organization. An `orgId` that is not an organization answers `400 organization not found`. Before, sending `orgId` answered 500, so the organization could not be changed. A `password` sent is ignored: the password changes only by a password reset (`POST auth/reset-password`). Before, it was saved as sent, unhashed.
+
+Once a card is issued (15) or cancelled (16), the user changes their details by starting a request for a new card with [`POST users/me/card`](#starting-a-request-for-a-new-card-post-usersmecard), which saves the details in its body.
+
+Reading stays open at every status: `GET users/me`, `GET users/me/experiences`, `GET users/me/requests/form` and `GET users/me/requests/exp`.
+
+The experience routes also changed in these ways:
+
+- `POST users/me/experiences` adds every item to the logged-in user. The `userId` field is no longer needed, and a `userId` that is sent is ignored.
+- `PATCH` and `DELETE users/me/experiences/:expId` work only on the logged-in user's own experiences. Another user's `expId`, or one that does not exist, answers `404 experience not found`.
+- A failure in these three routes now answers with its error status. Before, the error body came back with `200` or `201`.
+
 ### Uploads with no file answer 400
 
 `POST users/me/photo`, `PUT users/me/photo` and `POST users/me/envcard` used to answer 500 when the form had no file field. They now answer 400 with `photo is required` or `envcard is required`.
 
-### Step 3 upload: the request file is optional
+### Document upload by an admin: the request file is optional
 
 Issue #11. `POST admins/users/:userId/files` takes `multipart/form-data` and requires the admin cookie. `:userId` is the target user's id. It has no status gate: an admin may upload at any request status.
 
@@ -523,6 +772,9 @@ Issue #11. `POST admins/users/:userId/files` takes `multipart/form-data` and req
 | `govCard` | yes, unless the user already has one | PDF, at most 10 MB. |
 | `requestFile` | **no** (it used to be required, and leaving it out caused a 500) | PDF, at most 10 MB. |
 | `experienceForm` | no | PDF, at most 10 MB. |
+| `policeReport` | for a lost-card request (Request Type 3), unless the user already has one; otherwise no (issue #57) | PDF, at most 10 MB. The police report (ใบแจ้งความ). |
+
+A type 3 request without a police report, sent or stored, answers `400` with `policeReport is required`. An admin sends no photo, so the photo a request for a new card needs is not required here.
 
 ```http
 POST /envocc-card/api/v2/admins/users/42/files
@@ -539,7 +791,31 @@ Content-Type: application/pdf
 
 On success the user moves to status 4. A file sent again replaces the existing one; files left out are kept.
 
-If no user has the id `:userId`, the route answers `404` with `user not found` and stores nothing.
+If no user has the id `:userId`, the route answers `404` with `user not found` and stores nothing. For a user outside the admin's organization or the ones below it, it answers `403` with `user is outside your organization` and stores nothing (see [breaking change 8](#8-admin-file-routes-are-limited-to-the-admins-organization)).
+
+### The signing method and the Approval date are checked
+
+Both routes used to accept any value and write it as it came.
+
+**`POST admins/members`** (step 7, choosing the signing method) is accepted only while the user's request status is **7**, and `signature_method` must be the status the chosen method leads to: **8** for an electronic signature (the approval date, then E. print at 9) or **10** or **11** for a manual one (M. print at 10, then the approval date at 11). Before, any number was written as the user's new request status, from any status, so `signature_method: 3` moved a user to the retired status 3.
+
+| Status | `message` | When |
+|---|---|---|
+| 400 | `signature_method must be 8 or 10 or 11` | Any other `signature_method`. Nothing is saved. |
+| 400 | `the signing method can be chosen only at request status 7` | The user is at any other status. Nothing is saved. |
+
+**`PATCH admins/members/:userId/activate`** (the Approval date, at 8 or 11) takes `startDate` as a calendar date, `YYYY-MM-DD`, for every Request Type. A time of day (`2027-03-01T10:00:00Z`), a partial date (`2027-03`), a day that does not exist (`2027-02-30`) or no `startDate` answers:
+
+```json
+400 Bad Request
+{
+  "message": ["startDate must be a date as YYYY-MM-DD"],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+Before, a time of day was accepted and compared with the Old card's end date as a timestamp, so `2027-03-01T10:00:00Z` passed the type 2 overlap check against an Old card ending on 2027-03-01.
 
 ### Smaller changes
 

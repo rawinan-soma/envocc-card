@@ -6,6 +6,7 @@ import type { App } from 'supertest/types';
 import { PrismaService } from 'prisma/prisma.service';
 import { JwtAccessStrategy } from 'src/admin-auth/jwt-access.strategy';
 import { AdminsService } from 'src/admins/admins.service';
+import { FilesService } from 'src/files/files.service';
 import { AdminUserController } from 'src/users/admin-user.controller';
 import { UsersService } from 'src/users/users.service';
 import { startApp, testConfig } from './support/test-app';
@@ -36,7 +37,10 @@ const userRow = (id: number, statuses: number[], orgId = ADMIN_ORG_ID) => ({
   lname_th: `สกุล${id}`,
   organization: org(orgId, `หน่วย${orgId}`),
   members: [],
-  requests: statuses.map((request_status) => ({ request_status })),
+  requests: statuses.map((request_status) => ({
+    request_status,
+    request_types: { type_id: 1, type_name: 'ครั้งแรก' },
+  })),
   position: { position_name: 'นักวิชาการ' },
   position_lv: { position_lv_name: 'ปฏิบัติการ' },
 });
@@ -77,6 +81,7 @@ describe('admin user listing routes', () => {
       providers: [
         JwtAccessStrategy,
         UsersService,
+        FilesService,
         { provide: PrismaService, useValue: prisma },
         {
           provide: AdminsService,

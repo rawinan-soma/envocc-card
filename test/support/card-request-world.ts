@@ -15,18 +15,22 @@ import { ExperiencesService } from 'src/experiences/experiences.service';
 import { FilesService } from 'src/files/files.service';
 import { AdminMemberController } from 'src/members/admin-member.controller';
 import { CommonMembersController } from 'src/members/common-members.controller';
+import { UserMemberController } from 'src/members/user-member.controller';
 import { MembersService } from 'src/members/members.service';
 import { AdminRequestController } from 'src/request/admin-request.controller';
 import { RequestService } from 'src/request/request.service';
+import { REQUEST_TYPES } from 'src/request/request-types';
 import { JwtAccessStrategy as UserJwtAccessStrategy } from 'src/user-auth/jwt-access.strategy';
 import { AdminUserController } from 'src/users/admin-user.controller';
 import { AdminFileController } from 'src/files/admin-file.controller';
 import { UserFileController } from 'src/files/user-file.controller';
 import { UsersController } from 'src/users/users.controller';
+import { UserCardRequestController } from 'src/users/user-card-request.controller';
 import { UsersService } from 'src/users/users.service';
 import { startApp, testConfig } from './test-app';
 import { createTestDb, TestDb } from './test-db';
 import { OrgFixture, seedOrganizations } from './org-fixtures';
+import { clock } from 'src/common/clock';
 
 const ACCESS_SECRET = 'test-access-secret';
 
@@ -43,13 +47,21 @@ export const ORG = {
 // One admin per organization, with the same id as its organization.
 export const ADMIN = ORG;
 
-export type FileKind = 'photo' | 'govcard' | 'expfile' | 'reqFile';
+export type FileKind =
+  | 'photo'
+  | 'govcard'
+  | 'expfile'
+  | 'reqFile'
+  | 'envcard'
+  | 'policeReport';
 
 const fileTable = {
+  envcard: 'envocc_card_files',
   photo: 'photos',
   govcard: 'gov_card_files',
   expfile: 'exp_files',
   reqFile: 'request_files',
+  policeReport: 'police_report_files',
 } as const;
 
 const seedWorld = async (prisma: PrismaClient) => {
@@ -57,6 +69,12 @@ const seedWorld = async (prisma: PrismaClient) => {
     data: Array.from({ length: 17 }, (_, i) => ({
       status_id: i,
       status_name: `status ${i}`,
+    })),
+  });
+  await prisma.request_types.createMany({
+    data: Object.entries(REQUEST_TYPES).map(([type, { name }]) => ({
+      type_id: Number(type),
+      type_name: name,
     })),
   });
   await prisma.position_lvs.create({ data: { position_lv_id: 1 } });
@@ -96,11 +114,14 @@ export const createCardRequestWorld = async () => {
   let app: INestApplication<App>;
   let workDir: string;
   let userCount = 0;
+  let today: Date;
 
   const start = async () => {
     workDir = mkdtempSync(join(tmpdir(), 'card-request-'));
     mkdirSync(join(workDir, 'assets'));
     jest.spyOn(process, 'cwd').mockReturnValue(workDir);
+    today = new Date('2026-06-01');
+    jest.spyOn(clock, 'today').mockImplementation(() => today);
 
     await db.reset();
     await seedWorld(db.prisma);
@@ -112,7 +133,9 @@ export const createCardRequestWorld = async () => {
         AdminUserController,
         AdminMemberController,
         CommonMembersController,
+        UserMemberController,
         UsersController,
+        UserCardRequestController,
         AdminFileController,
         UserFileController,
       ],
@@ -234,6 +257,9 @@ export const createCardRequestWorld = async () => {
     const data = { userId, filename, url };
     const withAdmin = { ...data, adminId: ADMIN.UNIT };
     switch (kind) {
+      case 'envcard':
+        await db.prisma.envocc_card_files.create({ data });
+        break;
       case 'photo':
         await db.prisma.photos.create({ data });
         break;
@@ -245,6 +271,9 @@ export const createCardRequestWorld = async () => {
         break;
       case 'reqFile':
         await db.prisma.request_files.create({ data: withAdmin });
+        break;
+      case 'policeReport':
+        await db.prisma.police_report_files.create({ data: withAdmin });
         break;
     }
     return url;
@@ -259,7 +288,7 @@ export const createCardRequestWorld = async () => {
   const giveMember = async (
     userId: number,
     data: {
-      member_no: number;
+      member_no?: number;
       qrcode: string;
       is_active?: boolean;
       start_date?: Date;
@@ -275,6 +304,10 @@ export const createCardRequestWorld = async () => {
         ...data,
       },
     });
+
+  const setToday = (date: string) => {
+    today = new Date(date);
+  };
 
   const historyOf = async (userId: number) =>
     (
@@ -297,6 +330,7 @@ export const createCardRequestWorld = async () => {
     filesOf,
     giveMember,
     historyOf,
+    setToday,
     workDir: () => workDir,
   };
 };

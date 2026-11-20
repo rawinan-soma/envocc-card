@@ -5,7 +5,7 @@ import { UserCreateDto } from 'src/user-auth/dto/user-create.dto';
 import { UserExpCreateDto } from 'src/user-auth/dto/user-exp-create.dto';
 
 export class UserUpdateInternalDto extends PartialType(
-  OmitType(UserCreateDto, ['username'] as const),
+  OmitType(UserCreateDto, ['username', 'password'] as const),
 ) {}
 
 export class UserUpdateDto extends PartialType(

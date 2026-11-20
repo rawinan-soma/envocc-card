@@ -26,5 +26,5 @@ body:json {
 }
 
 docs {
-  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. `delete_files` (optional): any of `photo`, `govcard`, `expfile`.
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. `delete_files` (optional): any of `photo`, `govcard`, `expfile`. A Revert to 0 is only for a first-card request (Request Type 1); for a request of types 2-11 it is 400 "only a first-card request (Request Type 1) can be reverted to 0", so Revert it to 1, 6 or 7 instead. The new status entry carries the Request Type of the user's current request.
 }

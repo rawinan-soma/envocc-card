@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { MembersService } from './members.service';
 import { MemeberCreateDto } from './dto/create-member.dto';
+import { ApprovalDateDto } from './dto/approval-date.dto';
 import type { RequestwithAdminData } from 'src/admin-auth/request-admin.interface';
 import { JwtAccessGuardAdmin } from 'src/admin-auth/jwt-access.guard';
 import { AdminsService } from 'src/admins/admins.service';
@@ -25,7 +26,7 @@ export class AdminMemberController {
 
   @Get('members/:userId')
   async getMemberByIdHandler(@Param('userId', ParseIntPipe) userId: number) {
-    return this.membersService.getMember(userId);
+    return this.membersService.getLatestCard(userId);
   }
 
   @Post('members')
@@ -47,7 +48,7 @@ export class AdminMemberController {
   @Patch('members/:userId/activate')
   async activateMemberHandler(
     @Param('userId', ParseIntPipe) userId: number,
-    @Body('startDate') startDate: string,
+    @Body() { startDate }: ApprovalDateDto,
     @Req() request: RequestwithAdminData,
   ) {
     return this.membersService.transactionUpdateStartDate(

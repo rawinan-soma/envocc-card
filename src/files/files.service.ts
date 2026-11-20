@@ -10,15 +10,24 @@ import {
 import { promises as fs } from 'fs';
 import {
   addStatusEntry,
-  canReplacePhoto,
   latestStatusEntry,
   lockUser,
 } from 'src/request/status-history';
+import {
+  canReplacePhoto,
+  USER_SENDS_DOCUMENTS_STATUSES,
+} from 'src/request/request-statuses';
+import {
+  FIRST_CARD,
+  isNewCardRequest,
+  REQUEST_TYPES,
+} from 'src/request/request-types';
 import {
   envocc_card_files,
   exp_files,
   gov_card_files,
   photos,
+  police_report_files,
   // seals,
   Prisma,
   request_files,
@@ -28,14 +37,17 @@ import {
 import { PrismaService } from 'prisma/prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { FileCreateDto } from './dto/file-create.dto';
+import { assertUserInAdminOrg } from 'src/organizations/user-org-scope';
 
-type FileModels =
-  | 'envcard'
-  | 'expfile'
-  | 'govcard'
-  // | 'seal'
-  | 'photo'
-  | 'reqFile';
+export const FILE_KINDS = [
+  'envcard',
+  'expfile',
+  'govcard',
+  'photo',
+  'policeReport',
+  'reqFile',
+] as const;
+type FileModels = (typeof FILE_KINDS)[number];
 
 export type FileModelMap = {
   envcard: envocc_card_files;
@@ -43,30 +55,44 @@ export type FileModelMap = {
   govcard: gov_card_files;
   // seal: seals;
   photo: photos;
+  policeReport: police_report_files;
   reqFile: request_files;
 
   // member: members;
 };
 
-type StepThreeFile = 'govcard' | 'reqFile' | 'expfile' | 'photo';
+type DocumentUploadFile =
+  | 'govcard'
+  | 'reqFile'
+  | 'expfile'
+  | 'photo'
+  | 'policeReport';
 
-interface StepThreeRule {
-  files: readonly StepThreeFile[];
-  required: readonly StepThreeFile[];
+interface DocumentUploadRule {
+  files: readonly DocumentUploadFile[];
   // Request Statuses the upload may start from; undefined = any.
   from?: readonly number[];
 }
 
-const STEP_THREE_RULES = {
-  admin: { files: ['govcard', 'reqFile', 'expfile'], required: ['govcard'] },
+const DOCUMENT_UPLOAD_RULES = {
+  admin: { files: ['govcard', 'reqFile', 'expfile', 'policeReport'] },
   user: {
-    files: ['govcard', 'expfile', 'photo'],
-    required: ['govcard'],
-    from: [1, 3],
+    files: ['govcard', 'expfile', 'photo', 'policeReport'],
+    from: USER_SENDS_DOCUMENTS_STATUSES,
   },
-} satisfies Record<'admin' | 'user', StepThreeRule>;
+} satisfies Record<'admin' | 'user', DocumentUploadRule>;
 
-export type StepThreeUploader = keyof typeof STEP_THREE_RULES;
+const requiredDocuments = (requestType: number): DocumentUploadFile[] => [
+  'govcard',
+  ...(isNewCardRequest(requestType) ? (['photo'] as const) : []),
+  ...(REQUEST_TYPES[requestType]?.needsPoliceReport
+    ? (['policeReport'] as const)
+    : []),
+];
+
+export type DocumentUploader =
+  | { role: 'user' }
+  | { role: 'admin'; adminId: number };
 
 @Injectable()
 export class FilesService {
@@ -81,6 +107,7 @@ export class FilesService {
       govcard: this.prisma.gov_card_files,
       // seal: this.prisma.seals,
       photo: this.prisma.photos,
+      policeReport: this.prisma.police_report_files,
       reqFile: this.prisma.request_files,
 
       // member: this.prisma.members
@@ -230,7 +257,7 @@ export class FilesService {
         const current = await latestStatusEntry(tx, userId);
         if (!current || !canReplacePhoto(current.request_status)) {
           throw new ForbiddenException(
-            'photo can be replaced only at request status 1, 2 or 3',
+            'photo can be replaced only at request status 1 or 6',
           );
         }
 
@@ -253,15 +280,49 @@ export class FilesService {
     return swapped.photo;
   }
 
-  // Step 3. Each document replaces the user's existing one(s) of that type.
-  // A required type the user already has may be left out. Files the rule does
-  // not list are ignored and removed from disk with the rest on failure.
-  async uploadStepThree(
-    uploader: StepThreeUploader,
+  async uploadEnvcard(userId: number, data: FileCreateDto) {
+    let swapped: { envcard: envocc_card_files | null; oldPaths: string[] };
+    try {
+      swapped = await this.prisma.$transaction(async (tx) => {
+        await lockUser(tx, userId);
+        const current = await latestStatusEntry(tx, userId);
+        const replacesOldCopy =
+          current?.request_status === 12 &&
+          isNewCardRequest(current.request_type);
+
+        if (
+          !replacesOldCopy &&
+          (await this.txCountFilesForUser('envcard', userId, tx)) > 0
+        ) {
+          throw new BadRequestException('user already has file(s)');
+        }
+
+        return {
+          oldPaths: replacesOldCopy
+            ? await this.txDeleteFilesForUser(['envcard'], userId, tx)
+            : [],
+          envcard: await this.txUploadFileForUser('envcard', data, tx),
+        };
+      });
+    } catch (err) {
+      await this.deleteFilesFromDisk([data.url]);
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      this.logger.error(err);
+      throw new InternalServerErrorException('something went wrong');
+    }
+
+    await this.deleteFilesFromDisk(swapped.oldPaths);
+    return swapped.envcard;
+  }
+
+  async uploadDocuments(
+    uploader: DocumentUploader,
     userId: number,
-    uploads: Partial<Record<StepThreeFile, FileCreateDto>>,
+    uploads: Partial<Record<DocumentUploadFile, FileCreateDto>>,
   ) {
-    const rule: StepThreeRule = STEP_THREE_RULES[uploader];
+    const rule: DocumentUploadRule = DOCUMENT_UPLOAD_RULES[uploader.role];
     const uploaded = Object.values(uploads).flatMap((dto) =>
       dto ? [dto.url] : [],
     );
@@ -270,6 +331,9 @@ export class FilesService {
       replaced = await this.prisma.$transaction(async (tx) => {
         if ((await lockUser(tx, userId)).length === 0) {
           throw new NotFoundException('user not found');
+        }
+        if (uploader.role === 'admin') {
+          await assertUserInAdminOrg(tx, uploader.adminId, userId);
         }
         const current = await latestStatusEntry(tx, userId);
         if (rule.from) {
@@ -280,6 +344,7 @@ export class FilesService {
           }
         }
 
+        const required = requiredDocuments(current?.request_type ?? FIRST_CARD);
         const replaced: string[] = [];
         for (const model of rule.files) {
           const upload = uploads[model];
@@ -289,19 +354,14 @@ export class FilesService {
             );
             await this.txUploadFileForUser(model, upload, tx);
           } else if (
-            rule.required.includes(model) &&
+            required.includes(model) &&
             (await this.txCountFilesForUser(model, userId, tx)) === 0
           ) {
             throw new BadRequestException(`${model} is required`);
           }
         }
 
-        await addStatusEntry(tx, {
-          userId,
-          status: 4,
-          requestType: current?.request_type ?? 1,
-          from: current?.request_status ?? null,
-        });
+        await addStatusEntry(tx, { userId, status: 4 });
 
         return replaced;
       });
@@ -324,6 +384,7 @@ export class FilesService {
       govcard: tx.gov_card_files,
       // seal: tx.seals,
       photo: tx.photos,
+      policeReport: tx.police_report_files,
       reqFile: tx.request_files,
     } satisfies Record<FileModels, any>;
   }

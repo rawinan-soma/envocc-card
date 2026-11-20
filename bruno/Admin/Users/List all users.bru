@@ -13,8 +13,9 @@ get {
 params:query {
   page: 1
   ~search_term: สมชาย
+  ~request_type: 3
 }
 
 docs {
-  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Ministry admins only (403 otherwise). Every user, unfiltered.
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Ministry admins only (403 otherwise). Every user, filtered only by the optional `search_term` and `request_type` (1-11, otherwise 400; matches the Request Type of the user's latest Status History entry). Each row has `request_type` and `request_type_name` of the user's latest entry.
 }

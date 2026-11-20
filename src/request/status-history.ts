@@ -1,23 +1,16 @@
 import { Prisma } from '@prisma/client';
+import { FIRST_CARD } from './request-types';
 
 export interface NewStatusEntry {
   userId: number;
   status: number;
-  requestType: number;
+  requestType?: number;
   approver?: number;
   description?: string;
   // The Request Status being left: null for a user's first entry. Looked up
   // from the Status History when left out.
   from?: number | null;
 }
-
-// A user may replace their photo only while it is still being checked (1) or
-// corrected (2), or their documents are still being uploaded (3). See Replace
-// photo in CONTEXT.md.
-export const PHOTO_REPLACEABLE_STATUSES: readonly number[] = [1, 2, 3];
-
-export const canReplacePhoto = (status: number) =>
-  PHOTO_REPLACEABLE_STATUSES.includes(status);
 
 // Serializes every writer of a user's card request (Status History, uploaded
 // files) by holding the user's row until the transaction ends. Call it first:
@@ -48,9 +41,12 @@ export const addStatusEntry = async (
   { userId, status, requestType, approver, description, from }: NewStatusEntry,
 ) => {
   await lockUser(db, userId);
-  if (from === undefined) {
+  if (from === undefined || requestType === undefined) {
     const current = await latestStatusEntry(db, userId);
-    from = current?.request_status ?? null;
+    if (from === undefined) {
+      from = current?.request_status ?? null;
+    }
+    requestType ??= current?.request_type ?? FIRST_CARD;
   }
 
   const entry = await db.requests.create({

@@ -1,0 +1,63 @@
+# One disposable EnvOcc Card stack per verification run. scripts/up.sh starts
+# it as compose project envocc-verify-<run>, so runs never share a database,
+# a Redis or an assets volume, and never touch the dev docker-compose.yaml stack.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: verify
+      POSTGRES_PASSWORD: verify
+      POSTGRES_DB: envocc
+    # The image's init runs a temporary server on the unix socket only, so a
+    # TCP check passes only once init has finished and the real server listens.
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U verify -d envocc']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # The service must be named `redis`: src/app.module.ts hard-codes
+  # BullModule's host as 'redis', ignoring REDIS_HOST.
+  redis:
+    image: redis:alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    image: ${VERIFY_IMAGE:?set by scripts/up.sh}
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgresql://verify:verify@db:5432/envocc?schema=public
+      SERVER_PORT: '3000'
+      SERVER_URL: http://localhost:3000
+      ENDPOINT_PREFIX: envocc-card/api/v2
+      ACCESS_TOKEN_SECRET: verify-access-secret
+      ACCESS_TOKEN_EXP: '3600'
+      REFRESH_TOKEN_SECRET: verify-refresh-secret
+      REFRESH_TOKEN_EXP: '86400'
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+    # Loopback only, on a port Docker picks; scripts/up.sh reads it back.
+    ports:
+      - '127.0.0.1::3000'
+    # Uploads go to /app/assets (multer does not create the directory).
+    volumes:
+      - assets:/app/assets
+    # The same steps as the api service in docker-compose.yaml.
+    command: |
+      sh -c "
+        set -e
+        bun prisma generate
+        bun run build
+        bun prisma migrate deploy
+        bun prisma/seed.ts
+        bun run start:prod
+      "
+
+volumes:
+  assets:

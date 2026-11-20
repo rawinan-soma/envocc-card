@@ -21,5 +21,5 @@ body:json {
 }
 
 docs {
-  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first.
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Sets the approval date (`startDate`, a calendar date as YYYY-MM-DD; anything else is 400) of a user at request status 8 or 11: the card is valid from it for 5 years. Moves the user on to 9 or 12. The card itself becomes valid only when the request reaches 15. For a type 2 request whose Old card has not yet expired, `startDate` must be after the Old card's end date, otherwise 400 "the approval date must be after the Old card's end date, <date>".
 }

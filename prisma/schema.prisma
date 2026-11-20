@@ -52,10 +52,11 @@ model admins {
   organization   organizations @relation(fields: [organizationId], references: [id])
 
   // @@index([level], map: "level")
-  exp_files      exp_files[]
-  gov_card_files gov_card_files[]
-  request_files  request_files[]
-  reset_tokens   reset_tokens[]
+  exp_files           exp_files[]
+  gov_card_files      gov_card_files[]
+  police_report_files police_report_files[]
+  request_files       request_files[]
+  reset_tokens        reset_tokens[]
 }
 
 enum OrgLevel {
@@ -273,6 +274,17 @@ model gov_card_files {
   // @@index([user])
 }
 
+model police_report_files {
+  id          Int       @id @default(autoincrement())
+  adminId     Int?
+  filename    String?   @unique @db.VarChar(255)
+  url         String?
+  create_date DateTime? @default(now()) @db.Timestamptz()
+  admin       admins?   @relation(fields: [adminId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  userId      Int
+  user        users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 // model institutions {
 //   id       Int    @id @unique(map: "institution_id") @default(autoincrement())
@@ -293,7 +305,7 @@ model gov_card_files {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model members {
   member_id    Int         @unique @default(autoincrement())
-  member_no    Int?
+  member_no    Int?        @default(autoincrement())
   userId       Int
   start_date   DateTime?   @db.Date
   end_date     DateTime?   @db.Date
@@ -352,6 +364,12 @@ model request_statuses {
   requests    requests[]
 }
 
+model request_types {
+  type_id   Int        @id
+  type_name String     @db.VarChar(255)
+  requests  requests[]
+}
+
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model requests {
   id               Int              @unique(map: "req_id") @default(autoincrement())
@@ -364,6 +382,7 @@ model requests {
   user             users?           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "requests_ibfk_1")
   admins           admins?          @relation(fields: [approver], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "requests_ibfk_2")
   request_statuses request_statuses @relation(fields: [request_status], references: [status_id], onDelete: Cascade, onUpdate: NoAction, map: "requests_ibfk_3")
+  request_types    request_types    @relation(fields: [request_type], references: [type_id], onDelete: Restrict, onUpdate: NoAction)
   // @@index([user])
 
   // @@id([req_id])
@@ -453,15 +472,16 @@ model users {
   requests     requests[]
   reset_tokens reset_tokens[]
 
-  position       positions?       @relation(fields: [positionId], references: [position_id])
-  positionId     Int?
-  position_lv    position_lvs?    @relation(fields: [position_lvId], references: [position_lv_id])
-  position_lvId  Int?
-  organizationId Int
-  organization   organizations    @relation(fields: [organizationId], references: [id])
-  gov_card_files gov_card_files[]
-  exp_files      exp_files[]
-  request_files  request_files[]
+  position            positions?            @relation(fields: [positionId], references: [position_id])
+  positionId          Int?
+  position_lv         position_lvs?         @relation(fields: [position_lvId], references: [position_lv_id])
+  position_lvId       Int?
+  organizationId      Int
+  organization        organizations         @relation(fields: [organizationId], references: [id])
+  gov_card_files      gov_card_files[]
+  police_report_files police_report_files[]
+  exp_files           exp_files[]
+  request_files       request_files[]
 
   @@id([username, email, id])
 }

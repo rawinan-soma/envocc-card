@@ -1,0 +1,19 @@
+meta {
+  name: User request form
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/admins/users/:userId/requests/form
+  body: none
+  auth: none
+}
+
+params:path {
+  userId: 1
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. Same response as "User / Card request / Request form", including request_type and request_type_name of the user's latest Status History entry. Only for users in the admin's organization or below (403 otherwise).
+}

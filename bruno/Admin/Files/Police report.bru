@@ -1,0 +1,19 @@
+meta {
+  name: Police report
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/admins/users/:userId/files/policeReport
+  body: none
+  auth: none
+}
+
+params:path {
+  userId: 1
+}
+
+docs {
+  Admin login (cookie Authentication_Admin): run "Admin auth / Login" first. The police report a user sent for a lost-card request (Request Type 3). Only for users in the admin's organization or one below it (403 "user is outside your organization"); 404 when the user has none.
+}

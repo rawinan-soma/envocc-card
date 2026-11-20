@@ -1,5 +1,13 @@
 import { Transform } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
+import { REQUEST_TYPES } from 'src/request/request-types';
 
 enum Statuses {
   ongoing = 'ongoing',
@@ -17,6 +25,11 @@ export class GetUsersPageQueryDto {
   @IsString()
   @IsOptional()
   search_term?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsIn(Object.keys(REQUEST_TYPES).map(Number))
+  request_type?: number;
 }
 
 export class GetAllUserQueryDto extends GetUsersPageQueryDto {

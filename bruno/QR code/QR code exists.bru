@@ -15,5 +15,5 @@ params:query {
 }
 
 docs {
-  No login.
+  No login. Returns the card in effect today (start_date <= today <= end_date). Answers 400 `cannot generate qr code` when there is none. It also answers 400 while a request of types 3-11 runs, since the Old card stops being valid when it starts. A type 2 (expired card) request leaves the Old card valid.
 }
