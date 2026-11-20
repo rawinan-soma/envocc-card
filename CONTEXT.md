@@ -67,7 +67,7 @@ _Avoid_: update photo, re-upload
 A user changing their own details (names, name title, rank or level, position, organization and the rest of their profile), allowed only while their Request Status is 0, 1 or 6. Changes take effect as soon as they are saved. Once a card is issued, the only way to change these details is to start a new request.
 
 **Document upload**:
-Sending the documents for a card request in one go, which moves the user from Request Status 1 or 6 to 4. The user sends the government card (unless already stored) and may send an experience form and a new photo. An admin may also send it for a user, at any Request Status. For both, the government card is required, the photo too when none is stored, and for a lost card (Request Type 3) the police report as well.
+Sending the documents for a card request in one go, which moves the user from Request Status 1 or 6 to 4. The user sends the government card (unless already stored) and may send an experience form and a new photo. An admin may also send it for a user, at any Request Status. For both, the government card is required unless already stored, and for a lost card (Request Type 3) the police report as well. A user sending it for a request for a new card (Request Types 2–11) must also send a photo when none is stored. A first-card user and an admin are not held to the photo: the first-card user may send it on its own, and an admin cannot send one.
 _Avoid_: Step 3 upload
 
 **Member Number**:
