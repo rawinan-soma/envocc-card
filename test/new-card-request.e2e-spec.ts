@@ -515,10 +515,15 @@ describe('Starting a request for a new card (POST users/me/card)', () => {
       return req;
     };
 
-    it.each([3, 4, 5, 6, 7, 8, 9, 10, 11])(
-      'deletes the photo, government card and police report when a type %i request starts, and keeps the rest',
-      async (requestType) => {
-        const { user, paths } = await cardHolder([...ISSUED, 16]);
+    it.each([
+      ...[3, 4, 5, 6, 7, 8, 9, 10].map((type) => [type, 15]),
+      ...[3, 4, 5, 6, 7, 8, 9, 10, 11].map((type) => [type, 16]),
+    ])(
+      'deletes the photo, government card and police report when a type %i request starts from %i, and keeps the rest',
+      async (requestType, from) => {
+        const { user, paths } = await cardHolder(
+          from === 16 ? [...ISSUED, 16] : ISSUED,
+        );
 
         expect((await startRequest(user, requestType, {})).status).toBe(201);
 
